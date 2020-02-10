@@ -11,8 +11,10 @@ rem	pause
 call	npm install @types/node --save-dev
 rem	pause
 
+if not exist ".vscode" (
+	mkdir ".vscode"
+)
 
-mkdir ".vscode"
 echo { 															> ".vscode/launch.json"
 echo 	"version": "0.2.0",										>> ".vscode/launch.json"
 echo 	"configurations": [                                     >> ".vscode/launch.json"
@@ -23,7 +25,7 @@ echo 			"name": "Launch Program",                       >> ".vscode/launch.json"
 echo 			"program": "${workspaceFolder}\\Server.js",     >> ".vscode/launch.json"
 echo 			"outFiles": [                                   >> ".vscode/launch.json"
 echo 				"${workspaceFolder}/*.js"     	            >> ".vscode/launch.json"
-echo 			]
+echo 			]												>> ".vscode/launch.json"
 echo 		}                                                   >> ".vscode/launch.json"
 echo 	]                                                       >> ".vscode/launch.json"
 echo } 															>> ".vscode/launch.json"
@@ -36,8 +38,8 @@ echo         "watch": true 										>> tsconfig.json
 echo     } 														>> tsconfig.json
 echo } 															>> tsconfig.json
 
+call "./node_modules/.bin/tsc.cmd" -p tsconfig.json --watch false
 
 start "" /B code . -n -g Server.ts
-
 
 exit 0
