@@ -211,7 +211,7 @@ async function UploadConfigurationFile()
 	{
 		console.log( 'publicIp', publicIp );
 		serverData.ServerIp = publicIp;
-		fs.writeFileSync( fileName, JSON.stringify( fileName, null, '\t' ) );		
+		fs.writeFileSync( fileName, JSON.stringify( serverData, null, '\t' ) );		
 	}
 }
 
