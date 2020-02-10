@@ -7,10 +7,18 @@ call :DeleteFolder ".vscode"
 del *.map
 del *.js
 
-del package.json
-del package-lock.json
-del tsconfig.json
+call :DeleteFile package.json
+call :DeleteFile package-lock.json
+call :DeleteFile tsconfig.json
 
+goto :EOF
+
+
+
+:DeleteFile
+if exist %~1 (
+	DEL %~1
+)
 goto :EOF
 
 :DeleteFolder
@@ -26,3 +34,4 @@ cd %~1
 del *.map
 del *.js
 cd %rootPath%
+goto :EOF
