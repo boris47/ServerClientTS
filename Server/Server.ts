@@ -1,6 +1,5 @@
 
 import http = require('http');
-import { File } from 'megajs';
 import * as fs from 'fs'
 
 const delay = ( ms : number = 1000 ) => {
