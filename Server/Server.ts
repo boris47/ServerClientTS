@@ -2,6 +2,8 @@
 import http = require('http');
 import * as fs from 'fs'
 
+import { IServerInfo } from '../Common/Interfaces'
+
 const delay = ( ms : number = 1000 ) => {
     return new Promise( (resolve, reject) => {
         setTimeout (() => {
@@ -164,11 +166,7 @@ async function ProcessRequest()
 	}
 }
 
-export interface IServerInfo {
 
-	ServerIp : string;
-
-}
 
 
 async function UploadConfigurationFile()

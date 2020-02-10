@@ -1,5 +1,7 @@
 
 import http = require('http');
+import * as fs from 'fs';
+import { IServerInfo } from '../Common/Interfaces'
 
 const delay = ( ms : number = 1000 ) => {
     return new Promise( (resolve, reject) => {
@@ -97,10 +99,19 @@ async function SendData( options: http.RequestOptions, method : string = "put" )
 }
 
 
+let serverPublicIp = "";
+const serverConfigFileName = './ServerCfg.json';
+if ( fs.existsSync( serverConfigFileName ) )
+{
+	const fileContent = fs.readFileSync( serverConfigFileName, 'UTF-8' );
+	const fileJson : IServerInfo = JSON.parse( fileContent );
+	serverPublicIp = fileJson.ServerIp;
+}
+
 
 
 const CommonOptions : http.RequestOptions = {
-	host: '127.0.0.1',
+	host: `${serverPublicIp}`,
 	port: 3000,
 	timeout : 500,
 };
