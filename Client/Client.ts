@@ -12,7 +12,7 @@ const delay = ( ms : number = 1000 ) => {
 };
 
 
-async function DoRequest( options: http.RequestOptions, method : string = "get" ) : Promise<string | null>
+async function DoRequest( options: http.RequestOptions, method : string = "put" ) : Promise<string | null>
 {
 	return new Promise<string | null>( (resolve) =>
 	{
@@ -35,7 +35,7 @@ async function DoRequest( options: http.RequestOptions, method : string = "get" 
 					{
 						console.error( 'Request Failed.\n' +	`Status Code: ${statusCode}` );
 						// Consume response data to free up memory
-						resolve( null );
+						return resolve( null );
 					}
 
 					const bIsContentJSON = (/^application\/json/).test(contentType.toLowerCase());
@@ -161,10 +161,9 @@ async function Main()
 	}
 }
 
-AddRequest('/greetings');
-AddRequest('/test1');
-AddRequest('/test2');
-AddRequest('/test3');
+AddRequest('/ping');
+AddRequest( '/upload?file=Client.js' );
+
 
 Main();
 

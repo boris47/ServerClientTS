@@ -2,6 +2,7 @@
 import http = require('http');
 import * as fs from 'fs'
 
+import { HTTPCodes } from './HTTP.Codes'
 import { IServerInfo } from '../Common/Interfaces'
 
 const delay = ( ms : number = 1000 ) => {
@@ -51,31 +52,33 @@ server.listen(
 class HttpResponse {
 
 	private code : number = 0;
-	private body : string = null;
+	private body : string | Buffer = null;
 	private headers : any[] = new Array<any>();
 
-	constructor( code : number, body : string, headers = [] )
+	constructor( code : number, body : string | Buffer, headers = [] )
 	{
         this.headers = headers
         this.body = body
         this.code = code
     }
 
-	applyToResponse( request : http.IncomingMessage, response : http.ServerResponse )
+	public applyToResponse( request : http.IncomingMessage, response : http.ServerResponse )
 	{
 		response.statusCode = this.code;
 		this.headers.forEach( h => response.setHeader( h.name, h.value ) );
-	//	if (request.headers['origin'])
-	//		response.setHeader('Access-Control-Allow-Origin', request.headers['origin'])
+		if (request.headers['origin'])
+		{
+			response.setHeader('Access-Control-Allow-Origin', request.headers['origin'])
+		}
 	//	response.setHeader('Access-Control-Allow-Credentials', 'true')
 	//	response.setHeader('Access-Control-Allow-Headers', 'x-identity-key, x-identity-key-name, x-pw, x-token')
 		response.end(this.body);
     }
 
 }
-
+/*
 export type ServerReqResFunction = ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-
+*/
 export interface IResponseMethods {
 	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
 	get? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
@@ -90,11 +93,15 @@ export interface ServerResponceMap {
 
 const ResponsesMap : ServerResponceMap = {
 
-	'/test1' : <IResponseMethods>
+	'/upload' : <IResponseMethods>
 	{
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 200, '{ "bStatusOK": true, "data":"test1 received" }' ),
+		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
 		put : ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
+			const filename = request.url.split('=')[1];
 			let data = "";
 			request.on('data', (chunk : any) =>
 			{
@@ -102,29 +109,41 @@ const ResponsesMap : ServerResponceMap = {
 			})
 			.on('end', () =>
 			{
-				console.log( "end", data );
+				fs.writeFileSync( filename, data );
 			});
+			return null;
 		}
 	},
-	'/test2' : <IResponseMethods>
-	{
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 200, '{ "bStatusOK": true, "data":"test2 received" }' ),
-	},
-	'/test3' : <IResponseMethods>
-	{
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 200, '{ "bStatusOK": true, "data":"test3 received" }' ),
-	},
-	'/uploadImage' : <IResponseMethods>
-	{
-		put: ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-		{
 
+	'/download' : <IResponseMethods>
+	{
+		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		put : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => 
+		{
+			const filename = request.url.split('=')[1];
+			if ( fs.existsSync( filename ) )
+			{
+				return new HttpResponse( 200, fs.readFileSync( filename ) );
+			}
+			else
+			{
+				return new HttpResponse( 404, null );
+			}
 		}
-	}
+	},
+
 };
 
-ResponsesMap['/greetings'] = {
-	get : ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Good morning" )
+
+ResponsesMap['/ping'] = {
+	post 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+	get 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+	put 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+	patch 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+	delete 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
 }
 
 
@@ -148,7 +167,7 @@ async function ProcessRequest()
 		const responseMethodsMap : IResponseMethods = ResponsesMap[identifier];
 		if ( responseMethodsMap )
 		{
-			const func : ServerReqResFunction = responseMethodsMap[request.method.toLowerCase()];
+			const func = responseMethodsMap[request.method.toLowerCase()];
 			if ( func )
 			{
 				const result : HttpResponse = func( request, response );

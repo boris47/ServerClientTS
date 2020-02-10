@@ -10,6 +10,7 @@ call	npm install typescript --save-dev
 rem	pause
 call	npm install @types/node --save-dev
 rem	pause
+call	npm install http-status-codes --save-dev
 
 if not exist ".vscode" (
 	mkdir ".vscode"
