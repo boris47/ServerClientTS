@@ -1,6 +1,7 @@
 @echo off
 
 REM SETUP FOR SERVER
+call	npm install
 
 if not exist ".vscode" (
 	mkdir ".vscode"
