@@ -4,6 +4,7 @@ import * as fs from 'fs'
 
 import { HTTPCodes } from './HTTP.Codes'
 import { IServerInfo } from '../Common/Interfaces'
+import { HttpResponse } from './HttpResponse';
 
 const delay = ( ms : number = 1000 ) => {
     return new Promise( (resolve, reject) => {
@@ -49,33 +50,7 @@ server.listen(
 */);
 
 
-class HttpResponse {
 
-	private code : number = 0;
-	private body : string | Buffer = null;
-	private headers : any[] = new Array<any>();
-
-	constructor( code : number, body : string | Buffer, headers = [] )
-	{
-        this.headers = headers
-        this.body = body
-        this.code = code
-    }
-
-	public applyToResponse( request : http.IncomingMessage, response : http.ServerResponse )
-	{
-		response.statusCode = this.code;
-		this.headers.forEach( h => response.setHeader( h.name, h.value ) );
-		if (request.headers['origin'])
-		{
-			response.setHeader('Access-Control-Allow-Origin', request.headers['origin'])
-		}
-	//	response.setHeader('Access-Control-Allow-Credentials', 'true')
-	//	response.setHeader('Access-Control-Allow-Headers', 'x-identity-key, x-identity-key-name, x-pw, x-token')
-		response.end(this.body);
-    }
-
-}
 /*
 export type ServerReqResFunction = ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
 */
@@ -87,40 +62,56 @@ export interface IResponseMethods {
 	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
 }
 
-export interface ServerResponceMap {
+export interface ServerResponseMap {
 	[key:string] : IResponseMethods
 }
 
-const ResponsesMap : ServerResponceMap = {
+const ResponsesMap : ServerResponseMap = {
 
 	'/upload' : <IResponseMethods>
 	{
-		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
 		put : ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
 			const filename = request.url.split('=')[1];
-			let data = "";
-			request.on('data', (chunk : any) =>
+			let writer = fs.createWriteStream( filename )
+			.on('error', ( err : Error ) =>
 			{
-                data += (chunk);
+				console.error( err.name, err.message );
+                response.statusCode = 400;
+				response.end();
 			})
-			.on('end', () =>
+
+			request.on( 'error', ( err : Error ) =>
 			{
-				fs.writeFileSync( filename, data );
-			});
+				console.error( err.name, err.message );
+				response.statusCode = 400;
+				response.end();
+			})
+			.on( 'data', ( chunk : any ) =>
+			{
+				writer.write( chunk );
+			})
+			.on( 'end', () =>
+			{
+				writer.end();
+				response.statusCode = 200;
+				response.end();
+			})
+
 			return null;
 		}
 	},
 
 	'/download' : <IResponseMethods>
 	{
-		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
-		put : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": ${HTTPCodes[405]} }` ),
+		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
+		put : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
 		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => 
 		{
 			const filename = request.url.split('=')[1];
@@ -173,7 +164,7 @@ async function ProcessRequest()
 				const result : HttpResponse = func( request, response );
 				if ( result )
 				{
-					result.applyToResponse( request, response );
+					await result.applyToResponse( request, response );
 					console.log( `Request: ${request.url}, response sent.` );
 				}
 			}
@@ -213,7 +204,7 @@ async function UploadConfigurationFile()
 				resolve(null);
 			})
 		})
-		.on("error", function( err: Error )
+		.on( "error", function( err: Error )
 		{
 			console.error( "Server", err.name, err.message );
 			resolve(null);
@@ -226,7 +217,7 @@ async function UploadConfigurationFile()
 	}
 	else
 	{
-		console.log( 'publicIp', publicIp );
+		console.log( "Server", 'publicIp', publicIp );
 		serverData.ServerIp = publicIp;
 		fs.writeFileSync( fileName, JSON.stringify( serverData, null, '\t' ) );		
 	}

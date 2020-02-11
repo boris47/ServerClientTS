@@ -1,7 +1,12 @@
 
-import http = require('http');
+//import http = require('http');
+import * as http from 'http';
 import * as fs from 'fs';
+
+import * as FSUtils from '../Common/FSUtils'
 import { IServerInfo } from '../Common/Interfaces'
+import * as mime from 'mime-types'
+import { Stream } from 'stream';
 
 const delay = ( ms : number = 1000 ) => {
     return new Promise( (resolve, reject) => {
@@ -11,53 +16,27 @@ const delay = ( ms : number = 1000 ) => {
     });
 };
 
-
-async function DoRequest( options: http.RequestOptions, method : string = "put" ) : Promise<string | null>
+async function Request_GET( options: http.RequestOptions ) : Promise<string | null>
 {
 	return new Promise<string | null>( (resolve) =>
 	{
 		http.request
 		(
-			Object.assign
-			(
-				options,
-				<http.RequestOptions>
-				{
-					method: method
-				}
-			),
+			options,
 			function( response: http.IncomingMessage )
 			{
 				const statusCode : number = response.statusCode;
-				const contentType : string = response.headers['content-type'];
+				if ( statusCode !== 200 )
 				{
-					if ( statusCode !== 200 )
-					{
-						console.error( 'Request Failed.\n' +	`Status Code: ${statusCode}` );
-						// Consume response data to free up memory
-						return resolve( null );
-					}
-
-					const bIsContentJSON = (/^application\/json/).test(contentType.toLowerCase());
-					const bIsContentTEXT = (/^text\/plain/).test(contentType.toLowerCase());
-					if ( bIsContentJSON || bIsContentTEXT )
-					{
-						let rawData = "";
-						response.setEncoding('utf8')
-						.on( 'data', function( chunk : any )
-						{
-							rawData += chunk;
-						})
-						.on( 'end', function()
-						{
-							resolve(rawData);
-						});
-					}
-					else
-					{
-						resolve("{}");
-					}
+					console.error( 'Request Failed.\n' +	`Status Code: ${statusCode}` );
+					// Consume response data to free up memory
+					return resolve( null );
 				}
+
+				let rawData = new Array<any>();
+				response
+				.on( 'data', ( chunk : any ) => rawData.push( chunk ))
+				.on( 'end', () => resolve( Buffer.concat( rawData ).toString() ) );
 			}
 		)
 		.on('error', function( e : Error )
@@ -67,34 +46,59 @@ async function DoRequest( options: http.RequestOptions, method : string = "put" 
 		})
 		.end();
 	});
-};
+}
 
-async function SendData( options: http.RequestOptions, method : string = "put" ) : Promise<boolean>
+
+async function Request_PUT( options: http.RequestOptions ) : Promise<string | null>
 {
-	return new Promise<boolean>( (resolve) =>
+	const filename = options.path.split('=')[1];
+	const bytes : number = await FSUtils.GetFileSizeInBytesOf( filename );
+
+	return new Promise<string | null>( (resolve) =>
 	{
-		http.request
-		(
-			Object.assign
-			(
-				options,
-				<http.RequestOptions>
-				{
-					method: method
-				}
-			),
-			function( response: http.IncomingMessage )
-			{
-				
-				resolve(true);
-			}
-		)
-		.on('error', function( e : Error )
+		const request : http.ClientRequest = http.request( options );
+		
+		// Content type and length
+		const contentType : string = mime.lookup( filename ).toString();
+		request.setHeader( 'content-type', contentType );
+		request.setHeader( 'content-length', bytes );
+
+		// Response Check
+		request.on( 'response', function( response: http.IncomingMessage )
 		{
-			console.error( e.message );
+			const statusCode : number = response.statusCode;
+			if ( statusCode !== 200 )
+			{
+				console.error( 'Request Failed.\n' +	`Status Code: ${statusCode}` );
+				return resolve( null );
+			}
+			console.log( "File submitted", filename );
+		} )
+
+		// Error Callback
+		request.on('error', function( err : Error )
+		{
+			console.error( err.message );
 			resolve( null );
+		});
+
+		request.on( 'pipe', function( src : fs.ReadStream )
+		{
+			console.log( "PUT", filename, contentType, bytes );
 		})
-		.end();
+		request.on( 'drain', function()
+		{
+			console.log('DRAIN');
+		})
+		request.on( 'finish', function()
+		{
+			console.log( "PUT", filename, contentType, bytes, "DONE" );
+		})
+		
+
+		// Pipe to file
+		const readStream : fs.ReadStream =  fs.createReadStream( filename )
+		readStream.pipe( request );
 	});
 }
 
@@ -116,22 +120,38 @@ const CommonOptions : http.RequestOptions = {
 	timeout : 500,
 };
 
-interface ClientRequest {
+interface IClientRequest {
 	path : string,
+	method : string
 }
 
-const requestToProcess : Array<ClientRequest> = new Array();
-
+const requestsToProcess : Array<IClientRequest> = new Array<IClientRequest>();
 
 async function ProcessRequest()
 {
-	if ( requestToProcess.length === 0 )
+	if ( requestsToProcess.length === 0 )
 	{
 		return process.exit(0);
 	}
 
-	const request : ClientRequest = requestToProcess.shift();
-	const result : string | null = await DoRequest( Object.assign({}, CommonOptions, request ) );
+	let requestFunction : ( options: http.RequestOptions) => Promise<string> = null;
+	const request : IClientRequest = requestsToProcess.shift();
+	switch( request.method )
+	{
+		case 'get' :
+		{
+			requestFunction = Request_GET;
+			break;
+		}
+		case 'put' :
+		{
+			requestFunction = Request_PUT;
+			break;	
+		}
+	}
+
+
+	const result : string | null = await requestFunction( Object.assign({}, CommonOptions, request ) );
 	if ( result )
 	{
 		console.log("request satisfied for " + result );
@@ -143,13 +163,16 @@ async function ProcessRequest()
 
 }
 
-function AddRequest( path : string = 'none' )
+function AddRequest( path : string, method : string )
 {
-	const newRequest : ClientRequest = {
-		path : path
-	};
-
-	requestToProcess.push( newRequest );
+	if ( typeof path === 'string' )
+	{
+		const newRequest : IClientRequest = {
+			path : path,
+			method : method.toLowerCase()
+		};
+		requestsToProcess.push( newRequest );
+	}
 }
 
 async function Main()
@@ -161,8 +184,8 @@ async function Main()
 	}
 }
 
-AddRequest('/ping');
-AddRequest( '/upload?file=Client.js' );
+AddRequest( '/ping', 'get' );
+AddRequest( '/upload?file=ClientManyBytes.js', 'put' );
 
 
 Main();
