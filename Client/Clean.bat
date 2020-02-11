@@ -7,9 +7,9 @@ call :DeleteFolder ".vscode"
 del *.map
 del *.js
 
-call :DeleteFile package.json
 call :DeleteFile package-lock.json
 call :DeleteFile tsconfig.json
+call :DeleteFile ServerCfg.json
 
 goto :EOF
 
