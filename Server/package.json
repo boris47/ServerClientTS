@@ -11,7 +11,9 @@
   "license": "ISC",
   "devDependencies": {
     "@types/node": "=13.7.0",
+    "@types/mime-types": "=2.1.0",
     "http-status-codes": "=1.4.0",
-    "typescript": "=3.7.5"
+    "typescript": "=3.7.5",
+    "mime-types": "=2.1.26"
   }
 }

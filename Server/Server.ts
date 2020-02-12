@@ -1,141 +1,45 @@
 
-import http = require('http');
+import * as http from 'http';
 import * as fs from 'fs'
 
-import { HTTPCodes } from './HTTP.Codes'
-import { IServerInfo } from '../Common/Interfaces'
+import  * as GenericUtils from '../Common/GenericUtils';
+import { IServerInfo } from '../Common/Interfaces';
 import { HttpResponse } from './HttpResponse';
+import { ResponsesMap, IResponseMethods } from './Server.Responses';
 
-const delay = ( ms : number = 1000 ) => {
-    return new Promise( (resolve, reject) => {
-        setTimeout (() => {
-            resolve(1);
-        }, ms);
-    });
-};
+export interface IServerRequestResponsePair {
 
-const requestToProcess : Array<http.IncomingMessage> = new Array();
-const responseToProcess : Array<http.ServerResponse> = new Array();
-
-const requestListener : http.RequestListener = ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-{
-	requestToProcess.push( request );
-	responseToProcess.push( response );
-
-//	response.writeHead(200, { 'Content-Type': 'text/plain' });
-//	response.end('okay');
+	request : http.IncomingMessage;
 	
-//	response.writeHead(200, { 'Content-Type': 'application/json' });
-//	response.write('{ "data": "Sono roberto" }');
-//	response.end();
-}
-const server = http.createServer( requestListener );
-
-
-server.on('error', (err) => console.error(err));
-/*
-server.on('request',(request,response)=>{
-	response.writeHead(200,{'Content-Type':'text/plain'});
-	response.write('Hello world');
-	response.end();
- });
-*/
-server.listen(
-	3000,
-	'0.0.0.0'
-//	'ec2-3-122-195-167.eu-central-1.compute.amazonaws.com',
-/*	() => {
-		console.log('Node server created at 127.0.0.1:3000');
-	}
-*/);
-
-
-
-/*
-export type ServerReqResFunction = ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-*/
-export interface IResponseMethods {
-	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	get? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	put? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	patch? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
+	response : http.ServerResponse;
 }
 
-export interface ServerResponseMap {
-	[key:string] : IResponseMethods
-}
 
-const ResponsesMap : ServerResponseMap = {
 
-	'/upload' : <IResponseMethods>
+const requestToProcess : IServerRequestResponsePair[] = new Array<IServerRequestResponsePair>();
+
+
+
+const server : http.Server = http.createServer( ( request : http.IncomingMessage, response : http.ServerResponse ) =>
+{
+	const newPair = <IServerRequestResponsePair>
 	{
-		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		put : ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-		{
-			const filename = request.url.split('=')[1];
-			let writer = fs.createWriteStream( filename )
-			.on('error', ( err : Error ) =>
-			{
-				console.error( err.name, err.message );
-                response.statusCode = 400;
-				response.end();
-			})
-
-			request.on( 'error', ( err : Error ) =>
-			{
-				console.error( err.name, err.message );
-				response.statusCode = 400;
-				response.end();
-			})
-			.on( 'data', ( chunk : any ) =>
-			{
-				writer.write( chunk );
-			})
-			.on( 'end', () =>
-			{
-				writer.end();
-				response.statusCode = 200;
-				response.end();
-			})
-
-			return null;
-		}
-	},
-
-	'/download' : <IResponseMethods>
-	{
-		post : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		delete : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		patch : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		put : ( request : http.IncomingMessage, response : http.ServerResponse ) => new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` ),
-		get : ( request : http.IncomingMessage, response : http.ServerResponse ) => 
-		{
-			const filename = request.url.split('=')[1];
-			if ( fs.existsSync( filename ) )
-			{
-				return new HttpResponse( 200, fs.readFileSync( filename ) );
-			}
-			else
-			{
-				return new HttpResponse( 404, null );
-			}
-		}
-	},
-
-};
+		request : request,
+		response : response
+	};
+	requestToProcess.push( newPair );
+})
+.on( 'error', function( err : Error )
+{
+	console.error( err.name, err.message );
+})
+.listen( 3000, '0.0.0.0', function()
+{
+	console.log('Node server created at 0.0.0.0:3000');
+});
 
 
-ResponsesMap['/ping'] = {
-	post 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	get 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	put 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	patch 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	delete 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-}
+
 
 
 async function ProcessRequest()
@@ -143,14 +47,9 @@ async function ProcessRequest()
 	if ( requestToProcess.length === 0 )
 		return;
 
-	const request : http.IncomingMessage = requestToProcess.shift()
-	const response : http.ServerResponse = responseToProcess.shift();
-
-	response.writeHead
-	(
-		/*statusCode*/ 200,
-		/*headers*/ { 'Content-Type': 'application/json' }
-	);
+	const pair : IServerRequestResponsePair = requestToProcess.shift();
+	const request : http.IncomingMessage = pair.request;
+	const response : http.ServerResponse = pair.response;
 
 	const identifier : string = request.url.split('?')[0];
 	if ( ResponsesMap[identifier] )
@@ -161,11 +60,12 @@ async function ProcessRequest()
 			const func = responseMethodsMap[request.method.toLowerCase()];
 			if ( func )
 			{
-				const result : HttpResponse = func( request, response );
-				if ( result )
+				const intermediate : HttpResponse = func( request, response );
+				if ( intermediate )
 				{
-					await result.applyToResponse( request, response );
+					const result = await intermediate.applyToResponse( request, response );
 					console.log( `Request: ${request.url}, response sent.` );
+					console.log( JSON.stringify( result, null, 4 ) );
 				}
 			}
 		}
@@ -229,7 +129,7 @@ async function Main()
 
 	while( true )
 	{
-		await delay();
+		await GenericUtils.DelayMS( 1000 );
 
 		await ProcessRequest();
 	}
