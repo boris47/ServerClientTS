@@ -1,0 +1,16 @@
+
+# Log files
+*.log*
+
+# Editor directories and files
+*.js
+*.map
+
+#custom
+package-lock.json
+bin/*
+
+.DS_Store
+node_modules
+!.gitkeep
+
