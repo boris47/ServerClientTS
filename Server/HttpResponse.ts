@@ -1,47 +1,54 @@
 
 import http = require('http');
 import { IServerResponseResult } from '../Common/Interfaces';
+import { HTTPCodes } from './HTTP.Codes';
 
 
-type responseApplyFunction = ( request : http.IncomingMessage, response : http.ServerResponse) => Promise<IServerResponseResult> 
 
-
-export class HttpResponse {
-
-	private code : number = 0;
-	private body : string | Buffer = null;
+export class HttpResponse
+{
+	protected code : number = 0;
+	protected body : string | Buffer = null;
 	private headers : any[] = new Array<any>();
-	private applyFunction : responseApplyFunction | null = null;
 
-	constructor( code : number, body : string | Buffer, applyFunction? : responseApplyFunction | null, headers : any[] = [] )
+	constructor( code : number, body : string | Buffer, headers : any[] = [] )
 	{
 		this.headers = headers;
         this.body = body;
 		this.code = code;
-		this.applyFunction = applyFunction;
     }
 
 	public async applyToResponse( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult>
 	{
-		if ( this.applyFunction )
+		response.statusCode = this.code;
+		this.headers.forEach( h => response.setHeader( h.name, h.value ) );
+		if ( request.headers['origin'] )
 		{
-			return await this.applyFunction( request, response );
+			response.setHeader( 'Access-Control-Allow-Origin', request.headers['origin'] );
 		}
-		else
+		response.end(this.body);
+		return <IServerResponseResult>
 		{
-			response.statusCode = this.code;
-			this.headers.forEach( h => response.setHeader( h.name, h.value ) );
-			if (request.headers['origin'])
-			{
-				response.setHeader('Access-Control-Allow-Origin', request.headers['origin'])
-			}
-			response.end(this.body);
-			return <IServerResponseResult>
-			{
-				bHasGoodResult : true,
-				body : "OK"
-			}
+			bHasGoodResult : this.code === 200,
+			body : HTTPCodes[this.code]
 		}
     }
 
+}
+
+export class AsyncHttpResponse extends HttpResponse
+{
+	private asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult> = null;
+
+	constructor( asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult>, headers : any[] = [] )
+	{
+		super( 0, "" )
+		this.asyncFunction = asyncFunction;
+    }
+
+	public async applyToResponse( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult>
+	{
+		return await this.asyncFunction( request, response );
+    }
+	
 }

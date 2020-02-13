@@ -51,18 +51,16 @@ async function ProcessRequest()
 	{
 		case 'get' :
 		{
-			requestFunction = ClientRequests.DownloadFile;
+			requestFunction = request.path.startsWith('/download') ? ClientRequests.DownloadFile : ClientRequests.Request_GET;
 			break;
 		}
 		case 'put' :
 		{
-			requestFunction = ClientRequests.UploadFile;
+			requestFunction = request.path.startsWith('/upload') ? ClientRequests.UploadFile : ClientRequests.Request_PUT;
 			break;	
 		}
-		case 'post' :
-		{
-			requestFunction = ClientRequests.Request_GET;
-			break;	
+		default: {
+			return;
 		}
 	}
 
@@ -101,9 +99,12 @@ async function Main()
 	}
 }
 
-	AddRequest( '/ping', 'get' );
+///	AddRequest( '/ping', 'get' );
 //	AddRequest( '/upload', 'put', 'Client.js' );
 //	AddRequest( '/download', 'get', 'Server2.js' );
+//	AddRequest( '/ping', 'put', "Some boring data" );
+	AddRequest( '/data', 'put', 'MyDataName', "123" );
+	AddRequest( '/data', 'get', 'MyDataName' );
 
 
 Main();

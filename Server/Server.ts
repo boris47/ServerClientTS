@@ -5,7 +5,7 @@ import * as fs from 'fs'
 import  * as GenericUtils from '../Common/GenericUtils';
 import { IServerInfo } from '../Common/Interfaces';
 import { HttpResponse } from './HttpResponse';
-import { ResponsesMap, IResponseMethods } from './Server.Responses';
+import { ResponsesMap, IResponseMethods, MethodNotAllowed } from './Server.Responses';
 
 export interface IServerRequestResponsePair {
 
@@ -61,6 +61,16 @@ async function ProcessRequest()
 			if ( func )
 			{
 				const intermediate : HttpResponse = func( request, response );
+				if ( intermediate )
+				{
+					const result = await intermediate.applyToResponse( request, response );
+					console.log( `Request: ${request.url}, response sent.` );
+					console.log( JSON.stringify( result, null, 4 ) );
+				}
+			}
+			else // Method Not Allowed
+			{
+				const intermediate = MethodNotAllowed;
 				if ( intermediate )
 				{
 					const result = await intermediate.applyToResponse( request, response );
