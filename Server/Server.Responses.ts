@@ -83,7 +83,11 @@ ResponsesMap['/ping'] = {
 	{
 		return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 		{
-			return await ServerResponses.Request_PUT( request, response, "hi There" );
+			ServerResponses.EndResponseWithGoodResult( response );
+			return new Promise<IServerResponseResult>( ( resolve ) =>
+			{
+				ComUtils.ResolveWithGoodResult( "Hi there", resolve );
+			});
 		});
 	},
 	put 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
@@ -95,14 +99,14 @@ ResponsesMap['/ping'] = {
 export class ServerResponses {
 
 
-	private static EndResponseWithGoodResult( response : http.ServerResponse ) : void
+	public static EndResponseWithGoodResult( response : http.ServerResponse ) : void
 	{
 		response.statusCode = 200;
 		response.end();
 	}
 
 
-	private static EndResponseWithError( response : http.ServerResponse, errMessage : string | Error, errCode : number ) : void
+	public static EndResponseWithError( response : http.ServerResponse, errMessage : string | Error, errCode : number ) : void
 	{
 		let msg = '';
 		if ( typeof errMessage === 'string' )

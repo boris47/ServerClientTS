@@ -68,7 +68,7 @@ async function ProcessRequest()
 	const result : string = await requestFunction( Object.assign({}, CommonOptions, request ), ...request.reqArgs );
 	if ( result )
 	{
-		console.log( "request satisfied for\n" + JSON.stringify( result, null, '\t' ) );
+		console.log( `request satisfied for ${request.path}\n` + JSON.stringify( result, null, '\t' ) );
 	}
 	else
 	{
@@ -99,15 +99,15 @@ async function Main()
 	}
 }
 
-///	AddRequest( '/ping', 'get' );
-//	AddRequest( '/upload', 'put', 'Client.js' );
-//	AddRequest( '/download', 'get', 'Server2.js' );
-//	AddRequest( '/ping', 'put', "Some boring data" );
+	AddRequest( '/ping', 'get' );
+	AddRequest( '/upload', 'put', 'Client.js' );
+	AddRequest( '/download', 'get', 'Server.js' );
 	AddRequest( '/data', 'put', 'MyDataName', "123" );
 	AddRequest( '/data', 'get', 'MyDataName' );
 
 
 Main();
+
 
 
 
