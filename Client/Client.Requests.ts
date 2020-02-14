@@ -30,7 +30,7 @@ export class ClientRequests {
 				.on( 'data', ( chunk : any ) => rawData.push( chunk ) )
 				.on( 'end', () =>
 				{
-					const body = Buffer.concat( rawData ).toString();
+					const body : Buffer = Buffer.concat( rawData );
 					return ComUtils.ResolveWithGoodResult<IClientRequestResult>( body, resolve );
 				});
 			})
@@ -82,7 +82,7 @@ export class ClientRequests {
 				{
 					return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `${response.statusCode}:${response.statusMessage}`, resolve );
 				}
-				return ComUtils.ResolveWithGoodResult( "Done", resolve );
+				return ComUtils.ResolveWithGoodResult( Buffer.from( "Done" ), resolve );
 			});
 
 			request.on( 'pipe', function( src : fs.ReadStream )
@@ -121,7 +121,7 @@ export class ClientRequests {
 				.on( 'data', ( chunk : any ) => rawData.push( chunk ) )
 				.on( 'end', () =>
 				{
-					const body = Buffer.concat( rawData ).toString();
+					const body : Buffer = Buffer.concat( rawData );
 					return ComUtils.ResolveWithGoodResult( body, resolve );
 				})
 				.on( 'error', ( err : Error ) =>
@@ -163,7 +163,7 @@ export class ClientRequests {
 
 			request.on( 'close', function()
 			{
-				return ComUtils.ResolveWithGoodResult( "Done", resolve );
+				return ComUtils.ResolveWithGoodResult( Buffer.from( "Done" ), resolve );
 			});
 
 			request.end( data );

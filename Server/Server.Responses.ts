@@ -102,28 +102,18 @@ export const ResponsesMap : ServerResponseMap = {
 				return result;
 			});
 		}
-	}
+	},
+
+	'ping' : <IResponseMethods>
+	{
+		post 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+		get 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+		put 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+		patch 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+		delete 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
+	},
 
 };
-
-
-ResponsesMap['/ping'] = {
-	post 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	get 		:	( request: http.IncomingMessage, response: http.ServerResponse ) =>
-	{
-		return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
-		{
-			ServerResponses.EndResponseWithGoodResult( response );
-			return new Promise<IServerResponseResult>( ( resolve ) =>
-			{
-				ComUtils.ResolveWithGoodResult( Buffer.from( "Hi there" ), resolve );
-			});
-		});
-	},
-	put 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	patch 		:	( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	delete 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-}
 
 
 export class ServerResponses {

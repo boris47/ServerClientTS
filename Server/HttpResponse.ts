@@ -1,6 +1,6 @@
 
 import http = require('http');
-import { IServerResponseResult } from '../Common/Interfaces';
+import { IServerResponseResult, ICommonResult } from '../Common/Interfaces';
 import { HTTPCodes } from './HTTP.Codes';
 
 
@@ -30,8 +30,8 @@ export class HttpResponse
 		return <IServerResponseResult>
 		{
 			bHasGoodResult : this.code === 200,
-			body : HTTPCodes[this.code]
-		}
+			body : Buffer.from( HTTPCodes[this.code ] )
+		};
     }
 
 }
