@@ -20,15 +20,19 @@ import { ICommonResult } from '../Common/Interfaces'
 	}
 */
 
-export async function ResolveWithGoodResult<T extends ICommonResult>( body : string, cb : ( value: T ) => void  )
+export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buffer, cb? : ( value: T ) => void  ) : Promise<T>
 {
 	const resultObject = <T>{};
 	resultObject.body = body;
 	resultObject.bHasGoodResult = true;
-	return cb( resultObject );
+	if ( typeof cb === 'function' )
+	{
+		cb( resultObject );
+	}
+	return resultObject
 }
 
-export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb : (value: T) => void )
+export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb? : (value: T) => void ) : Promise<T>
 {
 
 	let msg = '';
@@ -43,7 +47,11 @@ export async function ResolveWithError<T extends ICommonResult>( errName : strin
 
 	const resultObject = <T>{};
 	const body = `${errName}.\n${msg}`;
-	resultObject.body = body;
+	resultObject.body = Buffer.from( body );
 	resultObject.bHasGoodResult = false;
-	return cb( resultObject );
+	if ( typeof cb === 'function' )
+	{
+		cb( resultObject );
+	}
+	return resultObject;
 }

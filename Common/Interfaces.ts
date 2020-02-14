@@ -8,7 +8,7 @@ export interface ICommonResult
 {
 	bHasGoodResult : boolean;
 	
-	body : string | null;
+	body : Buffer | null;
 }
 
 export interface IClientRequestResult extends ICommonResult

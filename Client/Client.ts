@@ -2,16 +2,9 @@
 import * as http from 'http';
 import * as fs from 'fs';
 
-import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
+import { IServerInfo } from '../Common/Interfaces'
 import { ClientRequests } from './Client.Requests';
-
-const delay = ( ms : number = 1000 ) => {
-    return new Promise( (resolve, reject) => {
-        setTimeout (() => {
-            resolve(1);
-        }, ms);
-    });
-};
+import * as GenericUtils from '../Common/GenericUtils';
 
 
 let serverPublicIp = "0.0.0.0";
@@ -64,7 +57,7 @@ async function ProcessRequest()
 		}
 	}
 
-
+	console.log( "Doing request", request.method, request.path, JSON.stringify( request.reqArgs ) );
 	const result : string = await requestFunction( Object.assign({}, CommonOptions, request ), ...request.reqArgs );
 	if ( result )
 	{
@@ -92,19 +85,20 @@ function AddRequest( path : string, method : string, ...args:string[] )
 
 async function Main()
 {
+	{
+		AddRequest( '/ping', 'get' );
+		AddRequest( '/upload', 'put', 'Client.js' );
+		AddRequest( '/download', 'get', 'Server.js' );
+		AddRequest( '/data', 'put', 'MyDataName', "123" );
+		AddRequest( '/data', 'get', 'MyDataName' );
+	}
+
 	while( true )
 	{
-		await delay();
+		await GenericUtils.DelayMS( 1000 );
 		await ProcessRequest();
 	}
 }
-
-	AddRequest( '/ping', 'get' );
-	AddRequest( '/upload', 'put', 'Client.js' );
-	AddRequest( '/download', 'get', 'Server.js' );
-	AddRequest( '/data', 'put', 'MyDataName', "123" );
-	AddRequest( '/data', 'get', 'MyDataName' );
-
 
 Main();
 

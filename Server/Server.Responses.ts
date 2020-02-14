@@ -12,6 +12,14 @@ import * as FSUtils from '../Common/FSUtils';
 import { ServerStorage } from './Server.Storage';
 
 
+interface IServerRequestInternalOptions
+{
+	FileName? : string;
+	Key? : string
+	Value? : any
+}
+
+
 export const MethodNotAllowed = new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` );
 export interface IResponseMethods {
 	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
@@ -31,10 +39,15 @@ export const ResponsesMap : ServerResponseMap = {
 	{
 		put 	: ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
-			const filename = request.url.split('=')[1];
 			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 			{
-				return await ServerResponses.DownloadFile( request, response, filename );
+				// Execute file upload to client
+				const fileName = request.url.split('=')[1];
+				const options = <IServerRequestInternalOptions>
+				{
+					FileName : fileName
+				};
+				return await ServerResponses.DownloadFile( request, response, options );
 			});
 		}
 	},
@@ -43,10 +56,15 @@ export const ResponsesMap : ServerResponseMap = {
 	{
 		get 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => 
 		{
-			const filename = request.url.split('=')[1];
 			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 			{
-				return await ServerResponses.UploadFile( request, response, filename );
+				// Execute file download server side
+				const fileName = request.url.split('=')[1];
+				const options = <IServerRequestInternalOptions>
+				{
+					FileName : fileName
+				};
+				return await ServerResponses.UploadFile( request, response, options );
 			});
 		}
 	},
@@ -55,20 +73,32 @@ export const ResponsesMap : ServerResponseMap = {
 	{
 		get		: ( request : http.IncomingMessage, response : http.ServerResponse ) => 
 		{
-			const key = request.url.split('=')[1];
 			return new AsyncHttpResponse( async ( request, response ) : Promise<IServerResponseResult> =>
 			{
+				const key = request.url.split('=')[1];
 				const value = ServerStorage.HasEntry( key ) ? ServerStorage.GetEntry( key ) : null;
-				return await ServerResponses.Request_GET( request, response, key );
+				const options = <IServerRequestInternalOptions>
+				{
+					Key : key,
+					Value : value
+				};
+				return await ServerResponses.Request_GET( request, response, options );
 			});
 		},
 		put 	: ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
-			const key = request.url.split('=')[1];
 			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 			{
-				const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response );
-				ServerStorage.AddEntry( key, result.body );
+				const key = request.url.split('=')[1];
+				const options = <IServerRequestInternalOptions>
+				{
+					Key : key
+				};
+				const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
+				if ( result.bHasGoodResult )
+				{
+					ServerStorage.AddEntry( key, result.body );
+				}
 				return result;
 			});
 		}
@@ -86,7 +116,7 @@ ResponsesMap['/ping'] = {
 			ServerResponses.EndResponseWithGoodResult( response );
 			return new Promise<IServerResponseResult>( ( resolve ) =>
 			{
-				ComUtils.ResolveWithGoodResult( "Hi there", resolve );
+				ComUtils.ResolveWithGoodResult( Buffer.from( "Hi there" ), resolve );
 			});
 		});
 	},
@@ -124,43 +154,45 @@ export class ServerResponses {
 	}
 
 	
-	public static async DownloadFile( request : http.IncomingMessage, response : http.ServerResponse, fileName : string ) : Promise<IServerResponseResult>
+	public static async DownloadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
-		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
+		const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, <IServerRequestInternalOptions>{} );
+		if ( !result.bHasGoodResult )
 		{
-			const writer = fs.createWriteStream( fileName )
-			.on('error', ( err : Error ) =>
+			return result;
+		}
+		
+		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
+		{
+			fs.writeFile( serverRequestInternalOptions.FileName, result.body, function( err : NodeJS.ErrnoException )
 			{
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:DownloadFile", err, resolve );
-			})
-
-			request.on( 'error', ( err : Error ) =>
-			{
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:DownloadFile", err, resolve );
+				resolve( !err );
 			});
-			request.on( 'data', ( chunk : any ) => writer.write( chunk ) );
-			request.on( 'end', () =>
-			{
-				writer.end();
-				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( "DONE", resolve );
-			})
 		});
+		if ( !bHasWriteGoodResult )
+		{
+			if ( fs.existsSync( serverRequestInternalOptions.FileName ) )
+			{
+				fs.unlinkSync( serverRequestInternalOptions.FileName );
+			}
+			return ComUtils.ResolveWithError( `File Upload Failed`, `Upload request of ${serverRequestInternalOptions.FileName} failed` );
+		}
+		ServerResponses.EndResponseWithGoodResult( response );
+		return ComUtils.ResolveWithGoodResult( result.body );
 	}
 
 
-	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, fileName : string ) : Promise<IServerResponseResult>
+	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
 		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
 		{
+			const fileName = serverRequestInternalOptions.FileName;
 			// Check if file exists
 			if ( fs.existsSync( fileName ) === false )
 			{
 				const err = `File ${fileName} doesn't exist`;
 				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err, resolve );
+				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 			}
 
 			// Check if content type can be found
@@ -169,16 +201,16 @@ export class ServerResponses {
 			{
 				const err = `Cannot define content type for file ${fileName}`;
 				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err, resolve );
+				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 			}
 
 			// Check file Size
-			const bytes : number | null = FSUtils.GetFileSizeInBytesOf( fileName );
-			if ( bytes === null )
+			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( fileName );
+			if ( sizeInBytes === null )
 			{
 				const err = `Cannot obtain size of file ${fileName}`;
 				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err, resolve );
+				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 			}
 
 			// Error Callback
@@ -191,34 +223,26 @@ export class ServerResponses {
 			response.on( 'finish', function()
 			{
 				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( "Done", resolve );
+				return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ), resolve );
 			});
 
 			// Content type and length
 			response.setHeader( 'content-type', contentType );
-			response.setHeader( 'content-length', bytes );
+			response.setHeader( 'content-length', sizeInBytes );
 
 			// Pipe to file
-			const readStream : fs.ReadStream =  fs.createReadStream( fileName );
+			const readStream : fs.ReadStream =  fs.createReadStream( serverRequestInternalOptions.FileName );
 			readStream.pipe( response );
 
 
 		});
 	}
 
-
-	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, key : string ) : Promise<IServerResponseResult>
+	/** End the response with value passed with 'serverRequestInternalOptions' */
+	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
 		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
 		{
-			const value = ServerStorage.GetEntry( key );
-			if ( !value )
-			{
-				const err = `Storage does not contains any entry with key "${key}"`;
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
-			}
-
 			response.on( 'error', ( err : Error ) =>
 			{
 				ServerResponses.EndResponseWithError( response, err, 400 );
@@ -227,15 +251,15 @@ export class ServerResponses {
 			response.on( 'finish', () =>
 			{
 				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( "DONE", resolve );
+				return ComUtils.ResolveWithGoodResult( Buffer.from( "DONE" ), resolve );
 			});
 
-			response.end( value );
+			response.end( serverRequestInternalOptions.Value );
 		});
 	}
 
-
-	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult>
+	/** Receive data storing them into buffer inside returne value body */
+	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
 		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
 		{
@@ -255,7 +279,7 @@ export class ServerResponses {
 			
 			request.on( 'end', function()
 			{
-				const result : string = Buffer.concat( body ).toString();
+				const result : Buffer = Buffer.concat( body );
 				ServerResponses.EndResponseWithGoodResult( response );
 				return ComUtils.ResolveWithGoodResult( result, resolve );
 			});
