@@ -1,11 +1,13 @@
 
 import * as http from 'http';
-import * as fs from 'fs'
+import * as fs from 'fs';
+import * as os from 'os';
 
 import  * as GenericUtils from '../Common/GenericUtils';
 import { IServerInfo } from '../Common/Interfaces';
-import { HttpResponse } from './HttpResponse';
-import { ResponsesMap, IResponseMethods, MethodNotAllowed } from './Server.Responses';
+import { HttpResponse, AsyncHttpResponse } from './HttpResponse';
+import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
+import { ServerStorage } from './Server.Storage';
 
 export interface IServerRequestResponsePair {
 
@@ -33,7 +35,7 @@ const server : http.Server = http.createServer( ( request : http.IncomingMessage
 {
 	console.error( err.name, err.message );
 })
-.listen( 3000, '0.0.0.0', function()
+.listen( 3000, '::', function()
 {
 	console.log('Node server created at 0.0.0.0:3000');
 });
@@ -52,51 +54,46 @@ async function ProcessRequest()
 	const response : http.ServerResponse = pair.response;
 
 	const identifier : string = request.url.split('?')[0];
-	if ( ResponsesMap[identifier] )
+	const availableMethods : IResponseMethods = ResponsesMap[identifier];
+	if ( availableMethods )
 	{
-		const responseMethodsMap : IResponseMethods = ResponsesMap[identifier];
-		if ( responseMethodsMap )
+		const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
+		if ( method )
 		{
-			const func = responseMethodsMap[request.method.toLowerCase()];
-			if ( func )
-			{
-				const intermediate : HttpResponse = func( request, response );
-				if ( intermediate )
-				{
-					const result = await intermediate.applyToResponse( request, response );
-					console.log( `Request: ${request.url}, response sent.` );
-					console.log( JSON.stringify( result, null, 4 ) );
-				}
-			}
-			else // Method Not Allowed
-			{
-				const intermediate = MethodNotAllowed;
-				if ( intermediate )
-				{
-					const result = await intermediate.applyToResponse( request, response );
-					console.log( `Request: ${request.url}, response sent.` );
-					console.log( JSON.stringify( result, null, 4 ) );
-				}
-			}
+			const result = await method().applyToResponse( request, response );
+			console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
+		}
+		else // Method Not Allowed
+		{
+			const result = await MethodNotAllowed.applyToResponse( request, response );
+			console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
 		}
 	}
 	else
 	{
-		response.end('{ "bStatusOK": false }');
+		const result = await NotImplementedResponse.applyToResponse( request, response );
+		console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
 	}
 }
 
 
-
-
-async function UploadConfigurationFile()
+async function UploadConfigurationFile() : Promise<boolean>
 {
 	const fileName = "./ServerCfg.json";
 	const serverData : IServerInfo = <IServerInfo>{};
 
+	const res = require('os').networkInterfaces();
+	const filtered : string = Object.keys( res )
+	.map( ( value : string ) => res[value] )
+	.find( ( value: os.NetworkInterfaceInfo[] ) => value.some( ( value: os.NetworkInterfaceInfo ) => typeof value['scopeid'] === 'number' ))
+	.find( ( value: os.NetworkInterfaceInfo ) => ( value: os.NetworkInterfaceInfo ) => typeof value['scopeid'] === 'number' ).address;
+//	console.log( JSON.stringify( res, null, 4 ) );
+	console.log( "Server IP", filtered );
+
+
 	const publicIp : string | null = await new Promise( ( resolve ) =>
 	{
-		http.get( 'http://bot.whatismyipaddress.com', function( response : http.IncomingMessage )
+		http.get( /*'http://bot.whatismyipaddress.com'*/'http://ifconfig.me/ip', function( response : http.IncomingMessage )
 		{
 			let rawData = "";
 			response
@@ -131,17 +128,38 @@ async function UploadConfigurationFile()
 		serverData.ServerIp = publicIp;
 		fs.writeFileSync( fileName, JSON.stringify( serverData, null, '\t' ) );		
 	}
+	return !!publicIp;
 }
 
 async function Main()
 {
-	UploadConfigurationFile();
-
-	while( true )
 	{
-		await GenericUtils.DelayMS( 1000 );
+		await ServerStorage.ClearStorage();
+		await ServerStorage.CreateStorage();
+		const bResult = await ServerStorage.Load();
+		if ( !bResult )
+		{
+			console.error( "Storage unavailable" );
+			process.exit(1);
+		}
+	}
 
-		await ProcessRequest();
+	{
+		const bResult = await UploadConfigurationFile();
+		if ( !bResult )
+		{
+			console.error( "Cannot public current ip" );
+			process.exit(1);
+		}
+	}
+
+	{
+		while( true )
+		{
+			await GenericUtils.DelayMS( 1000 );
+	
+			await ProcessRequest();
+		}
 	}
 }
 

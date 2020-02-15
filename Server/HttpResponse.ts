@@ -1,6 +1,6 @@
 
 import http = require('http');
-import { IServerResponseResult, ICommonResult } from '../Common/Interfaces';
+import { IServerResponseResult } from '../Common/Interfaces';
 import { HTTPCodes } from './HTTP.Codes';
 
 
@@ -36,19 +36,18 @@ export class HttpResponse
 
 }
 
-export class AsyncHttpResponse extends HttpResponse
+export class AsyncHttpResponse
 {
 	private asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult> = null;
 
 	constructor( asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult>, headers : any[] = [] )
 	{
-		super( 0, "" )
 		this.asyncFunction = asyncFunction;
     }
 
 	public async applyToResponse( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult>
 	{
-		return await this.asyncFunction( request, response );
+		return this.asyncFunction( request, response );
     }
 	
 }

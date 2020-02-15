@@ -2,7 +2,7 @@
 import * as http from 'http';
 import * as fs from 'fs';
 
-import { IServerInfo } from '../Common/Interfaces'
+import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
 import { ClientRequests } from './Client.Requests';
 import * as GenericUtils from '../Common/GenericUtils';
 
@@ -11,7 +11,7 @@ let serverPublicIp = "0.0.0.0";
 const serverConfigFileName = './ServerCfg.json';
 if ( fs.existsSync( serverConfigFileName ) )
 {
-	const fileContent = fs.readFileSync( serverConfigFileName, 'UTF-8' );
+	const fileContent = fs.readFileSync( serverConfigFileName, 'utf8' );
 	const fileJson : IServerInfo = JSON.parse( fileContent );
 	serverPublicIp = fileJson.ServerIp;
 }
@@ -58,10 +58,10 @@ async function ProcessRequest()
 	}
 
 	console.log( "Doing request", request.method, request.path, JSON.stringify( request.reqArgs ) );
-	const result : string = await requestFunction( Object.assign({}, CommonOptions, request ), ...request.reqArgs );
+	const result : IClientRequestResult = await requestFunction( Object.assign({}, CommonOptions, request ), ...request.reqArgs );
 	if ( result )
 	{
-		console.log( `request satisfied for ${request.path}\n` + JSON.stringify( result, null, '\t' ) );
+		console.log( `request satisfied for ${request.path}\nResult: ${result.bHasGoodResult}` /* + JSON.stringify( result, null, '\t' )*/ );
 	}
 	else
 	{

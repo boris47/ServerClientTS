@@ -4,11 +4,14 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-            "label": "Compile Typescript",
-            "type": "shell",
-            "command": "\"\"${workspaceRoot}/node_modules/.bin/tsc\" -p \"${workspaceFolder}/tsconfig.json\"\"",
-            "problemMatcher": "$tsc",
-            "group": "build"
-        }
+			"label": "Compile Typescript",
+			"type": "typescript",
+			"tsconfig": "tsconfig.json",
+			"problemMatcher": ["$tsc"],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
 	]
 }

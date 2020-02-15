@@ -5,115 +5,11 @@ import * as path from 'path'
 import * as mime from 'mime-types';
 
 import { HTTPCodes } from './HTTP.Codes';
-import { HttpResponse, AsyncHttpResponse } from './HttpResponse';
 import { IServerResponseResult } from '../Common/Interfaces';
 import * as ComUtils from '../Common/ComUtils';
 import * as FSUtils from '../Common/FSUtils';
-import { ServerStorage } from './Server.Storage';
+import { IServerRequestInternalOptions } from './Server.ResponsesMap';
 
-
-interface IServerRequestInternalOptions
-{
-	FileName? : string;
-	Key? : string
-	Value? : any
-}
-
-
-export const MethodNotAllowed = new HttpResponse( 405, `{ "codeMessage": "${HTTPCodes[405]}" }` );
-export interface IResponseMethods {
-	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	get? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	put? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	patch? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => HttpResponse;
-}
-
-interface ServerResponseMap {
-	[key:string] : IResponseMethods
-}
-
-export const ResponsesMap : ServerResponseMap = {
-
-	'/upload' : <IResponseMethods>
-	{
-		put 	: ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-		{
-			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
-			{
-				// Execute file upload to client
-				const fileName = request.url.split('=')[1];
-				const options = <IServerRequestInternalOptions>
-				{
-					FileName : fileName
-				};
-				return await ServerResponses.DownloadFile( request, response, options );
-			});
-		}
-	},
-
-	'/download' : <IResponseMethods>
-	{
-		get 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => 
-		{
-			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
-			{
-				// Execute file download server side
-				const fileName = request.url.split('=')[1];
-				const options = <IServerRequestInternalOptions>
-				{
-					FileName : fileName
-				};
-				return await ServerResponses.UploadFile( request, response, options );
-			});
-		}
-	},
-
-	'/data' : <IResponseMethods>
-	{
-		get		: ( request : http.IncomingMessage, response : http.ServerResponse ) => 
-		{
-			return new AsyncHttpResponse( async ( request, response ) : Promise<IServerResponseResult> =>
-			{
-				const key = request.url.split('=')[1];
-				const value = ServerStorage.HasEntry( key ) ? ServerStorage.GetEntry( key ) : null;
-				const options = <IServerRequestInternalOptions>
-				{
-					Key : key,
-					Value : value
-				};
-				return await ServerResponses.Request_GET( request, response, options );
-			});
-		},
-		put 	: ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-		{
-			return new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
-			{
-				const key = request.url.split('=')[1];
-				const options = <IServerRequestInternalOptions>
-				{
-					Key : key
-				};
-				const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
-				if ( result.bHasGoodResult )
-				{
-					ServerStorage.AddEntry( key, result.body );
-				}
-				return result;
-			});
-		}
-	},
-
-	'ping' : <IResponseMethods>
-	{
-		post 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-		get 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-		put 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-		patch 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-		delete 		: ( request: http.IncomingMessage, response: http.ServerResponse ) => new HttpResponse( 200, "Hi there" ),
-	},
-
-};
 
 
 export class ServerResponses {
