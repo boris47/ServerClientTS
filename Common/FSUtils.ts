@@ -1,20 +1,20 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export interface IASyncFileReadresult
+export interface IASyncFileReadResult
 {
 	bHasGoodResult : boolean;
 
 	data : NodeJS.ErrnoException | string;
 }
 
-export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileReadresult>
+export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileReadResult>
 {
-	const readPromiseResult = await new Promise<IASyncFileReadresult>( ( resolve ) =>
+	const readPromiseResult = await new Promise<IASyncFileReadResult>( ( resolve ) =>
 	{
 		fs.readFile( filePath, 'utf8', ( err: NodeJS.ErrnoException, data: string ) =>
 		{
-			const result = <IASyncFileReadresult>
+			const result = <IASyncFileReadResult>
 			{
 				bHasGoodResult : !err,
 				data : err ? err : data

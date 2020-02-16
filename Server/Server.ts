@@ -1,11 +1,13 @@
 
 import * as http from 'http';
+import * as net from 'net';
+import * as https from 'https';
 import * as fs from 'fs';
 import * as os from 'os';
 
 import  * as GenericUtils from '../Common/GenericUtils';
 import { IServerInfo } from '../Common/Interfaces';
-import { HttpResponse, AsyncHttpResponse } from './HttpResponse';
+import { AsyncHttpResponse } from './HttpResponse';
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
 import { ServerStorage } from './Server.Storage';
 
@@ -20,30 +22,78 @@ export interface IServerRequestResponsePair {
 
 const requestToProcess : IServerRequestResponsePair[] = new Array<IServerRequestResponsePair>();
 
-
-
-const server : http.Server = http.createServer( ( request : http.IncomingMessage, response : http.ServerResponse ) =>
+function GetDiffMillisecondsStr( startTime : number, currentTime : number )
 {
-	const newPair = <IServerRequestResponsePair>
+	const diff = currentTime - startTime;
+	return diff.toString();
+}
+
+function ReportResponseResult( request : http.IncomingMessage, value : any, startTime : number )
+{
+	console.log( [
+		`Request: ${request.url}`,
+		`Result: ${value.bHasGoodResult}`,
+		`Time: ${GetDiffMillisecondsStr(startTime, Date.now())}ms`,
+		''
+	].join('\n') );
+}
+
+async function CreateServer() : Promise<boolean>
+{
+	let bResult = true;
+
+	const serverOptions  = <http.ServerOptions>
 	{
-		request : request,
-		response : response
+
 	};
-	requestToProcess.push( newPair );
-})
-.on( 'error', function( err : Error )
-{
-	console.error( err.name, err.message );
-})
-.listen( 3000, '::', function()
-{
-	console.log('Node server created at 0.0.0.0:3000');
-});
+
+	const listenOptions = <net.ListenOptions>
+	{
+		port : 3000,
+		host : '::'
+	}
+
+	const server : http.Server = http.createServer( serverOptions )
+
+	.on( 'error', function( err : Error )
+	{
+		console.error( err.name, err.message );
+		bResult = false;
+	})
+	
+	.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
+	{
+		const startTime = Date.now();
+		const identifier : string = request.url.split('?')[0];
+		const availableMethods : IResponseMethods = ResponsesMap[identifier];
+		if ( availableMethods )
+		{
+			const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
+			if ( method )
+			{
+				method().applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+			}
+			else // Method Not Allowed
+			{
+				MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+			}
+		}
+		else
+		{
+			NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+		}
+	})
+
+	.listen( listenOptions, () =>
+	{
+		console.log( `Node server created at localhost, port:3000\n` );
+	});
+	return bResult;
+}
 
 
 
-
-
+/*
 async function ProcessRequest()
 {
 	if ( requestToProcess.length === 0 )
@@ -75,13 +125,13 @@ async function ProcessRequest()
 		console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
 	}
 }
-
+*/
 
 async function UploadConfigurationFile() : Promise<boolean>
 {
 	const fileName = "./ServerCfg.json";
 	const serverData : IServerInfo = <IServerInfo>{};
-
+/*
 	const res = require('os').networkInterfaces();
 	const filtered : string = Object.keys( res )
 	.map( ( value : string ) => res[value] )
@@ -89,11 +139,11 @@ async function UploadConfigurationFile() : Promise<boolean>
 	.find( ( value: os.NetworkInterfaceInfo ) => ( value: os.NetworkInterfaceInfo ) => typeof value['scopeid'] === 'number' ).address;
 //	console.log( JSON.stringify( res, null, 4 ) );
 	console.log( "Server IP", filtered );
-
+*/
 
 	const publicIp : string | null = await new Promise( ( resolve ) =>
 	{
-		http.get( /*'http://bot.whatismyipaddress.com'*/'http://ifconfig.me/ip', function( response : http.IncomingMessage )
+		https.get( /*'http://bot.whatismyipaddress.com'*//*'http://ifconfig.me/ip'*/ 'https://api6.ipify.org/', function( response : http.IncomingMessage )
 		{
 			let rawData = "";
 			response
@@ -134,7 +184,7 @@ async function UploadConfigurationFile() : Promise<boolean>
 async function Main()
 {
 	{
-		await ServerStorage.ClearStorage();
+//		await ServerStorage.ClearStorage();
 		await ServerStorage.CreateStorage();
 		const bResult = await ServerStorage.Load();
 		if ( !bResult )
@@ -145,10 +195,20 @@ async function Main()
 	}
 
 	{
-		const bResult = await UploadConfigurationFile();
-		if ( !bResult )
+		const publicIp = await UploadConfigurationFile();
+		if ( !publicIp )
 		{
 			console.error( "Cannot public current ip" );
+			process.exit(1);
+		}
+
+	}
+
+	{	
+		const bResult = await CreateServer();
+		if ( !bResult )
+		{
+			console.error( "Cannot create server" );
 			process.exit(1);
 		}
 	}
@@ -158,9 +218,10 @@ async function Main()
 		{
 			await GenericUtils.DelayMS( 1000 );
 	
-			await ProcessRequest();
+			await ServerStorage.Save();
 		}
 	}
+
 }
 
 Main();

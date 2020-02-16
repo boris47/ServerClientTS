@@ -1,1 +1,10 @@
-[]
+{
+	"MyDataName": {
+		"type": "Buffer",
+		"data": [
+			49,
+			50,
+			51
+		]
+	}
+}

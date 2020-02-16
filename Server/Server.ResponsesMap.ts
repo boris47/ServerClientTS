@@ -1,5 +1,6 @@
 
 import * as http from 'http';
+import * as fs from 'fs';
 
 import { AsyncHttpResponse } from "./HttpResponse";
 import { HTTPCodes } from "./HTTP.Codes";
@@ -56,8 +57,12 @@ interface ServerResponseMap
 export interface IServerRequestInternalOptions
 {
 	FileName? : string;
-	Key? : string
-	Value? : any
+	Key? : string;
+	Value? : any;
+	Headers? : {
+		[key:string] : any
+	};
+	FileStream? : fs.ReadStream;
 }
 
 export const ResponsesMap : ServerResponseMap = {

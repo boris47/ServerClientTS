@@ -16,28 +16,28 @@ export class ServerStorage {
 
 	public static async CreateStorage() : Promise<void>
 	{
-		const folderPath = path.parse( this.m_StorageFilePath ).dir;
+		const folderPath = path.parse( ServerStorage.m_StorageFilePath ).dir;
 		FSUtils.EnsureDirectoryExistence( folderPath );
-		if ( !fs.existsSync( this.m_StorageFilePath ) )
+		if ( !fs.existsSync( ServerStorage.m_StorageFilePath ) )
 		{
-			fs.writeFileSync( this.m_StorageFilePath, "[]", 'utf8' );
+			fs.writeFileSync( ServerStorage.m_StorageFilePath, "{}", 'utf8' );
 		}
 	}
 
 	public static async ClearStorage() : Promise<void>
 	{
-		this.m_Storage.clear();
-		if ( fs.existsSync( this.m_StorageFilePath ) )
+		ServerStorage.m_Storage.clear();
+		if ( fs.existsSync( ServerStorage.m_StorageFilePath ) )
 		{
-			fs.unlinkSync( this.m_StorageFilePath );
+			fs.unlinkSync( ServerStorage.m_StorageFilePath );
 		}
 		/*
-		fs.unlink( this.m_StorageFilePath, ( err: NodeJS.ErrnoException ) =>
+		fs.unlink( ServerStorage.m_StorageFilePath, ( err: NodeJS.ErrnoException ) =>
 		{
 			console.log(err);
 		} );
 		*/
-		const folderPath = path.parse( this.m_StorageFilePath ).dir;
+		const folderPath = path.parse( ServerStorage.m_StorageFilePath ).dir;
 		if ( fs.existsSync( folderPath ) )
 		{
 			fs.rmdirSync( folderPath );
@@ -52,7 +52,7 @@ export class ServerStorage {
 		const readReasult = await FSUtils.ReadFileAsync( filePath );
 		if ( readReasult.bHasGoodResult )
 		{
-			let parsed = null;
+			let parsed : { key: string, value: any } = null;
 			try
 			{
 				parsed = JSON.parse( readReasult.data as string );
@@ -60,16 +60,15 @@ export class ServerStorage {
 			catch( e )
 			{
 				// TODO Handle this case
-				console.error( "Server Storage", `Cannot load resources from file ${this.m_StorageFilePath}` );
+				console.error( "Server Storage", `Cannot load resources from file ${ServerStorage.m_StorageFilePath}` );
 			}
 
 			if ( parsed )
 			{
-				let parsedArray : { key: string, value: any }[] = [];
-				for (let index = 0; index < parsedArray.length; index++)
+				for( const key in parsed )
 				{
-					const element = parsedArray[index];
-					this.m_Storage.set( element.key, element.value );
+					const value = parsed[key];
+					ServerStorage.m_Storage.set( key, value );
 				}
 				return true;
 			}
@@ -77,36 +76,55 @@ export class ServerStorage {
 		return false;
 	}
 
+	public static async Save() : Promise<boolean>
+	{
+		let objectToSave = {};
+		ServerStorage.m_Storage.forEach( ( value: any, key: string ) =>
+		{
+			objectToSave[key] = value;
+		});
+
+		const bResult = await new Promise<boolean>( ( resolve ) =>
+		{
+			fs.writeFile( ServerStorage.m_StorageFilePath, JSON.stringify( objectToSave, null, '\t' ), ( err: NodeJS.ErrnoException ) =>
+			{
+				resolve(!err);
+			})
+		});
+
+		return bResult;
+	}
+
 
 	public static AddEntry( key : string, data : any, bForced : boolean = false ) : void
 	{
-		const bAlreadyExists = this.m_Storage.has( key );
+		const bAlreadyExists = ServerStorage.m_Storage.has( key );
 		if ( !bAlreadyExists || bForced )
 		{
-			this.m_Storage.set( key, data );
+			ServerStorage.m_Storage.set( key, data );
 		}
 	}
 
 
 	public static RemoveEntry( key :  string ) : void
 	{
-		const bExists = this.m_Storage.has( key );
+		const bExists = ServerStorage.m_Storage.has( key );
 		if ( bExists )
 		{
-			this.m_Storage.delete( key );
+			ServerStorage.m_Storage.delete( key );
 		}
 	}
 
 
 	public static HasEntry( key : string ) : boolean
 	{
-		return this.m_Storage.has( key );
+		return ServerStorage.m_Storage.has( key );
 	}
 
 	
 	public static GetEntry( key : string ) : any | undefined
 	{
-		return this.m_Storage.get( key );
+		return ServerStorage.m_Storage.get( key );
 	}
 
 }

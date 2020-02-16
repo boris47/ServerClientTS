@@ -70,58 +70,42 @@ export class ServerResponses {
 
 	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
-		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
+		const fileName = serverRequestInternalOptions.FileName;
+
+		// Check if file exists
+		if ( fs.existsSync( fileName ) === false )
 		{
-			const fileName = serverRequestInternalOptions.FileName;
-			// Check if file exists
-			if ( fs.existsSync( fileName ) === false )
-			{
-				const err = `File ${fileName} doesn't exist`;
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
-			}
+			const err = `File ${fileName} doesn't exist`;
+			ServerResponses.EndResponseWithError( response, err, 400 );
+			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+		}
 
-			// Check if content type can be found
-			const contentType : string | false = mime.lookup( path.parse(fileName).ext );
-			if ( contentType === false )
-			{
-				const err = `Cannot define content type for file ${fileName}`;
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
-			}
+		// Check if content type can be found
+		const contentType : string | false = mime.lookup( path.parse(fileName).ext );
+		if ( contentType === false )
+		{
+			const err = `Cannot define content type for file ${fileName}`;
+			ServerResponses.EndResponseWithError( response, err, 400 );
+			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+		}
 
-			// Check file Size
-			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( fileName );
-			if ( sizeInBytes === null )
-			{
-				const err = `Cannot obtain size of file ${fileName}`;
-				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
-			}
+		// Check file Size
+		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( fileName );
+		if ( sizeInBytes === null )
+		{
+			const err = `Cannot obtain size of file ${fileName}`;
+			ServerResponses.EndResponseWithError( response, err, 400 );
+			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+		}
 
-			// Error Callback
-			response.on('error', function( err : Error )
-			{
-						ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err, resolve );
-			});
+		serverRequestInternalOptions.Headers =
+		{
+			'content-type' : contentType,
+			'content-length' : sizeInBytes
+		};
+		serverRequestInternalOptions.FileStream = fs.createReadStream( serverRequestInternalOptions.FileName );
 
-			response.on( 'finish', function()
-			{
-				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ), resolve );
-			});
-
-			// Content type and length
-			response.setHeader( 'content-type', contentType );
-			response.setHeader( 'content-length', sizeInBytes );
-
-			// Pipe to file
-			const readStream : fs.ReadStream =  fs.createReadStream( serverRequestInternalOptions.FileName );
-			readStream.pipe( response );
-
-
-		});
+		return ServerResponses.Request_GET( request, response, serverRequestInternalOptions );
 	}
 
 	/** End the response with value passed with 'serverRequestInternalOptions' */
@@ -132,15 +116,33 @@ export class ServerResponses {
 			response.on( 'error', ( err : Error ) =>
 			{
 				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
+				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
 			})
 			response.on( 'finish', () =>
 			{
 				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( Buffer.from( "DONE" ), resolve );
+				ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ), resolve );
 			});
 
-			response.end( serverRequestInternalOptions.Value );
+			// Set headers
+			if ( serverRequestInternalOptions.Headers )
+			{
+				for( const key in serverRequestInternalOptions.Headers )
+				{
+					const value = serverRequestInternalOptions.Headers[key];
+					response.setHeader( key, value );
+				}
+			}
+
+			// If upload of file is requested
+			if ( serverRequestInternalOptions.FileStream )
+			{
+				serverRequestInternalOptions.FileStream.pipe( response );
+			}
+			else // direct value sent
+			{
+				response.end( serverRequestInternalOptions.Value );
+			}
 		});
 	}
 
@@ -151,23 +153,22 @@ export class ServerResponses {
 		{
 			const body : any[] = [];
 
-			// Error Callback
 			request.on('error', function( err : Error )
 			{
 				ServerResponses.EndResponseWithError( response, err, 400 );
-				return ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
+				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
 			});
 
 			request.on( 'data', function( chunk : any )
 			{
 				body.push( chunk );
-			})
+			});
 			
 			request.on( 'end', function()
 			{
 				const result : Buffer = Buffer.concat( body );
 				ServerResponses.EndResponseWithGoodResult( response );
-				return ComUtils.ResolveWithGoodResult( result, resolve );
+				ComUtils.ResolveWithGoodResult( result, resolve );
 			});
 		});
 	}
