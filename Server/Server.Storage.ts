@@ -11,7 +11,7 @@ export class ServerStorage {
 	private static readonly m_StorageFilePath = './ServerStorage/Storage.json';
 
 	// TODO Fix race condition
-	private static m_Storage : Map<string, any> = new Map<string, any>();
+	private static m_Storage : Map<string, string> = new Map<string, string>();
 
 
 	public static async CreateStorage() : Promise<void>
@@ -52,7 +52,11 @@ export class ServerStorage {
 		const readReasult = await FSUtils.ReadFileAsync( filePath );
 		if ( readReasult.bHasGoodResult )
 		{
-			let parsed : { key: string, value: any } = null;
+			if( readReasult.data === "" )
+			{
+				readReasult.data = '{}';
+			}
+			let parsed : { [key:string] : string } = null;
 			try
 			{
 				parsed = JSON.parse( readReasult.data as string );
@@ -79,7 +83,7 @@ export class ServerStorage {
 	public static async Save() : Promise<boolean>
 	{
 		let objectToSave = {};
-		ServerStorage.m_Storage.forEach( ( value: any, key: string ) =>
+		ServerStorage.m_Storage.forEach( ( value: string, key: string ) =>
 		{
 			objectToSave[key] = value;
 		});
@@ -96,17 +100,17 @@ export class ServerStorage {
 	}
 
 
-	public static AddEntry( key : string, data : any, bForced : boolean = false ) : void
+	public static AddEntry( key : string, data : string, bForced : boolean = false ) : void
 	{
 		const bAlreadyExists = ServerStorage.m_Storage.has( key );
 		if ( !bAlreadyExists || bForced )
 		{
-			ServerStorage.m_Storage.set( key, data );
+			ServerStorage.m_Storage.set( key, data.toString() );
 		}
 	}
 
 
-	public static RemoveEntry( key :  string ) : void
+	public static RemoveEntry( key : string ) : void
 	{
 		const bExists = ServerStorage.m_Storage.has( key );
 		if ( bExists )
@@ -122,7 +126,7 @@ export class ServerStorage {
 	}
 
 	
-	public static GetEntry( key : string ) : any | undefined
+	public static GetEntry( key : string ) : string | undefined
 	{
 		return ServerStorage.m_Storage.get( key );
 	}

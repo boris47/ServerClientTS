@@ -14,6 +14,8 @@ import { IServerRequestInternalOptions } from './Server.ResponsesMap';
 
 export class ServerResponses {
 
+	private static readonly DOWNLOAD_LOCATION : string = '.\\Downloaded\\';
+
 
 	public static EndResponseWithGoodResult( response : http.ServerResponse ) : void
 	{
@@ -48,19 +50,17 @@ export class ServerResponses {
 			return result;
 		}
 		
+		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
 		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
 		{
-			fs.writeFile( serverRequestInternalOptions.FileName, result.body, function( err : NodeJS.ErrnoException )
+			FSUtils.EnsureDirectoryExistence( ServerResponses.DOWNLOAD_LOCATION );
+			fs.writeFile( filePath, result.body, function( err: NodeJS.ErrnoException | null )
 			{
 				resolve( !err );
 			});
 		});
 		if ( !bHasWriteGoodResult )
 		{
-			if ( fs.existsSync( serverRequestInternalOptions.FileName ) )
-			{
-				fs.unlinkSync( serverRequestInternalOptions.FileName );
-			}
 			return ComUtils.ResolveWithError( `File Upload Failed`, `Upload request of ${serverRequestInternalOptions.FileName} failed` );
 		}
 		ServerResponses.EndResponseWithGoodResult( response );
@@ -70,30 +70,30 @@ export class ServerResponses {
 
 	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
-		const fileName = serverRequestInternalOptions.FileName;
+		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
 
 		// Check if file exists
-		if ( fs.existsSync( fileName ) === false )
+		if ( !(await FSUtils.FileExistsAsync( filePath ) ))
 		{
-			const err = `File ${fileName} doesn't exist`;
+			const err = `File ${serverRequestInternalOptions.FileName} doesn't exist`;
 			ServerResponses.EndResponseWithError( response, err, 400 );
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
 
 		// Check if content type can be found
-		const contentType : string | false = mime.lookup( path.parse(fileName).ext );
+		const contentType : string | false = mime.lookup( path.parse(filePath).ext );
 		if ( contentType === false )
 		{
-			const err = `Cannot define content type for file ${fileName}`;
+			const err = `Cannot define content type for file ${filePath}`;
 			ServerResponses.EndResponseWithError( response, err, 400 );
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
 
 		// Check file Size
-		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( fileName );
+		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( filePath );
 		if ( sizeInBytes === null )
 		{
-			const err = `Cannot obtain size of file ${fileName}`;
+			const err = `Cannot obtain size of file ${filePath}`;
 			ServerResponses.EndResponseWithError( response, err, 400 );
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
@@ -103,7 +103,7 @@ export class ServerResponses {
 			'content-type' : contentType,
 			'content-length' : sizeInBytes
 		};
-		serverRequestInternalOptions.FileStream = fs.createReadStream( serverRequestInternalOptions.FileName );
+		serverRequestInternalOptions.FileStream = fs.createReadStream( filePath );
 
 		return ServerResponses.Request_GET( request, response, serverRequestInternalOptions );
 	}

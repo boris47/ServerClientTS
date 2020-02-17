@@ -58,7 +58,7 @@ export interface IServerRequestInternalOptions
 {
 	FileName? : string;
 	Key? : string;
-	Value? : any;
+	Value? : string | null;
 	Headers? : {
 		[key:string] : any
 	};
@@ -110,7 +110,7 @@ export const ResponsesMap : ServerResponseMap = {
 		get		: () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 		{
 			const key = request.url.split('=')[1];
-			const value = ServerStorage.HasEntry( key ) ? ServerStorage.GetEntry( key ) : null;
+			const value : string | null = ServerStorage.HasEntry( key ) ? ServerStorage.GetEntry( key ) : null;
 			const options = <IServerRequestInternalOptions>
 			{
 				Key : key,
@@ -128,7 +128,7 @@ export const ResponsesMap : ServerResponseMap = {
 			const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
 			if ( result.bHasGoodResult )
 			{
-				ServerStorage.AddEntry( key, result.body );
+				ServerStorage.AddEntry( key, result.body.toString() );
 			}
 			return result;
 		})

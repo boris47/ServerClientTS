@@ -8,6 +8,19 @@ export interface IASyncFileReadResult
 	data : NodeJS.ErrnoException | string;
 }
 
+
+export async function FileExistsAsync( filePath : string ) : Promise<boolean>
+{
+	const bResult = await new Promise<boolean>( ( resolve ) =>
+	{
+		fs.exists( filePath, ( exists : boolean ) =>
+		{
+			resolve( exists );
+		});
+	});
+	return bResult;
+}
+
 export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileReadResult>
 {
 	const readPromiseResult = await new Promise<IASyncFileReadResult>( ( resolve ) =>
