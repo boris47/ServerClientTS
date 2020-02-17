@@ -20,15 +20,15 @@ export interface IServerRequestResponsePair {
 
 
 
-const requestToProcess : IServerRequestResponsePair[] = new Array<IServerRequestResponsePair>();
+const requestToProcess = new Array<IServerRequestResponsePair>();
 
-function GetDiffMillisecondsStr( startTime : number, currentTime : number )
+function GetDiffMillisecondsStr( startTime : number, currentTime : number ) : string
 {
 	const diff = currentTime - startTime;
 	return diff.toString();
 }
 
-function ReportResponseResult( request : http.IncomingMessage, value : any, startTime : number )
+function ReportResponseResult( request : http.IncomingMessage, value : any, startTime : number ) : void
 {
 	console.log( [
 		`Request: ${request.url}`,
@@ -91,42 +91,6 @@ async function CreateServer() : Promise<boolean>
 	return bResult;
 }
 
-
-
-/*
-async function ProcessRequest()
-{
-	if ( requestToProcess.length === 0 )
-		return;
-
-	const pair : IServerRequestResponsePair = requestToProcess.shift();
-	const request : http.IncomingMessage = pair.request;
-	const response : http.ServerResponse = pair.response;
-
-	const identifier : string = request.url.split('?')[0];
-	const availableMethods : IResponseMethods = ResponsesMap[identifier];
-	if ( availableMethods )
-	{
-		const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
-		if ( method )
-		{
-			const result = await method().applyToResponse( request, response );
-			console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
-		}
-		else // Method Not Allowed
-		{
-			const result = await MethodNotAllowed.applyToResponse( request, response );
-			console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
-		}
-	}
-	else
-	{
-		const result = await NotImplementedResponse.applyToResponse( request, response );
-		console.log( `Request: ${request.url}, response sent.\nResult: ${result.bHasGoodResult}` );
-	}
-}
-*/
-
 async function UploadConfigurationFile() : Promise<boolean>
 {
 	const fileName = "./ServerCfg.json";
@@ -143,7 +107,7 @@ async function UploadConfigurationFile() : Promise<boolean>
 
 	const publicIp : string | null = await new Promise( ( resolve ) =>
 	{
-		https.get( /*'http://bot.whatismyipaddress.com'*//*'http://ifconfig.me/ip'*/ 'https://api6.ipify.org/', function( response : http.IncomingMessage )
+		https.get( 'https://bot.whatismyipaddress.com/'/*'http://ifconfig.me/ip'*/ /*'https://api6.ipify.org/'*/, function( response : http.IncomingMessage )
 		{
 			let rawData = "";
 			response
@@ -184,7 +148,6 @@ async function UploadConfigurationFile() : Promise<boolean>
 async function Main()
 {
 	{
-//		await ServerStorage.ClearStorage();
 		await ServerStorage.CreateStorage();
 		const bResult = await ServerStorage.Load();
 		if ( !bResult )
@@ -201,7 +164,6 @@ async function Main()
 			console.error( "Cannot public current ip" );
 			process.exit(1);
 		}
-
 	}
 
 	{	
@@ -225,3 +187,34 @@ async function Main()
 }
 
 Main();
+
+
+
+
+/*
+import * as ws from 'ws'
+
+const server = http.createServer();
+const wss = new WebSocket.Server({ noServer: true });
+
+wss.on('connection', function connection(ws, request, client) {
+  ws.on('message', function message(msg) {
+    console.log(`Received message ${msg} from user ${client}`);
+  });
+});
+
+server.on('upgrade', function upgrade(request, socket, head) {
+  authenticate(request, (err, client) => {
+    if (err || !client) {
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(request, socket, head, function done(ws) {
+      wss.emit('connection', ws, request, client);
+    });
+  });
+});
+
+server.listen(8080);
+*/

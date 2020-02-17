@@ -36,6 +36,8 @@ export class ClientRequests {
 
 		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
 		{
+			const folderPath = path.parse( clientRequestInternalOptions.AbsoluteFilePath ).dir;
+			FSUtils.EnsureDirectoryExistence(folderPath);
 			fs.writeFile( clientRequestInternalOptions.AbsoluteFilePath, result.body, function( err : NodeJS.ErrnoException )
 			{
 				resolve( !err );
