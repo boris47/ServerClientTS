@@ -61,7 +61,7 @@ export function EnsureDirectoryExistence(filePath: string): void
 	filePathNormalized.forEach( ( sDir : string, index : number ) =>
 	{
 		const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-		if ( ( this.isDirectory( pathInQuestion ) === false ) && pathInQuestion )
+		if ( ( this.IsDirectory( pathInQuestion ) === false ) && pathInQuestion )
 		{
 			fs.mkdirSync(pathInQuestion);
 		}

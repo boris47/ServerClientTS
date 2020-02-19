@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
-import  * as GenericUtils from '../Common/GenericUtils';
+import  * as GenericUtils from '../../Common/GenericUtils';
 
 
 export namespace AWSUtils {
