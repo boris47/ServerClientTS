@@ -76,7 +76,7 @@ export class ServerResponses {
 		if ( !(await FSUtils.FileExistsAsync( filePath ) ))
 		{
 			const err = `File ${serverRequestInternalOptions.FileName} doesn't exist`;
-			ServerResponses.EndResponseWithError( response, err, 400 );
+			ServerResponses.EndResponseWithError( response, err, 404 );
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
 
