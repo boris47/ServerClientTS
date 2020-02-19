@@ -3,8 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
-
-import { DelayMS } from './GenericUtils';
+import  * as GenericUtils from '../Common/GenericUtils';
 
 
 export namespace AWSUtils {
@@ -557,7 +556,7 @@ export namespace AWSUtils {
 					debugger;
 				}
 
-				await DelayMS( this.Configs.WaitForStateChangeDelayMS );
+				await GenericUtils.DelayMS( this.Configs.WaitForStateChangeDelayMS );
 			}
 
 			// Timeout is reached
