@@ -1,24 +1,6 @@
 
 import { ICommonResult } from '../Common/Interfaces'
 
-/*
-	private static EndResponseWithError( response : http.ServerResponse, errMessage : string | Error, errCode : number ) : void
-	{
-		let msg = '';
-		if ( typeof errMessage === 'string' )
-		{
-			msg = `${errMessage}`;
-		}
-		else
-		{
-			msg = `${errMessage.name}:${errMessage.message}`;
-		}
-
-		response.statusCode = errCode;
-		response.statusMessage = msg;
-		response.end();
-	}
-*/
 
 export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buffer, cb? : ( value: T ) => void  ) : Promise<T>
 {

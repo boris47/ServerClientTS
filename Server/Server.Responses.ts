@@ -37,8 +37,8 @@ export class ServerResponses {
 		}
 
 		response.statusCode = errCode;
-		response.statusMessage = msg;
-		response.end();
+	//	response.statusMessage = msg;
+		response.end( msg );
 	}
 
 	

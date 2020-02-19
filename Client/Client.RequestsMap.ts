@@ -23,14 +23,6 @@ export const RequestsMap : ServerResponseMap = {
 		}
 	},
 
-	'/download' : <IRequestsMethods>
-	{
-		get : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
-		{
-			return ClientRequests.DownloadFile( options, clientRequestInternalOptions );
-		}
-	},
-
 	'/upload' : <IRequestsMethods>
 	{
 		put: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
@@ -39,7 +31,15 @@ export const RequestsMap : ServerResponseMap = {
 		}
 	},
 
-	'/data': <IRequestsMethods>
+	'/download' : <IRequestsMethods>
+	{
+		get : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.DownloadFile( options, clientRequestInternalOptions );
+		}
+	},
+
+	'/storage': <IRequestsMethods>
 	{
 		get: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 		{

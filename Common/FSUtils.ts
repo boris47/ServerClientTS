@@ -39,7 +39,7 @@ export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileRea
 }
 
 
-export function isDirectory(dpath: any): boolean
+export function IsDirectory(dpath: any): boolean
 {
 	let result = false;
 	try
@@ -66,6 +66,32 @@ export function EnsureDirectoryExistence(filePath: string): void
 			fs.mkdirSync(pathInQuestion);
 		}
 	});
+}
+
+/** If directory exists, clear all the content */
+export function DeleteContentFolder( folderPath: string ): void
+{
+	const directoryPath: string = path.normalize(folderPath);
+	if ( IsDirectory( directoryPath ) )
+	{
+		fs.readdirSync( directoryPath ).forEach( ( fileName: string ) =>
+		{
+			const filePath = path.join( directoryPath, fileName );
+			if ( IsDirectory( filePath ) )
+			{
+				fs.rmdirSync( filePath, <fs.RmDirOptions>
+				{
+					recursive : true
+				});
+			//	DeleteContentFolder( filePath );
+			//	fs.rmdirSync(filePath);
+			}
+			else
+			{
+				fs.unlinkSync(filePath);
+			}
+		});
+	}
 }
 
 

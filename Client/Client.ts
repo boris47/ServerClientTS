@@ -2,6 +2,7 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
 import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
@@ -34,17 +35,9 @@ interface IClientRequest {
 	OnReject : RejectDelegate | null;
 }
 
-const requestsToProcess : Array<IClientRequest> = new Array<IClientRequest>();
 
-async function ProcessRequest()
+async function ProcessRequest( request : IClientRequest ) : Promise<void>
 {
-	if ( requestsToProcess.length === 0 )
-	{
-		console.log( "CLIENT JOB COMPLETED" );
-		process.exit(0);
-	}
-
-	const request : IClientRequest = requestsToProcess.shift();
 	const identifier : string = request.path;
 
 	// Check if request is mapped
@@ -71,19 +64,18 @@ async function ProcessRequest()
 	if ( result && result.bHasGoodResult )
 	{
 		console.log( `Request "${request.path}" satisfied\nResult: ${result.bHasGoodResult}` );
-		request.OnResolve?.call( request, result.body );
+		return request.OnResolve?.call( request, result.body );
 	}
 	else
 	{
 		const err = `Request "${request.path}" failed\nServer Say:\n${result.body.toString()}`;
 		console.error( err );
-		request.OnReject?.call( request, new Error( err ) );
+		return request.OnReject?.call( request, new Error( err ) );
 	}
-
 }
 
 
-function AddRequest( path : string, method : string, args:IClientRequestInternalOptions = {}, OnResolve : null | ResolveDelegate = null, OnReject : null | RejectDelegate = null )
+async function Request( path : string, method : string, args:IClientRequestInternalOptions = {}, OnResolve : null | ResolveDelegate = null, OnReject : null | RejectDelegate = null ) : Promise<void>
 {
 	const newRequest : IClientRequest =
 	{
@@ -93,23 +85,134 @@ function AddRequest( path : string, method : string, args:IClientRequestInternal
 		OnResolve : OnResolve,
 		OnReject : OnReject
 	};
-	requestsToProcess.push( newRequest );
+
+	return ProcessRequest( newRequest );
 }
+
+
+async function RequestServerPing() : Promise<boolean>
+{
+	return new Promise<boolean>(( resolve : (value: boolean) => void ) =>
+	{
+		Request( '/ping', 'get', <IClientRequestInternalOptions>{},
+			( body: Buffer ) =>
+			{
+				resolve( true );
+			},
+			( err: Error ) =>
+			{
+				resolve( false );
+			}
+		);
+	});
+}
+
+
+async function RequestGetData<T>( key : string ) : Promise<T|null>
+{
+	return new Promise<T|null>(( resolve : (value: T) => void ) =>
+	{
+		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Key: key },
+			( body: Buffer ) =>
+			{
+				resolve( <T>( <unknown>body ) );
+			},
+			( err: Error ) =>
+			{
+				resolve( null );
+			}
+		);
+	});
+}
+
+async function RequestSetData( Key : string, Value: any ) : Promise<boolean>
+{
+	return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
+	{
+		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Key : Key, Value: Value },
+			( body: Buffer ) =>
+			{
+				resolve( true );
+			},
+			( err: Error ) =>
+			{
+				resolve( false );
+			}
+		);
+	});
+}
+
+
+async function RequestFileDownload( FileName : string ) : Promise<boolean>
+{
+	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
+	{
+		Request( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: FileName },
+			( body: Buffer ) =>
+			{
+				resolve( true );
+			},
+			( err: Error ) =>
+			{
+				resolve( false );
+			}
+		);
+	});
+}
+
+async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
+{
+	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
+	{
+		Request( '/upload', 'put', <IClientRequestInternalOptions>{ AbsoluteFilePath: AbsoluteFilePath },
+			( body: Buffer ) =>
+			{
+				resolve( true );
+			},
+			( err: Error ) =>
+			{
+				resolve( false );
+			}
+		);
+	});
+}
+
+
 
 async function Main()
 {
 	{
-		AddRequest( '/ping', 'get' );
-		AddRequest( '/upload', 'put', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Client.js' }, (msg:Buffer) => console.log(msg.toString()), ( err:Error ) => console.error(err) );
-		AddRequest( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Server.js' } );
-		AddRequest( '/data', 'put', <IClientRequestInternalOptions>{ Key : 'MyDataName', Value: '123' } );
-		AddRequest( '/data', 'get', <IClientRequestInternalOptions>{ Key: 'MyDataName' } );
+		RequestServerPing()
+		.then( ( bCanContinue : boolean ) =>
+		{
+			return bCanContinue ? RequestFileUpload( path.join( process.cwd(), 'Client.js' ) ) : Promise.reject(false);
+		})
+		.then( ( bCanContinue : boolean ) =>
+		{
+			return bCanContinue ? RequestFileDownload( './Server.js' ) : Promise.reject(false);
+		})
+		.then( ( bCanContinue : boolean ) =>
+		{
+			return bCanContinue ? RequestSetData( 'MyDataName', '123' ) : Promise.reject(false);
+		})
+		.then( ( bCanContinue : boolean ) =>
+		{
+			return bCanContinue ? RequestGetData<string>( 'MyDataName' ) : Promise.reject(null);
+		})
+		.then( ( value: string | null ) =>
+		{
+			console.log( "Value", value.toString() );
+		})
+		.catch( reason => console.error(reason) );
+
 	}
 
-	while( true )
 	{
-//		await GenericUtils.DelayMS( 1000 );
-		await ProcessRequest();
+//		Request( '/ping', 'get' );
+//		Request( '/upload', 'put', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Client.js' }, (msg:Buffer) => console.log(msg.toString()), ( err:Error ) => console.error(err) );
+//		Request( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Server.js' } );
+//		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Key : 'MyDataName', Value: '123' } );
+//		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Key: 'MyDataName' } );
 	}
 }
 

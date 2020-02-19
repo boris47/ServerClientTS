@@ -6,6 +6,7 @@ import { AsyncHttpResponse } from "./HttpResponse";
 import { HTTPCodes } from "./HTTP.Codes";
 import { IServerResponseResult } from "../Common/Interfaces";
 import { ServerResponses } from "./Server.Responses";
+import * as ComUtils from '../Common/ComUtils';
 import { ServerStorage } from "./Server.Storage";
 
 
@@ -90,7 +91,7 @@ export const ResponsesMap : ServerResponseMap = {
 		})
 	},
 
-	'/data' : <IResponseMethods>
+	'/storage' : <IResponseMethods>
 	{
 		get		: () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
 		{
@@ -116,8 +117,24 @@ export const ResponsesMap : ServerResponseMap = {
 				ServerStorage.AddEntry( key, result.body.toString() );
 			}
 			return result;
+		}),
+		delete	: () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+		{
+			const key = request.url.split('=')[1];
+			if ( ServerStorage.HasEntry( key ) )
+			{
+				ServerStorage.RemoveEntry( key );
+				ServerResponses.EndResponseWithGoodResult( response );
+				return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ) );
+			}
+			else
+			{
+				const err = `Entry "${key}" not found`;
+				ServerResponses.EndResponseWithError( response, err, 404 );
+				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+			}
 		})
-		
+
 	},
 
 };

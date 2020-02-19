@@ -22,9 +22,6 @@ export interface IServerRequestResponsePair {
 const ConnectedClients = new Array<WebSocketConnection>();
 
 
-
-const requestToProcess = new Array<IServerRequestResponsePair>();
-
 function GetDiffMillisecondsStr( startTime : number, currentTime : number ) : string
 {
 	const diff = currentTime - startTime;

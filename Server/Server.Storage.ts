@@ -24,6 +24,7 @@ export class ServerStorage {
 		}
 	}
 
+	
 	public static async ClearStorage() : Promise<void>
 	{
 		ServerStorage.m_Storage.clear();
@@ -79,6 +80,7 @@ export class ServerStorage {
 		}
 		return false;
 	}
+
 
 	public static async Save() : Promise<boolean>
 	{

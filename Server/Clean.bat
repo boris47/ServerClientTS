@@ -2,6 +2,8 @@
 
 call :DeleteFolder %~dp0node_modules
 
+call :ClearFolder %~dp0Utils
+
 call :DeleteFile %~dp0package-lock.json
 
 call :DeleteFile %~dp0ServerCfg.json
