@@ -3,7 +3,8 @@ import * as http from 'http';
 import * as net from 'net';
 import * as https from 'https';
 import * as fs from 'fs';
-import * as os from 'os';
+
+import { server as WebSocketServer, IServerConfig, connection as WebSocketConnection, request as WebSocketRequest, IMessage } from 'websocket';
 
 import  * as GenericUtils from '../Common/GenericUtils';
 import { IServerInfo } from '../Common/Interfaces';
@@ -17,6 +18,8 @@ export interface IServerRequestResponsePair {
 	
 	response : http.ServerResponse;
 }
+
+const ConnectedClients = new Array<WebSocketConnection>();
 
 
 
@@ -53,41 +56,120 @@ async function CreateServer() : Promise<boolean>
 		host : '::'
 	}
 
-	const server : http.Server = http.createServer( serverOptions )
-
-	.on( 'error', function( err : Error )
+	const server : http.Server = http.createServer( serverOptions );
 	{
-		console.error( err.name, err.message );
-		bResult = false;
-	})
-	
-	.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
-	{
-		const startTime = Date.now();
-		const identifier : string = request.url.split('?')[0];
-		const availableMethods : IResponseMethods = ResponsesMap[identifier];
-		if ( availableMethods )
+		server.on( 'error', function( err : Error )
 		{
-			const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
-			if ( method )
-			{
-				method().applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
-			}
-			else // Method Not Allowed
-			{
-				MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
-			}
-		}
-		else
+			console.error( err.name, err.message );
+			bResult = false;
+		})
+		
+		server.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
-			NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
-		}
-	})
+			const startTime = Date.now();
+			const identifier : string = request.url.split('?')[0];
+			const availableMethods : IResponseMethods = ResponsesMap[identifier];
+			if ( availableMethods )
+			{
+				const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
+				if ( method )
+				{
+					method().applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+				}
+				else // Method Not Allowed
+				{
+					MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+				}
+			}
+			else
+			{
+				NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+			}
+		})
 
-	.listen( listenOptions, () =>
+		server.listen( listenOptions, () =>
+		{
+			console.log( `Node server created at localhost, port:3000\n` );
+		});
+}
+
+	// Web socket server setup
 	{
-		console.log( `Node server created at localhost, port:3000\n` );
-	});
+		const IsOriginAllowed = ( origin : string ) : boolean =>
+		{
+			return true;
+		}
+
+		const serverConfig = <IServerConfig>
+		{
+			httpServer : /*server*/ http.createServer().listen( 3001, '::' ),
+
+		//	autoAcceptConnections : false
+		}
+		const webSocketServer = new WebSocketServer( serverConfig );
+		{
+			webSocketServer.on( 'connect', ( connection: WebSocketConnection ) =>
+			{
+
+			});
+
+			webSocketServer.on( 'close', ( connection: WebSocketConnection, reason: number, desc: string ) =>
+			{
+
+			});
+
+			webSocketServer.on( 'request', ( request: WebSocketRequest ) =>
+			{
+				console.log( `${new Date()} Connection from origin ${request.origin}.` );
+
+				if ( !IsOriginAllowed( request.origin ) )
+				{
+					request.reject();
+					console.log( `${new Date()} Connection from origin ${request.origin} rejected.` );
+					return;
+				}
+
+				console.log( `${new Date()} Connection accepted.` );
+				const connection : WebSocketConnection = request.accept( 'echo-protocol', request.origin );
+				ConnectedClients.push( connection );
+
+				connection.on('error', ( err: Error ) =>
+				{
+					console.error( `Connection Error: "${err.name}:${err.message}"` );
+				});
+
+				connection.on( 'close', ( code: number, desc: string ) =>
+				{
+					console.log( `${new Date()} Peer ${connection.remoteAddress} disconnected` );
+					ConnectedClients.splice( ConnectedClients.indexOf(connection), 1 );
+				});
+
+				connection.on( 'message', ( data: IMessage ) =>
+				{
+					let buffered : Buffer = null;
+					switch( data.type )
+					{
+						case 'utf8' :
+						{
+							buffered = Buffer.from( data.utf8Data );
+							console.log("Received: '" + data.utf8Data + "'");
+							connection.close();
+							break;
+						}
+						case 'binary' :
+						{
+							buffered = Buffer.from( data.binaryData );
+							break;
+						}
+					}
+				});
+			});
+		}
+
+	}
+
+
+
 	return bResult;
 }
 
@@ -186,35 +268,5 @@ async function Main()
 
 }
 
+
 Main();
-
-
-
-
-/*
-import * as ws from 'ws'
-
-const server = http.createServer();
-const wss = new WebSocket.Server({ noServer: true });
-
-wss.on('connection', function connection(ws, request, client) {
-  ws.on('message', function message(msg) {
-    console.log(`Received message ${msg} from user ${client}`);
-  });
-});
-
-server.on('upgrade', function upgrade(request, socket, head) {
-  authenticate(request, (err, client) => {
-    if (err || !client) {
-      socket.destroy();
-      return;
-    }
-
-    wss.handleUpgrade(request, socket, head, function done(ws) {
-      wss.emit('connection', ws, request, client);
-    });
-  });
-});
-
-server.listen(8080);
-*/

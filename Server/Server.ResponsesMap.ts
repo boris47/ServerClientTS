@@ -30,16 +30,6 @@ export const MethodNotAllowed = new AsyncHttpResponse( async ( request : http.In
 	return result;
 });
 
-const pingResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
-{
-	const options = <IServerRequestInternalOptions>
-	{
-		Value : 'Hi there!'
-	};
-	const result : IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
-	return result;
-});
-
 export interface IResponseMethods
 {
 	post? 		: () => AsyncHttpResponse;
@@ -47,11 +37,6 @@ export interface IResponseMethods
 	put? 		: () => AsyncHttpResponse;
 	patch? 		: () => AsyncHttpResponse;
 	delete? 	: () => AsyncHttpResponse;
-}
-
-interface ServerResponseMap
-{
-	[key:string] : IResponseMethods
 }
 
 export interface IServerRequestInternalOptions
@@ -137,3 +122,19 @@ export const ResponsesMap : ServerResponseMap = {
 
 };
 
+
+
+interface ServerResponseMap
+{
+	[key:string] : IResponseMethods
+}
+
+const pingResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+{
+	const options = <IServerRequestInternalOptions>
+	{
+		Value : 'Hi there!'
+	};
+	const result : IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	return result;
+});

@@ -1,0 +1,63 @@
+
+import * as http from 'http';
+
+import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
+import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
+
+export interface IRequestsMethods
+{
+	post? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+	get? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+	put? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+	patch? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+	delete? 	: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+}
+
+export const RequestsMap : ServerResponseMap = {
+
+	'/ping': <IRequestsMethods>
+	{
+		get : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.Request_GET( options, clientRequestInternalOptions );
+		}
+	},
+
+	'/download' : <IRequestsMethods>
+	{
+		get : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.DownloadFile( options, clientRequestInternalOptions );
+		}
+	},
+
+	'/upload' : <IRequestsMethods>
+	{
+		put: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.UploadFile( options, clientRequestInternalOptions );
+		}
+	},
+
+	'/data': <IRequestsMethods>
+	{
+		get: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.Request_GET( options, clientRequestInternalOptions );
+		},
+
+		put: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
+		},
+	},
+
+}
+
+
+
+
+interface ServerResponseMap
+{
+	[key:string] : IRequestsMethods
+}

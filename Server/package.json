@@ -12,8 +12,10 @@
   "devDependencies": {
     "@types/node": "=13.7.0",
     "@types/mime-types": "=2.1.0",
+    "@types/websocket": "0.0.38",
     "http-status-codes": "=1.4.0",
     "typescript": "=3.7.5",
-    "mime-types": "=2.1.26"
+    "mime-types": "=2.1.26",
+    "websocket": "1.0.31"
   }
 }

@@ -7,6 +7,7 @@ import * as FSUtils from '../Common/FSUtils';
 import * as ComUtils from '../Common/ComUtils';
 import { IClientRequestResult } from '../Common/Interfaces';
 import * as mime from 'mime-types';
+import { RequestsMap } from './Client.RequestsMap';
 
 
 export interface IClientRequestInternalOptions
