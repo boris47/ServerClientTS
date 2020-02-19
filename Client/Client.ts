@@ -14,7 +14,7 @@ if ( fs.existsSync( serverConfigFileName ) )
 {
 	const fileContent = fs.readFileSync( serverConfigFileName, 'utf8' );
 	const fileJson : IServerInfo = JSON.parse( fileContent );
-//	serverPublicIp = fileJson.ServerIp;
+	serverPublicIp = fileJson.ServerIp;
 }
 
 const CommonOptions : http.RequestOptions = {

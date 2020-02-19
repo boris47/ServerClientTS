@@ -186,7 +186,8 @@ async function UploadConfigurationFile() : Promise<boolean>
 
 	const publicIp : string | null = await new Promise( ( resolve ) =>
 	{
-		https.get( 'https://bot.whatismyipaddress.com/'/*'http://ifconfig.me/ip'*/ /*'https://api6.ipify.org/'*/, function( response : http.IncomingMessage )
+		https.get( /*'https://bot.whatismyipaddress.com/'*//*'http://ifconfig.me/ip'*/ /*'https://api6.ipify.org/'*/
+		'https://ipv6-api.speedtest.net/getip', function( response : http.IncomingMessage )
 		{
 			let rawData = "";
 			response

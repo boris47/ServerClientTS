@@ -16,7 +16,6 @@ export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buf
 
 export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb? : (value: T) => void ) : Promise<T>
 {
-
 	let msg = '';
 	if ( typeof errMessage === 'string' )
 	{
