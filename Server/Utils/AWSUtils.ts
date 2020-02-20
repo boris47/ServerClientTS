@@ -176,11 +176,12 @@ export namespace AWSUtils {
 			return bOverhaulResult;
 		}
 
-		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<string | null>
+		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<AWS.S3.HeadObjectOutput | null>
 		{
-			const result = await new Promise<string | null>( ( resolve : (value?: string | null) => void ) => 
+			const result = await new Promise<AWS.S3.HeadObjectOutput | null>( ( resolve : (value?: AWS.S3.HeadObjectOutput | null) => void ) => 
 			{
-				s3Instance.headObject({
+				s3Instance.headObject(<AWS.S3.HeadObjectRequest>
+				{
 					Bucket: bucketName,
 					Key: key
 				},
@@ -190,7 +191,7 @@ export namespace AWSUtils {
 					{
 						console.error( `AWSUtils:GetObjectMetadata: Some problem while trying to get metadata for "${bucketName}/${key}"\nError: ${err}` );
 					}
-					resolve( err ? null : JSON.stringify( data ) );
+					resolve( err ? null : data );
 				});
 			});
 			return result;
