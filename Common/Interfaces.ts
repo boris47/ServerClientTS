@@ -1,8 +1,4 @@
 
-export interface IServerInfo
-{
-	ServerIp : string;
-}
 
 export interface ICommonResult
 {

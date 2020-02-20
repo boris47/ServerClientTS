@@ -7,39 +7,38 @@ import * as fs from 'fs';
 import { server as WebSocketServer, IServerConfig, connection as WebSocketConnection, request as WebSocketRequest, IMessage } from 'websocket';
 
 import  * as GenericUtils from '../Common/GenericUtils';
-import { IServerInfo } from '../Common/Interfaces';
 import { AsyncHttpResponse } from './HttpResponse';
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
 import { ServerStorage } from './Server.Storage';
+import { ServerConfigs } from './Server.Configs';
 
-export interface IServerRequestResponsePair {
 
-	request : http.IncomingMessage;
-	
-	response : http.ServerResponse;
-}
+
 
 const ConnectedClients = new Array<WebSocketConnection>();
 
+const serverConfigs = new ServerConfigs();
 
-function GetDiffMillisecondsStr( startTime : number, currentTime : number ) : string
-{
-	const diff = currentTime - startTime;
-	return diff.toString();
-}
 
-function ReportResponseResult( request : http.IncomingMessage, value : any, startTime : number ) : void
-{
-	console.log( [
-		`Request: ${request.url}`,
-		`Result: ${value.bHasGoodResult}`,
-		`Time: ${GetDiffMillisecondsStr(startTime, Date.now())}ms`,
-		''
-	].join('\n') );
-}
 
 async function CreateServer() : Promise<boolean>
 {
+	const reportResponseResult = ( request : http.IncomingMessage, value : any, startTime : number ) : void =>
+	{
+		const getDiffMillisecondsStr = ( startTime : number, currentTime : number ) : string =>
+		{
+			const diff = currentTime - startTime;
+			return diff.toString();
+		};
+		console.log( [
+			`Request: ${request.url}`,
+			`Result: ${value.bHasGoodResult}`,
+			`Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`,
+			''
+		].join('\n') );
+	};
+
+
 	let bResult = true;
 
 	const serverOptions  = <http.ServerOptions>
@@ -71,16 +70,16 @@ async function CreateServer() : Promise<boolean>
 				const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
 				if ( method )
 				{
-					method().applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+					method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 				}
 				else // Method Not Allowed
 				{
-					MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+					MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 				}
 			}
 			else
 			{
-				NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => ReportResponseResult( request, value, startTime ) );
+				NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 		})
 
@@ -170,59 +169,71 @@ async function CreateServer() : Promise<boolean>
 	return bResult;
 }
 
-async function UploadConfigurationFile() : Promise<boolean>
+async function HTTP_Get( url : string ) : Promise<string | null>
 {
-	const fileName = "./ServerCfg.json";
-	const serverData : IServerInfo = <IServerInfo>{};
-/*
-	const res = require('os').networkInterfaces();
-	const filtered : string = Object.keys( res )
-	.map( ( value : string ) => res[value] )
-	.find( ( value: os.NetworkInterfaceInfo[] ) => value.some( ( value: os.NetworkInterfaceInfo ) => typeof value['scopeid'] === 'number' ))
-	.find( ( value: os.NetworkInterfaceInfo ) => ( value: os.NetworkInterfaceInfo ) => typeof value['scopeid'] === 'number' ).address;
-//	console.log( JSON.stringify( res, null, 4 ) );
-	console.log( "Server IP", filtered );
-*/
-
-	const publicIp : string | null = await new Promise( ( resolve ) =>
+	return await new Promise<string | null>( ( resolve ) =>
 	{
-		https.get( /*'https://bot.whatismyipaddress.com/'*//*'http://ifconfig.me/ip'*/ /*'https://api6.ipify.org/'*/
-		'https://ipv6-api.speedtest.net/getip', function( response : http.IncomingMessage )
+		const request = https.get( url, function( response : http.IncomingMessage )
 		{
 			let rawData = "";
-			response
-			.on('data', function( chunk : any )
+			response.on('data', function( chunk : any )
 			{
 				rawData += chunk;
-			})
-			.on('end', function()
-			{
-				resolve( rawData );
-			})
-			.on( "error", function( err: Error )
-			{
-				console.error( "Server", err.name, err.message );
-				resolve(null);
-			})
-		})
-		.on( "error", function( err: Error )
-		{
-			console.error( "Server", err.name, err.message );
-			resolve(null);
-		});
-	});
+			});
 
-	if ( !publicIp )
+			response.on('end', function()
+			{
+				resolve( rawData.trim() );
+			});
+
+			response.on( "error", function( err: Error )
+			{
+				console.error( "HTTP_Get:\t", err.name, err.message );
+				resolve( null );
+			})
+		});
+
+		request.on( "error", function( err: Error )
+		{
+			console.error( "HTTP_Get:\t", err.name, err.message );
+			resolve( null );
+		});
+	})
+}
+
+async function UploadConfigurationFile() : Promise<boolean>
+{
+	let bResult = true;
+	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
+	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
+	const publicIPv6 : string | null = await HTTP_Get( url_v6 );
+	const publicIPv4 : string | null = await HTTP_Get( url_v4 );
+	
+	if ( publicIPv6 )
 	{
-		console.error( "Server", "Cannot retrieve public ip" );
+		console.log( "Server", 'publicIP', publicIPv6 );
+		serverConfigs.SetCurrentPublicIP( publicIPv6 );
+	}
+	else if ( publicIPv4 )
+	{
+		console.log( "Server", 'publicIP', publicIPv4 );
+		serverConfigs.SetCurrentPublicIP( publicIPv4 );
 	}
 	else
 	{
-		console.log( "Server", 'publicIp', publicIp );
-		serverData.ServerIp = publicIp;
-		fs.writeFileSync( fileName, JSON.stringify( serverData, null, '\t' ) );		
+		console.error( `Cannot retrieve public ip` );
+		bResult = false;
 	}
-	return !!publicIp;
+	
+	if ( bResult )
+	{
+		const fileName = "./ServerCfg.json";
+		fs.writeFileSync( fileName, JSON.stringify( serverConfigs, null, '\t' ) );
+	}
+
+	bResult = bResult && serverConfigs.IsValid();
+
+	return bResult;
 }
 
 async function Main()
@@ -241,7 +252,7 @@ async function Main()
 		const publicIp = await UploadConfigurationFile();
 		if ( !publicIp )
 		{
-			console.error( "Cannot public current ip" );
+			console.error( "Cannot retrieve public ip" );
 			process.exit(1);
 		}
 	}
