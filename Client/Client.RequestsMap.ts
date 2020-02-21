@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 
-import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
+import { IClientRequestResult } from '../Common/Interfaces'
 import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
 
 export interface IRequestsMethods

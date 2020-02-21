@@ -26,7 +26,7 @@ export class ClientRequests {
 
 	public static async DownloadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath = '';
+		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
 		options.path += `?file=${path.parse( absoluteFilePath ).base}`;
 		options.method = 'get';
 
@@ -47,11 +47,11 @@ export class ClientRequests {
 		});
 		if ( !bHasWriteGoodResult )
 		{
-			if ( fs.existsSync( clientRequestInternalOptions.AbsoluteFilePath ) )
+			if ( fs.existsSync( absoluteFilePath ) )
 			{
-				fs.unlinkSync( clientRequestInternalOptions.AbsoluteFilePath );
+				fs.unlinkSync( absoluteFilePath );
 			}
-			return ComUtils.ResolveWithError( `ClientRequests:DownloadFile`, `Upload request of ${clientRequestInternalOptions.AbsoluteFilePath} failed` );
+			return ComUtils.ResolveWithError( `ClientRequests:DownloadFile`, `Upload request of ${absoluteFilePath} failed` );
 		}
 		return ComUtils.ResolveWithGoodResult<IClientRequestResult>( Buffer.from( "Done" ) );
 	}
@@ -59,7 +59,7 @@ export class ClientRequests {
 
 	public static async UploadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		const AbsoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath = '';
+		const AbsoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
 
 		// Check if file exists
 		if ( fs.existsSync( AbsoluteFilePath ) === false )

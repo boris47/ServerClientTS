@@ -224,6 +224,9 @@ async function UploadConfigurationFile() : Promise<boolean>
 		console.error( `Cannot retrieve public ip` );
 		bResult = false;
 	}
+
+	serverConfigs.SetWebSocketPort( 3001 );
+	serverConfigs.SetRequestListenerPort( 3000 );
 	
 	if ( bResult )
 	{
