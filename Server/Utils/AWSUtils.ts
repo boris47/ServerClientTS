@@ -1,8 +1,10 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
+
 import  * as GenericUtils from '../../Common/GenericUtils';
 
 
@@ -44,14 +46,10 @@ export namespace AWSUtils {
 			return s3Instance;
 		}
 
-		public static async ListAllObjects( s3Instance : AWS.S3, bucketName : string , prefixes : string[] = new Array<string>(), bFilterFolders : boolean = false ) : Promise<AWS.S3.Object[] | null>
+		public static async ListObjects( s3Instance : AWS.S3, bucketName : string , prefixes : string[] = new Array<string>(), bFilterFolders : boolean = false ) : Promise<AWS.S3.Object[] | null>
 		{
 			const objectsArray = new Array<AWS.S3.Object>();
-
-			if ( prefixes.length === 0 )
-			{
-				prefixes.push("");
-			}
+			prefixes.push("");
 
 			/** AWS.S3.Object
 			{
@@ -71,13 +69,14 @@ export namespace AWSUtils {
 					Bucket: bucketName,
 					// Limits the response to keys that begin with the specified prefix.
 					Prefix: prefix,
-
 				};
 
 				let bMustContinue = true;
 				let bErrorFound = false;
 				while( bMustContinue && !bErrorFound )
 				{
+
+
 					await s3Instance.listObjectsV2( params ).promise()
 					.then( ( output : AWS.S3.ListObjectsV2Output ) =>
 					{
@@ -101,51 +100,54 @@ export namespace AWSUtils {
 			return objectsArray;
 		}
 
-		public static async DownloadResource( s3Instance : AWS.S3, bucketName : string, key : string, absoluteFileSavePath : string ) : Promise<boolean>
+		public static async DownloadResource( s3Instance : AWS.S3, bucketName : string, key : string, absoluteFilePath : string ) : Promise<boolean>
 		{
-			const result2 = await new Promise<boolean>( ( resolve ) =>
+			const result = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
 			{
-				// Retrieves objects from Amazon S3.
-				const awsStream = s3Instance.getObject
-				(
-					<AWS.S3.GetObjectRequest>{
-						Bucket : bucketName,
-						Key : key
-					}
-				).createReadStream();
-
-				const fsStream = fs.createWriteStream( absoluteFileSavePath );
-				awsStream.pipe( fsStream );
-
-				awsStream.on( "error", ( err: Error ) =>
+				const writeStream = fs.createWriteStream( absoluteFilePath );
+				writeStream.on( "error", ( err: Error ) =>
 				{
 					console.error( `AWSUtils:S3_DownloadResource: Some problem while trying to download from "${bucketName}" the resource "${key}"\nError: ${err}` );
 					resolve(false);
 				});
 
+				// Retrieves objects from Amazon S3.
+				const awsStream = s3Instance.getObject( <AWS.S3.GetObjectRequest>
+					{
+						Bucket : bucketName,
+						Key : key
+					}
+				).createReadStream();
+				
+				awsStream.on( "error", ( err: Error ) =>
+				{
+					console.error( `AWSUtils:S3_DownloadResource: Some problem while trying to download from "${bucketName}" the resource "${key}"\nError: ${err}` );
+					resolve(false);
+				});
+				
 				awsStream.on( "end", () =>
 				{
 					resolve(true);
 				});
+
+				awsStream.pipe( writeStream );
 			});
-			return result2;
+			return result;
 		}
 		
-		public static async DownloadResources( s3Instance : AWS.S3, bucketName : string, keys : string[], absoluteFolderSavePath : string ) : Promise<string[]>
+		public static async DownloadResources( s3Instance : AWS.S3, bucketName : string, keys : string[], absoluteDestinationFolderPath : string ) : Promise<string[]>
 		{
+			const promises = new Array<Promise<boolean>>();
 			const results = new Array<string>();
-			for (let index = 0; index < keys.length; index++)
+			keys.forEach( key =>
 			{
-				const key = keys[index];
-				const fileName : string = key.substring( key.lastIndexOf('/') + 1 );
-				const absoluteFilePath = path.join( absoluteFolderSavePath, fileName );
-				const bResult = await this.DownloadResource( s3Instance, bucketName, key, absoluteFilePath );
-				if ( bResult )
-				{
-					results.push( absoluteFilePath );
-				}
-			}
-			return results;
+				const fileName : string = path.parse( key ).base;
+				const absoluteFilePath = path.join( absoluteDestinationFolderPath, fileName );
+				const promise = this.DownloadResource( s3Instance, bucketName, key, absoluteFilePath );
+				promise.then( () => results.push( absoluteFilePath ) );
+				promises.push( promise );
+			});
+			return Promise.all( promises ).then( () => results );
 		}
 
 		public static async UploadResource( s3Instance : AWS.S3, bucketName : string, key : string, absoluteInputFilePath : string ) : Promise<boolean>
@@ -178,37 +180,58 @@ export namespace AWSUtils {
 			return bResult;
 		}
 
-		public static async CopyObjects( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, keys : string[], bMustReplace : boolean = true ) : Promise<boolean>
+		public static async UploadResources( s3Instance : AWS.S3, bucketName : string, keys : Map<string, string> ) : Promise<string[]>
 		{
 			const promises = new Array<Promise<boolean>>();
-			keys.forEach( key =>
+			const results = new Array<string>();
+			keys.forEach( ( value: string, key: string ) =>
 			{
-				const promise = new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
-				{
-					s3Instance.copyObject( <AWS.S3.CopyObjectRequest>
-						{
-							// The name of the source bucket and key name of the source object, separated by a slash (/). Must be URL-encoded.
-							CopySource: encodeURIComponent(`${sourceBucketName}/${key}`),
-							// The name of the destination bucket.
-							Bucket: destBucketName,
-							// The key of the destination object.
-							Key: key,
-							// Specifies whether the metadata is copied from the source object or replaced with metadata provided in the request.
-							MetadataDirective: ( bMustReplace ? "REPLACE" : "COPY" )
-						},
-						( err : AWS.AWSError, data : AWS.S3.CopyObjectOutput ) =>
-						{
-							if ( err )
-							{
-								console.error( err.name, err.message ); // an error occurred
-							}
-							resolve( !err );
-						}
-					)
-				});
+				const promise = this.UploadResource( s3Instance, bucketName, key, value );
+				promise.then( () => results.push( key ) );
 				promises.push( promise );
 			});
-			return Promise.all( promises ).then( v => v.reduce( ( prevValue: boolean, currValue: boolean ) => prevValue && currValue, true ) );
+			return Promise.all( promises ).then( () => results );
+		}
+
+		public static async CopyObject( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, key : string, bMustReplace : boolean = true ) : Promise<boolean>
+		{
+			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
+			{
+				s3Instance.copyObject( <AWS.S3.CopyObjectRequest>
+					{
+						// The name of the source bucket and key name of the source object, separated by a slash (/). Must be URL-encoded.
+						CopySource: encodeURIComponent(`${sourceBucketName}/${key}`),
+						// The name of the destination bucket.
+						Bucket: destBucketName,
+						// The key of the destination object.
+						Key: key,
+						// Specifies whether the metadata is copied from the source object or replaced with metadata provided in the request.
+						MetadataDirective: ( bMustReplace ? "REPLACE" : "COPY" )
+					},
+					( err : AWS.AWSError, data : AWS.S3.CopyObjectOutput ) =>
+					{
+						if ( err )
+						{
+							console.error( err.name, err.message ); // an error occurred
+						}
+						resolve( !err );
+					}
+				)
+			});
+			return bResult;
+		}
+
+		public static async CopyObjects( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, keys : string[], bMustReplace : boolean = true ) : Promise<string[]>
+		{
+			const promises = new Array<Promise<boolean>>();
+			const results = new Array<string>();
+			keys.forEach( key =>
+			{
+				const promise = this.CopyObject( s3Instance, sourceBucketName, destBucketName, key, bMustReplace );
+				promise.then( () => results.push( key ) );
+				promises.push( promise );
+			});
+			return Promise.all( promises ).then( () => results );
 		}
 
 		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<AWS.S3.HeadObjectOutput | null>
