@@ -1,11 +1,23 @@
 
 import * as ipRegex from 'ip-regex';
+import { IServerConfigs } from '../Common/Interfaces';
 
-export class ServerConfigs {
+export class ServerConfigs implements IServerConfigs {
+	
+	public get PublicIP() : string
+	{
+		return this.ServerPublicIP;
+	}
 
-	public get PublicIP() : string					{ return this.ServerPublicIP; }
-	public get WebSocketPort() : number 			{ return this.ServerWebSocketPort; }
-	public get RequestsListenerPort() : number 		{ return this.ServerRequestsListenerPort; }
+	public get WebSocketPort() : number
+	{
+		return this.ServerWebSocketPort;
+	}
+
+	public get RequestsListenerPort() : number
+	{
+		return this.ServerRequestsListenerPort;
+	}
 	
 
 	private ServerPublicIP : string | null = null;
@@ -15,7 +27,7 @@ export class ServerConfigs {
 
 	public IsValid() : boolean
 	{
-		return this.ServerPublicIP !== null && this.ServerWebSocketPort > -1 && this.ServerRequestsListenerPort > -1;
+		return this.PublicIP !== null && this.WebSocketPort > -1 && this.RequestsListenerPort > -1;
 	}
 
 

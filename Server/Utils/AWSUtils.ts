@@ -10,6 +10,40 @@ export namespace AWSUtils {
 
 	export class S3 {
 
+		public CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.S3
+		{
+			// Locking API Version and region
+			const s3Instance = new AWS.S3( { apiVersion: '2016-11-15', region: region } );
+
+			// Creates a Credentials object with a given set of credential information as positional arguments. 
+			s3Instance.config.credentials = new AWS.Credentials( accessKeyId, secretAccessKey, sessionToken );
+
+			// The maximum amount of retries to perform for a service request. Defaults to 10.
+			s3Instance.config.maxRetries = 3600 / 5; // 720: This value grants 1 hour of retry
+
+			// Returns A set of options to configure the retry delay on retryable errors.
+			s3Instance.config.retryDelayOptions = <RetryDelayOptions>
+			{
+				// The base number of milliseconds to use in the exponential backoff for operation retries. Defaults to 100 ms.
+	//			base : 5000,
+				
+				// A custom function that accepts a retry count and error and returns the amount of time to delay in milliseconds.
+				// If the result is a non-zero negative value, no further retry attempts will be made.
+				// The base option will be ignored if this option is supplied.
+				customBackoff: ( retryCount: number, err?: Error | undefined ) : number =>
+				{
+					if ( err )
+					{
+						console.error( `[${err.name}]`, err.message );
+					}
+					// returns the amount of time to delay in milliseconds
+					return ( s3Instance.config.maxRetries || 10 /* Default */ ) > retryCount ? 5000 : -1;
+				}
+			}
+
+			return s3Instance;
+		}
+
 		public static async ListAllObjects( s3Instance : AWS.S3, bucketName : string , prefixes : string[] = new Array<string>(), bFilterFolders : boolean = false ) : Promise<AWS.S3.Object[] | null>
 		{
 			const objectsArray = new Array<AWS.S3.Object>();
@@ -122,21 +156,23 @@ export namespace AWSUtils {
 				return false;
 			}
 
-			const bResult = await new Promise<boolean>( ( resolve ) => 
+			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
 			{
-				s3Instance.putObject({
-					Bucket: bucketName,
-					Key: key,
-					Body: fs.readFileSync( absoluteInputFilePath )
-				},
-				( err : AWS.AWSError, data : AWS.S3.PutObjectOutput ) =>
-				{
-					if ( err )
+				s3Instance.putObject( <AWS.S3.PutObjectRequest>
 					{
-						console.error( `AWSUtils:S3_UploadResource: Some problem while trying to upload on "${bucketName}" with key "${key} file "${absoluteInputFilePath}"\nError: ${err}` );
+						Bucket: bucketName,
+						Key: key,
+						Body: fs.readFileSync( absoluteInputFilePath )
+					},
+					( err : AWS.AWSError, data : AWS.S3.PutObjectOutput ) =>
+					{
+						if ( err )
+						{
+							console.error( `AWSUtils:S3_UploadResource: Some problem while trying to upload on "${bucketName}" with key "${key} file "${absoluteInputFilePath}"\nError: ${err}` );
+						}
+						resolve( !err );
 					}
-					resolve( !err );
-				});
+				);
 			});
 
 			return bResult;
@@ -144,55 +180,55 @@ export namespace AWSUtils {
 
 		public static async CopyObjects( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, keys : string[], bMustReplace : boolean = true ) : Promise<boolean>
 		{
-			let bOverhaulResult = true;
-			for ( let index = 0; index < keys.length; index++ )
+			const promises = new Array<Promise<boolean>>();
+			keys.forEach( key =>
 			{
-				const key = keys[index];
-				bOverhaulResult = bOverhaulResult && await new Promise( (resolve) =>
+				const promise = new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
 				{
-					s3Instance.copyObject(
-						/* AWS.S3.CopyObjectRequest */ {
-
+					s3Instance.copyObject( <AWS.S3.CopyObjectRequest>
+						{
 							// The name of the source bucket and key name of the source object, separated by a slash (/). Must be URL-encoded.
 							CopySource: encodeURIComponent(`${sourceBucketName}/${key}`),
 							// The name of the destination bucket.
 							Bucket: destBucketName,
 							// The key of the destination object.
 							Key: key,
-							
+							// Specifies whether the metadata is copied from the source object or replaced with metadata provided in the request.
 							MetadataDirective: ( bMustReplace ? "REPLACE" : "COPY" )
 						},
 						( err : AWS.AWSError, data : AWS.S3.CopyObjectOutput ) =>
 						{
-							if (err)
+							if ( err )
 							{
-								console.error(err.message); // an error occurred
+								console.error( err.name, err.message ); // an error occurred
 							}
-							resolve(!err)
+							resolve( !err );
 						}
 					)
 				});
-			}
-			return bOverhaulResult;
+				promises.push( promise );
+			});
+			return Promise.all( promises ).then( v => v.reduce( ( prevValue: boolean, currValue: boolean ) => prevValue && currValue, true ) );
 		}
 
 		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<AWS.S3.HeadObjectOutput | null>
 		{
 			const result = await new Promise<AWS.S3.HeadObjectOutput | null>( ( resolve : (value?: AWS.S3.HeadObjectOutput | null) => void ) => 
 			{
-				s3Instance.headObject(<AWS.S3.HeadObjectRequest>
-				{
-					Bucket: bucketName,
-					Key: key
-				},
-				( err : AWS.AWSError, data : AWS.S3.HeadObjectOutput ) =>
-				{
-					if ( err )
+				s3Instance.headObject( <AWS.S3.HeadObjectRequest>
 					{
-						console.error( `AWSUtils:GetObjectMetadata: Some problem while trying to get metadata for "${bucketName}/${key}"\nError: ${err}` );
+						Bucket: bucketName,
+						Key: key
+					},
+					( err : AWS.AWSError, data : AWS.S3.HeadObjectOutput ) =>
+					{
+						if ( err )
+						{
+							console.error( `AWSUtils:GetObjectMetadata: Some problem while trying to get metadata for "${bucketName}/${key}"\nError: ${err}` );
+						}
+						resolve( err ? null : data );
 					}
-					resolve( err ? null : data );
-				});
+				);
 			});
 			return result;
 		}
@@ -270,7 +306,7 @@ export namespace AWSUtils {
 		
 		};
 
-		public CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string )
+		public CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.EC2
 		{
 			// Locking API Version and region
 			const ec2Instance = new AWS.EC2( { apiVersion: '2016-11-15', region: region } );

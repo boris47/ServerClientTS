@@ -8,6 +8,7 @@
 		"extendedDiagnostics" : true,
 		"inlineSourceMap" : true,
 		"noImplicitReturns" : true,
+		"strictNullChecks": true,
 		"removeComments": true
     }
 }

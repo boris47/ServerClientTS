@@ -4,8 +4,10 @@ import * as https from 'https';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { IServerInfo, IClientRequestResult } from '../Common/Interfaces'
-import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
+import { IServerConfigs, IClientRequestResult } from '../Common/Interfaces'
+import { IClientRequestInternalOptions } from './Client.Requests';
+import * as ClientWebSocket from './Client.WebSocket';
+import { IRequestsMethods, RequestsMap } from './Client.RequestsMap';
 
 
 let serverPublicIp = "0.0.0.0";// "0.0.0.0";
@@ -13,8 +15,8 @@ const serverConfigFileName = './ServerCfg.json';
 if ( fs.existsSync( serverConfigFileName ) )
 {
 	const fileContent = fs.readFileSync( serverConfigFileName, 'utf8' );
-	const fileJson : IServerInfo = JSON.parse( fileContent );
-	serverPublicIp = fileJson.ServerIp;
+	const fileJson : IServerConfigs = JSON.parse( fileContent );
+	serverPublicIp = fileJson.PublicIP || serverPublicIp;
 }
 
 const CommonOptions : http.RequestOptions = {
@@ -68,7 +70,7 @@ async function ProcessRequest( request : IClientRequest ) : Promise<void>
 	}
 	else
 	{
-		const err = `Request "${request.path}" failed\nServer Say:\n${result.body.toString()}`;
+		const err = `Request "${request.path}" failed\nServer Say:\n${result.body?.toString()}`;
 		console.error( err );
 		return request.OnReject?.call( request, new Error( err ) );
 	}
@@ -110,7 +112,7 @@ async function RequestServerPing() : Promise<boolean>
 
 async function RequestGetData<T>( key : string ) : Promise<T|null>
 {
-	return new Promise<T|null>(( resolve : (value: T) => void ) =>
+	return new Promise<T|null>(( resolve : (value: T|null) => void ) =>
 	{
 		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Key: key },
 			( body: Buffer ) =>
@@ -181,6 +183,7 @@ async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
 
 async function Main()
 {
+	const bResult = await ClientWebSocket.Client_SetupWebSocket();
 	{
 		RequestServerPing()
 		.then( ( bCanContinue : boolean ) =>
@@ -201,7 +204,7 @@ async function Main()
 		})
 		.then( ( value: string | null ) =>
 		{
-			console.log( "Value", value.toString() );
+			console.log( "Value", value?.toString() );
 		})
 		.catch( reason => console.error(reason) );
 
@@ -232,75 +235,6 @@ async function Main()
 
 
 
-
-
-
-import { client as WebSocketClient, IClientConfig, connection as WebSocketConnection, IMessage } from 'websocket';
-import { IRequestsMethods, RequestsMap } from './Client.RequestsMap';
-
-{
-	const config = <IClientConfig>
-	{
-	//	assembleFragments : false 					// Default
-	//	closeTimeout : 5000, 						// Default 5000
-	//	fragmentOutgoingMessages : true,			// Default true
-	//	fragmentationThreshold : 16					// Default 16 ( Kib )
-	//	maxReceivedFrameSize : 1					// Default 1 ( Mib )
-	//	maxReceivedMessageSize: 8					// Default 8 ( Mib )
-	/*	tlsOptions	: <https.RequestOptions>
-		{
-
-		}
-	*/
-	//	webSocketVersion : 13						/// Default 13
-	}
-
-	const webSocketClient = new WebSocketClient( config );
-
-	webSocketClient.on( 'connectFailed', function( err : Error )
-	{
-		console.log( 'Connect Error: ' + err.toString() );
-	});
-	
-	webSocketClient.on( 'connect', ( connection: WebSocketConnection ) =>
-	{
-		console.log( 'WebSocket Client Connected' );
-
-		connection.on('error', ( err: Error ) =>
-		{
-			console.error( `Connection Error: "${err.name}:${err.message}"` );
-		});
-
-		connection.on( 'close', ( code: number, desc: string ) =>
-		{
-			console.log('echo-protocol Connection Closed');
-		});
-
-		connection.on( 'message', ( data: IMessage ) =>
-		{
-			let buffered : Buffer = null;
-			switch( data.type )
-			{
-				case 'utf8' :
-				{
-					buffered = Buffer.from( data.utf8Data );
-					console.log("Received: '" + data.utf8Data + "'");
-					connection.send( "Ciao, sono un client" );
-					break;
-				}
-				case 'binary' :
-				{
-					buffered = Buffer.from( data.binaryData );
-					break;
-				}
-			}
-		});
-
-		connection.send( "Ciao, sono un client" );
-	});
-
-	webSocketClient.connect( 'ws://localhost:3001/websocket', 'echo-protocol' );
-}
 
 
 

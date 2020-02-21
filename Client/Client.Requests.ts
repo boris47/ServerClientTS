@@ -26,7 +26,8 @@ export class ClientRequests {
 
 	public static async DownloadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		options.path += `?file=${path.parse( clientRequestInternalOptions.AbsoluteFilePath ).base}`;
+		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath = '';
+		options.path += `?file=${path.parse( absoluteFilePath ).base}`;
 		options.method = 'get';
 
 		const result : IClientRequestResult = await ClientRequests.Request_GET( options, <IClientRequestInternalOptions>{} );
@@ -37,9 +38,9 @@ export class ClientRequests {
 
 		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
 		{
-			const folderPath = path.parse( clientRequestInternalOptions.AbsoluteFilePath ).dir;
+			const folderPath = path.parse( absoluteFilePath ).dir;
 			FSUtils.EnsureDirectoryExistence(folderPath);
-			fs.writeFile( clientRequestInternalOptions.AbsoluteFilePath, result.body, function( err : NodeJS.ErrnoException )
+			fs.writeFile( absoluteFilePath, result.body, function( err : NodeJS.ErrnoException )
 			{
 				resolve( !err );
 			});
@@ -58,7 +59,7 @@ export class ClientRequests {
 
 	public static async UploadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		const AbsoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath;
+		const AbsoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath = '';
 
 		// Check if file exists
 		if ( fs.existsSync( AbsoluteFilePath ) === false )
@@ -105,7 +106,7 @@ export class ClientRequests {
 			const request : http.ClientRequest = http.request( options );
 			request.on( 'response', ( response: http.IncomingMessage ) : void =>
 			{
-				const statusCode : number = response.statusCode;
+				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
 					ComUtils.ResolveWithError( 'ClientRequests:Request_GET', `${response.statusCode}:${response.statusMessage}`, resolve );
@@ -152,7 +153,7 @@ export class ClientRequests {
 			const request : http.ClientRequest = http.request( options );
 			request.on( 'response', ( response: http.IncomingMessage ) : void =>
 			{
-				const statusCode : number = response.statusCode;
+				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
 					ComUtils.ResolveWithError( "ClientRequests:Request_PUT", `${response.statusCode}:${response.statusMessage}`, resolve );
