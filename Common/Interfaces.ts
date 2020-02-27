@@ -25,3 +25,13 @@ export interface IServerResponseResult extends ICommonResult
 {
 
 }
+
+export interface IURLParseResult {
+
+	KeyValues : Map<string, string>;
+
+	Switches : string[];
+
+	Arrays : Map<string, string[]>;
+
+}

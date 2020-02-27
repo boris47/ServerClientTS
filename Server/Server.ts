@@ -7,12 +7,11 @@ import * as fs from 'fs';
 import { server as WebSocketServer, IServerConfig, connection as WebSocketConnection, request as WebSocketRequest, IMessage } from 'websocket';
 
 import  * as GenericUtils from '../Common/GenericUtils';
+import * as ComUtils from '../Common/ComUtils';
 import { AsyncHttpResponse } from './HttpResponse';
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
-import { ServerStorage } from './Server.Storage';
+import { IServerStorage, StorageManager, EStorageType } from './Server.Storage';
 import { ServerConfigs } from './Server.Configs';
-
-
 
 
 const ConnectedClients = new Array<WebSocketConnection>();
@@ -169,45 +168,13 @@ async function CreateServer() : Promise<boolean>
 	return bResult;
 }
 
-async function HTTP_Get( url : string ) : Promise<string | null>
-{
-	return await new Promise<string | null>( ( resolve ) =>
-	{
-		const request = https.get( url, function( response : http.IncomingMessage )
-		{
-			let rawData = "";
-			response.on('data', function( chunk : any )
-			{
-				rawData += chunk;
-			});
-
-			response.on('end', function()
-			{
-				resolve( rawData.trim() );
-			});
-
-			response.on( "error", function( err: Error )
-			{
-				console.error( "HTTP_Get:\t", err.name, err.message );
-				resolve( null );
-			})
-		});
-
-		request.on( "error", function( err: Error )
-		{
-			console.error( "HTTP_Get:\t", err.name, err.message );
-			resolve( null );
-		});
-	})
-}
-
 async function UploadConfigurationFile() : Promise<boolean>
 {
 	let bResult = true;
 	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-	const publicIPv6 : string | null = await HTTP_Get( url_v6 );
-	const publicIPv4 : string | null = await HTTP_Get( url_v4 );
+	const publicIPv6 : string | null = await ComUtils.HTTP_Get( url_v6 );
+	const publicIPv4 : string | null = await ComUtils.HTTP_Get( url_v4 );
 	
 	if ( publicIPv6 )
 	{
@@ -242,20 +209,28 @@ async function UploadConfigurationFile() : Promise<boolean>
 async function Main()
 {
 	{
-		await ServerStorage.CreateStorage();
-		const bResult = await ServerStorage.Load();
-		if ( !bResult )
-		{
-			console.error( "Storage unavailable" );
-			process.exit(1);
-		}
-	}
-
-	{
 		const publicIp = await UploadConfigurationFile();
 		if ( !publicIp )
 		{
 			console.error( "Cannot retrieve public ip" );
+			process.exit(1);
+		}
+	}
+
+	const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
+	const remoteStorage = await StorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
+	{
+		const bResultLocal = await localStorage.LoadStorage();
+		if ( !bResultLocal )
+		{
+			console.error( "Local Storage Unavailable" );
+			process.exit(1);
+		}
+		
+		const bResultRemote = await remoteStorage.LoadStorage();
+		if ( !bResultRemote )
+		{
+			console.error( "Remote Storage Unavailable" );
 			process.exit(1);
 		}
 	}
@@ -274,7 +249,7 @@ async function Main()
 		{
 			await GenericUtils.DelayMS( 1000 );
 	
-			await ServerStorage.Save();
+			await localStorage.SaveStorage();
 		}
 	}
 

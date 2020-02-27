@@ -108,6 +108,7 @@ export class ServerResponses {
 		return ServerResponses.Request_GET( request, response, serverRequestInternalOptions );
 	}
 
+
 	/** End the response with value passed with 'serverRequestInternalOptions' */
 	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{
@@ -146,6 +147,7 @@ export class ServerResponses {
 		});
 	}
 
+	
 	/** Receive data storing them into buffer inside returne value body */
 	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
 	{

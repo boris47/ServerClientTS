@@ -1,5 +1,5 @@
 {
-	"ServerPublicIP": "109.117.38.36",
-	"ServerWebSocketPort": -1,
-	"ServerRequestsListenerPort": -1
+	"ServerPublicIP": "2001:b07:ae6:2f48:d135:dbf0:ab5f:cc72",
+	"ServerWebSocketPort": 3001,
+	"ServerRequestsListenerPort": 3000
 }

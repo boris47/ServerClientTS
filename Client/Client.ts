@@ -114,7 +114,7 @@ async function RequestGetData<T>( key : string ) : Promise<T|null>
 {
 	return new Promise<T|null>(( resolve : (value: T|null) => void ) =>
 	{
-		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Key: key },
+		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Storage:'local', Key: key },
 			( body: Buffer ) =>
 			{
 				resolve( <T>( <unknown>body ) );
@@ -131,7 +131,7 @@ async function RequestSetData( Key : string, Value: any ) : Promise<boolean>
 {
 	return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 	{
-		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Key : Key, Value: Value },
+		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Storage:'local', Key : Key, Value: Value },
 			( body: Buffer ) =>
 			{
 				resolve( true );

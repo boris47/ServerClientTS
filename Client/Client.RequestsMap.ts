@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 
-import { IClientRequestResult } from '../Common/Interfaces'
+import { IClientRequestResult } from '../Common/Interfaces';
 import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
 
 export interface IRequestsMethods
@@ -47,6 +47,11 @@ export const RequestsMap : ServerResponseMap = {
 		},
 
 		put: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
+		},
+
+		delete: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 		{
 			return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
 		},

@@ -7,12 +7,14 @@ import * as FSUtils from '../Common/FSUtils';
 import * as ComUtils from '../Common/ComUtils';
 import { IClientRequestResult } from '../Common/Interfaces';
 import * as mime from 'mime-types';
-import { RequestsMap } from './Client.RequestsMap';
+import * as Genericutils from '../Common/Genericutils';
+import { Client_UrlPathBuilder } from './Client.UrlPathBuilder';
 
 
 export interface IClientRequestInternalOptions
 {
 	AbsoluteFilePath? : string;
+	Storage?: string;
 	Key? : string;
 	Value? : any;
 	Headers? : {
@@ -27,8 +29,8 @@ export class ClientRequests {
 	public static async DownloadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
 		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
-		options.path += `?file=${path.parse( absoluteFilePath ).base}`;
 		options.method = 'get';
+		options.path = new Client_UrlPathBuilder( options.path ).AddKeyValue( 'file', path.parse( absoluteFilePath ).base ).Get();
 
 		const result : IClientRequestResult = await ClientRequests.Request_GET( options, <IClientRequestInternalOptions>{} );
 		if ( !result.bHasGoodResult )
@@ -88,7 +90,7 @@ export class ClientRequests {
 			'content-length' : sizeInBytes
 		};
 		clientRequestInternalOptions.FileStream = fs.createReadStream( AbsoluteFilePath );
-		options.path += `?file=${filePathParsed.base}`;
+		options.path = new Client_UrlPathBuilder( options.path ).AddKeyValue( 'file', filePathParsed.base ).Get();
 
 		return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
 	}
@@ -98,9 +100,12 @@ export class ClientRequests {
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
-			if ( clientRequestInternalOptions.Key )
+			if ( clientRequestInternalOptions.Storage && clientRequestInternalOptions.Key )
 			{
-				options.path += `?key=${clientRequestInternalOptions.Key}`
+				options.path = new Client_UrlPathBuilder( options.path )
+				.AddKeyValue( 'stg', clientRequestInternalOptions.Storage )
+				.AddKeyValue( 'key', clientRequestInternalOptions.Key )
+				.Get();
 			}
 
 			const request : http.ClientRequest = http.request( options );
@@ -145,10 +150,14 @@ export class ClientRequests {
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
-			if ( clientRequestInternalOptions.Key )
+			if ( clientRequestInternalOptions.Storage && clientRequestInternalOptions.Key )
 			{
-				options.path += `?key=${clientRequestInternalOptions.Key}`
+				options.path = new Client_UrlPathBuilder( options.path )
+				.AddKeyValue( 'stg', clientRequestInternalOptions.Storage )
+				.AddKeyValue( 'key', clientRequestInternalOptions.Key )
+				.Get();
 			}
+			
 
 			const request : http.ClientRequest = http.request( options );
 			request.on( 'response', ( response: http.IncomingMessage ) : void =>

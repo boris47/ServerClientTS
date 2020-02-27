@@ -2,6 +2,7 @@
 import * as ipRegex from 'ip-regex';
 import { IServerConfigs } from '../Common/Interfaces';
 
+
 export class ServerConfigs implements IServerConfigs {
 	
 	public get PublicIP() : string

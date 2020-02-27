@@ -12,7 +12,8 @@ export namespace AWSUtils {
 
 	export class S3 {
 
-		public CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.S3
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.S3
 		{
 			// Locking API Version and region
 			const s3Instance = new AWS.S3( { apiVersion: '2016-11-15', region: region } );
@@ -46,6 +47,8 @@ export namespace AWSUtils {
 			return s3Instance;
 		}
 
+
+		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async ListObjects( s3Instance : AWS.S3, bucketName : string , prefixes : string[] = new Array<string>(), bFilterFolders : boolean = false ) : Promise<AWS.S3.Object[] | null>
 		{
 			const objectsArray = new Array<AWS.S3.Object>();
@@ -86,7 +89,7 @@ export namespace AWSUtils {
 					})
 					.catch( ( error : AWS.AWSError ) =>
 					{
-						console.error( `AWSUtils:S3_ListAllObjects: Some problem while trying to list object from "${bucketName}"\nReason: ${error}` );
+						console.error( `AWSUtils:S3:ListAllObjects: There was a problem trying to list object from "${bucketName}"\nReason: ${error}` );
 						bErrorFound = true;
 					} )
 				}
@@ -100,99 +103,87 @@ export namespace AWSUtils {
 			return objectsArray;
 		}
 
-		public static async DownloadResource( s3Instance : AWS.S3, bucketName : string, key : string, absoluteFilePath : string ) : Promise<boolean>
-		{
-			const result = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
-			{
-				const writeStream = fs.createWriteStream( absoluteFilePath );
-				writeStream.on( "error", ( err: Error ) =>
-				{
-					console.error( `AWSUtils:S3_DownloadResource: Some problem while trying to download from "${bucketName}" the resource "${key}"\nError: ${err}` );
-					resolve(false);
-				});
 
-				// Retrieves objects from Amazon S3.
-				const awsStream = s3Instance.getObject( <AWS.S3.GetObjectRequest>
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async DownloadResource( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<Buffer | null>
+		{
+			return new Promise<Buffer | null>( ( resolve : ( value?: Buffer | null ) => void ) =>
+			{
+				const request = s3Instance.getObject( <AWS.S3.GetObjectRequest>
 					{
 						Bucket : bucketName,
-						Key : key
+						Key : key,
 					}
-				).createReadStream();
+				);
 				
-				awsStream.on( "error", ( err: Error ) =>
+				const buffer = new Buffer(0);
+				request.on( 'httpData', ( chunk : Buffer | Uint8Array ) => buffer.write( chunk.toString('base64') ) );
+				request.on( 'httpDone', () => resolve( buffer ) );
+				request.on( 'error', ( err: AWS.AWSError, response: AWS.Response<AWS.S3.GetObjectOutput, AWS.AWSError> ) =>
 				{
-					console.error( `AWSUtils:S3_DownloadResource: Some problem while trying to download from "${bucketName}" the resource "${key}"\nError: ${err}` );
-					resolve(false);
+					console.error( `AWSUtils:S3:DownloadResource: There was a problem trying to download from "${bucketName}" key "${key} "\nError: ${err}` );
+					resolve(null);
 				});
-				
-				awsStream.on( "end", () =>
-				{
-					resolve(true);
-				});
-
-				awsStream.pipe( writeStream );
+				request.send();
 			});
-			return result;
 		}
 		
-		public static async DownloadResources( s3Instance : AWS.S3, bucketName : string, keys : string[], absoluteDestinationFolderPath : string ) : Promise<string[]>
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async DownloadResources( s3Instance : AWS.S3, bucketName : string, keys : string[] ) : Promise<( Buffer | null )[]>
 		{
-			const promises = new Array<Promise<boolean>>();
+			const promises = new Array<Promise<( Buffer | null )>>();
 			const results = new Array<string>();
-			keys.forEach( key =>
+			keys.forEach( ( key: string ) =>
 			{
-				const fileName : string = path.parse( key ).base;
-				const absoluteFilePath = path.join( absoluteDestinationFolderPath, fileName );
-				const promise = this.DownloadResource( s3Instance, bucketName, key, absoluteFilePath );
-				promise.then( () => results.push( absoluteFilePath ) );
+				const promise = this.DownloadResource( s3Instance, bucketName, key );
+				promise.then( (result) => result ? results.push( key ) : null );
 				promises.push( promise );
 			});
-			return Promise.all( promises ).then( () => results );
+			return Promise.all( promises );
 		}
 
-		public static async UploadResource( s3Instance : AWS.S3, bucketName : string, key : string, absoluteInputFilePath : string ) : Promise<boolean>
-		{
-			if ( !fs.existsSync( absoluteInputFilePath ) )
-			{
-				console.error( `AWSUtils:S3_UploadResource: Cannot find file "${absoluteInputFilePath}"` );
-				return false;
-			}
 
-			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async UploadResource( s3Instance : AWS.S3, bucketName : string, key : string, body : AWS.S3.Body ) : Promise<boolean>
+		{
+			return new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
 			{
 				s3Instance.putObject( <AWS.S3.PutObjectRequest>
 					{
 						Bucket: bucketName,
 						Key: key,
-						Body: fs.readFileSync( absoluteInputFilePath )
+						Body: body
 					},
 					( err : AWS.AWSError, data : AWS.S3.PutObjectOutput ) =>
 					{
 						if ( err )
 						{
-							console.error( `AWSUtils:S3_UploadResource: Some problem while trying to upload on "${bucketName}" with key "${key} file "${absoluteInputFilePath}"\nError: ${err}` );
+							console.error( `AWSUtils:S3:UploadResource: There was a problem trying to upload on "${bucketName}" with key "${key} file "${body}"\nError: ${err}` );
 						}
 						resolve( !err );
 					}
 				);
 			});
-
-			return bResult;
 		}
 
-		public static async UploadResources( s3Instance : AWS.S3, bucketName : string, keys : Map<string, string> ) : Promise<string[]>
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async UploadResources( s3Instance : AWS.S3, bucketName : string, keys : Map<string, Buffer> ) : Promise<string[]>
 		{
 			const promises = new Array<Promise<boolean>>();
 			const results = new Array<string>();
-			keys.forEach( ( value: string, key: string ) =>
+			keys.forEach( ( value: Buffer, key: string ) =>
 			{
 				const promise = this.UploadResource( s3Instance, bucketName, key, value );
-				promise.then( () => results.push( key ) );
+				promise.then( (bResult: boolean) => bResult ? results.push( key ) : null );
 				promises.push( promise );
 			});
 			return Promise.all( promises ).then( () => results );
 		}
 
+
+		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async CopyObject( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, key : string, bMustReplace : boolean = true ) : Promise<boolean>
 		{
 			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
@@ -212,7 +203,7 @@ export namespace AWSUtils {
 					{
 						if ( err )
 						{
-							console.error( err.name, err.message ); // an error occurred
+							console.error( `AWSUtils:S3:CopyObject: There was a problem copying from "${sourceBucketName}" to "${destBucketName}" of object "${key}"\nError: ${err}` );
 						}
 						resolve( !err );
 					}
@@ -221,6 +212,8 @@ export namespace AWSUtils {
 			return bResult;
 		}
 
+
+		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async CopyObjects( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, keys : string[], bMustReplace : boolean = true ) : Promise<string[]>
 		{
 			const promises = new Array<Promise<boolean>>();
@@ -228,12 +221,53 @@ export namespace AWSUtils {
 			keys.forEach( key =>
 			{
 				const promise = this.CopyObject( s3Instance, sourceBucketName, destBucketName, key, bMustReplace );
-				promise.then( () => results.push( key ) );
+				promise.then( (bResult: boolean) => bResult ? results.push( key ) : null );
 				promises.push( promise );
 			});
 			return Promise.all( promises ).then( () => results );
 		}
 
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async RemoveResource( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<boolean>
+		{
+			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
+			{
+				s3Instance.deleteObject( <AWS.S3.DeleteObjectRequest>
+					{
+						Bucket : bucketName,
+						Key : key
+					},
+					( err : AWS.AWSError, data : AWS.S3.DeleteObjectOutput ) =>
+					{
+						if ( err )
+						{
+							console.error( `AWSUtils:S3:RemoveResource: There was a problem removing from "${bucketName}" the object "${key}"\nError: ${err}` );
+						}
+						resolve( !err );
+					}
+				)
+			});
+			return bResult;
+		}
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		public static async RemoveResources( s3Instance : AWS.S3, bucketName : string, keys : string[] ) : Promise<string[]>
+		{
+			const promises = new Array<Promise<boolean>>();
+			const results = new Array<string>();
+			keys.forEach( key =>
+			{
+				const promise = this.RemoveResource( s3Instance, bucketName, key );
+				promise.then( (bResult: boolean) => bResult ? results.push( key ) : null );
+				promises.push( promise );
+			});
+			return Promise.all( promises ).then( () => results );
+		}
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<AWS.S3.HeadObjectOutput | null>
 		{
 			const result = await new Promise<AWS.S3.HeadObjectOutput | null>( ( resolve : (value?: AWS.S3.HeadObjectOutput | null) => void ) => 
@@ -247,7 +281,7 @@ export namespace AWSUtils {
 					{
 						if ( err )
 						{
-							console.error( `AWSUtils:GetObjectMetadata: Some problem while trying to get metadata for "${bucketName}/${key}"\nError: ${err}` );
+							console.error( `AWSUtils:GetObjectMetadata: There was a problem trying to get metadata for "${bucketName}/${key}"\nError: ${err}` );
 						}
 						resolve( err ? null : data );
 					}
@@ -329,7 +363,7 @@ export namespace AWSUtils {
 		
 		};
 
-		public CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.EC2
+		public static CreateInstance( accessKeyId : string, secretAccessKey : string, region: string, sessionToken? : string ) : AWS.EC2
 		{
 			// Locking API Version and region
 			const ec2Instance = new AWS.EC2( { apiVersion: '2016-11-15', region: region } );
@@ -372,21 +406,20 @@ export namespace AWSUtils {
 			console.log( `StartInstance: Going to start instance ${InstanceID}` );
 			return await new Promise<boolean>( (resolve) =>
 			{
-				EC2Instance.startInstances
-				(
-					<AWS.EC2.StartInstancesRequest>{ InstanceIds : [InstanceID] },
+				EC2Instance.startInstances( <AWS.EC2.StartInstancesRequest>
+					{
+						InstanceIds : [InstanceID]
+					},
 					( err: AWS.AWSError, data: AWS.EC2.StartInstancesResult ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
+						if ( err )
 						{
-							console.error( err, err.stack );
-							debugger;
+							console.error( `AWSUtils:EC2:StartInstance: There was a problem trying to start instance ${InstanceID}"\nError: ${err}` );
 						}
-						resolve( bResult );
+						resolve( !err );
 					}
 				)
-			} );
+			});
 		}
 
 
@@ -400,21 +433,20 @@ export namespace AWSUtils {
 			console.log( `StopInstance: Going to stop instance ${InstanceID}` );
 			return new Promise<boolean>( (resolve) =>
 			{
-				EC2Instance.stopInstances
-				(
-					<AWS.EC2.StopInstancesRequest>{ InstanceIds : [InstanceID] },
+				EC2Instance.stopInstances( <AWS.EC2.StopInstancesRequest>
+					{
+						InstanceIds : [InstanceID]
+					},
 					( err: AWS.AWSError, data: AWS.EC2.StopInstancesResult ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
+						if ( err )
 						{
-							console.error( err, err.stack );
-							debugger;
+							console.error( `AWSUtils:EC2:StartInstance: There was a problem trying to stop instance ${InstanceID}"\nError: ${err}` );
 						}
-						resolve( bResult );
+						resolve( !err );
 					}
 				)
-			} );
+			});
 		}
 
 
@@ -464,11 +496,11 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstanceStatus( EC2Instance : AWS.EC2, InstanceID : string ) : Promise<AWS.EC2.InstanceStatus | null>
 		{
-			console.log( `DescribeInstanceStatus: Going to describe status of instance ${InstanceID}` );
+			console.log( `AWSUtils:EC2:DescribeInstanceStatus: Going to describe status of instance ${InstanceID}` );
 			const status : AWS.EC2.InstanceStatus | null = await this.DescribeInstanceStatus_Internal( EC2Instance, InstanceID );
 			if ( !status )
 			{
-				console.error( `DescribeInstanceStatus: Cannot describe status for instance ${InstanceID}!!` );
+				console.error( `AWSUtils:EC2:DescribeInstanceStatus: Cannot describe status for instance ${InstanceID}!!` );
 			}
 			return status;
 		}
@@ -480,21 +512,20 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstance( EC2Instance : AWS.EC2, InstanceID : string ) : Promise<AWS.EC2.Instance | null>
 		{
-			console.log( `DescribeInstance: Going to describe instance ${InstanceID}` );
+			console.log( `AWSUtils:EC2:DescribeInstance: Going to describe instance ${InstanceID}` );
 			const result = await new Promise<AWS.EC2.DescribeInstancesResult | null>( (resolve) =>
 			{
-				EC2Instance.describeInstances
-				(
-					<AWS.EC2.DescribeInstancesRequest>{ InstanceIds : [InstanceID] },
+				EC2Instance.describeInstances( <AWS.EC2.DescribeInstancesRequest>
+					{
+						InstanceIds : [InstanceID]
+					},
 					( err: AWS.AWSError, data: AWS.EC2.DescribeInstancesResult ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
+						if ( err )
 						{
-							console.error( err, err.stack );
-							debugger;
+							console.error( `AWSUtils:EC2:StartInstance: There was a problem trying to describe instance ${InstanceID}"\nError: ${err}` );
 						}
-						resolve( bResult ? data : null );
+						resolve( !err ? data : null );
 					}
 				)
 			} );
@@ -508,7 +539,7 @@ export namespace AWSUtils {
 				}
 			}
 
-			console.error( `DescribeInstance: Cannot describe instance ${InstanceID}!!` );
+			console.error( `AWSUtils:EC2:DescribeInstance: Cannot describe instance ${InstanceID}!!` );
 			debugger;
 			return null;
 		}
@@ -525,13 +556,13 @@ export namespace AWSUtils {
 			{
 				const responseObject : IInstanceIPs =
 				{
-					public_IPv4 : instanceData.PublicIpAddress ? instanceData.PublicIpAddress : '',
-					public_IPv4_DNS : instanceData.PublicDnsName ? instanceData.PublicDnsName : ''
+					public_IPv4 : instanceData?.PublicIpAddress,
+					public_IPv4_DNS : instanceData?.PublicDnsName
 				}
 				return responseObject;
 			}
 
-			console.error( `GetInstanceIPs: Cannot get ips for instance ${InstanceID}!!` );
+			console.error( `AWSUtils:EC2:GetInstanceIPs: Cannot get ips for instance ${InstanceID}!!` );
 			debugger;
 			return null;
 		}
@@ -545,7 +576,7 @@ export namespace AWSUtils {
 		public async HasInstanceDesiredState( EC2Instance : AWS.EC2, InstanceID : string, desiredState : EInstanceStateCode ) : Promise<boolean | null>
 		{
 			const desiredStateName = AWSUtils.EC2.GetInstanceStateNameByCode( desiredState );
-			console.log( `HasInstanceDesiredState: Going to check if instance ${InstanceID} has state "${desiredStateName}"` );
+			console.log( `AWSUtils:EC2:HasInstanceDesiredState: Going to check if instance ${InstanceID} has state "${desiredStateName}"` );
 
 			const status : AWS.EC2.InstanceStatus | null = await this.DescribeInstanceStatus_Internal( EC2Instance, InstanceID );
 			if ( status && status.InstanceState )
@@ -553,7 +584,7 @@ export namespace AWSUtils {
 				return status.InstanceState.Code === desiredState;
 			}
 
-			console.error( `HasInstanceDesiredState: Cannot chech status for instance ${InstanceID}!!` );
+			console.error( `AWSUtils:EC2:HasInstanceDesiredState: Cannot chech status for instance ${InstanceID}!!` );
 			debugger;
 			return null;
 		}
@@ -567,7 +598,7 @@ export namespace AWSUtils {
 		public async WaitForInstanceStateChange( EC2Instance : AWS.EC2, InstanceID : string, desiredState : EInstanceStateCode, desiredSystemStatus? : AWS.EC2.SummaryStatus ) : Promise<boolean | null>
 		{
 			const desiredStateName = AWSUtils.EC2.GetInstanceStateNameByCode( desiredState );
-			console.log( `WaitForInstanceStateChange: Going to wait instance ${InstanceID} to reach state "${desiredStateName}"` );
+			console.log( `AWSUtils:EC2:WaitForInstanceStateChange: Going to wait instance ${InstanceID} to reach state "${desiredStateName}"` );
 			if ( desiredSystemStatus )
 			{
 				console.log( `\tWith System status "${desiredSystemStatus}"` );
@@ -606,13 +637,13 @@ export namespace AWSUtils {
 					}
 					else
 					{
-						console.error( `WaitForInstanceStateChange: Failed to obtain Instance State of ${InstanceID}` );
+						console.error( `AWSUtils:EC2:WaitForInstanceStateChange: Failed to obtain Instance State of ${InstanceID}` );
 						debugger;
 					}
 				}
 				else
 				{
-					console.error( `WaitForInstanceStateChange: Failed to Describe Instance of ${InstanceID}` );
+					console.error( `AWSUtils:EC2:WaitForInstanceStateChange: Failed to Describe Instance of ${InstanceID}` );
 					debugger;
 				}
 
@@ -622,7 +653,7 @@ export namespace AWSUtils {
 			// Timeout is reached
 			if ( bForcedToReturn )
 			{
-				console.error( "ERROR: WaitForInstanceStateChange: Forced to return because timeout reached!!!" );
+				console.error( "AWSUtils:EC2:WaitForInstanceStateChange: Forced to return because timeout reached!!!" );
 				debugger;
 				return null
 			}
@@ -643,28 +674,28 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstanceAttribute( EC2Instance : AWS.EC2, InstanceID : string, attribute : AWS.EC2.InstanceAttributeName ) : Promise<AWS.EC2.InstanceAttribute | null>
 		{
-			console.log( `DescribeInstanceAttribute: Going to describe instance ${InstanceID}` );
+			console.log( `AWSUtils:EC2:DescribeInstanceAttribute: Going to describe instance ${InstanceID}` );
 			const result = await new Promise<AWS.EC2.InstanceAttribute | null>( (resolve) =>
 			{
-				EC2Instance.describeInstanceAttribute
-				(
-					<AWS.EC2.DescribeInstanceAttributeRequest>{ InstanceId : InstanceID, Attribute : attribute },
+				EC2Instance.describeInstanceAttribute( <AWS.EC2.DescribeInstanceAttributeRequest>
+					{
+						InstanceId : InstanceID,
+						Attribute : attribute
+					},
 					( err: AWS.AWSError, data: AWS.EC2.InstanceAttribute ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
+						if ( err )
 						{
-							console.error( err, err.stack );
-							debugger;
+							console.error( `AWSUtils:EC2:DescribeInstanceAttribute: There was a problem trying to describe instance attribute ${attribute} for instance ${InstanceID}"\nError: ${err}` );
 						}
-						resolve( bResult ? data : null );
+						resolve( !err ? data : null );
 					}
 				)
-			} );
+			});
 
 			if ( !result )
 			{
-				console.error( `DescribeInstanceAttribute: Cannot describe attribute ${attribute} instance ${InstanceID}!!` );
+				console.error( `AWSUtils:EC2:DescribeInstanceAttribute: Cannot describe attribute ${attribute} for instance ${InstanceID}!!` );
 				debugger;
 			}
 			return result;
@@ -679,10 +710,10 @@ export namespace AWSUtils {
 		 */
 		public async ModifyInstanceAttribute( EC2Instance : AWS.EC2, InstanceID : string, attributeName : AWS.EC2.InstanceAttributeName, value : string ) : Promise<boolean | null>
 		{
-			console.log( `ModifyInstanceAttribute: Going to describe instance ${InstanceID}` );
+			console.log( `AWSUtils:EC2:ModifyInstanceAttribute: Going to describe instance ${InstanceID}` );
 			const result = await new Promise<boolean>( (resolve) =>
 			{
-				const params : any =
+				const params : AWS.EC2.ModifyInstanceAttributeRequest =
 				{
 					// The ID of the instance.
 					InstanceId : InstanceID
@@ -693,20 +724,18 @@ export namespace AWSUtils {
 					params,
 					( err: AWS.AWSError, data: {} ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
+						if ( err )
 						{
-							console.error( err, err.stack );
-							debugger;
+							console.error( `AWSUtils:EC2:ModifyInstanceAttribute: There was a problem trying to modify instance attribute ${attributeName} for instance ${InstanceID}"\nError: ${err}` );
 						}
-						resolve( bResult );
+						resolve( !err );
 					}
 				)
 			} );
 
 			if ( !result )
 			{
-				console.error( `ModifyInstanceAttribute: Cannot modify attribute ${attributeName} instance ${InstanceID}!!` );
+				console.error( `AWSUtils:EC2:ModifyInstanceAttribute: Cannot modify attribute ${attributeName} for instance ${InstanceID}!!` );
 				debugger;
 			}
 			return result;
@@ -718,18 +747,14 @@ export namespace AWSUtils {
 		{
 			const status : AWS.EC2.DescribeInstanceStatusResult | null = await new Promise<AWS.EC2.DescribeInstanceStatusResult | null>( (resolve) =>
 			{
-				EC2Instance.describeInstanceStatus
-				(
-					<AWS.EC2.DescribeInstanceStatusRequest>{ IncludeAllInstances: true, InstanceIds : [InstanceID] },
+				EC2Instance.describeInstanceStatus( <AWS.EC2.DescribeInstanceStatusRequest>
+					{
+						InstanceIds : [InstanceID],
+						IncludeAllInstances: true
+					},
 					( err: AWS.AWSError, data: AWS.EC2.DescribeInstanceStatusResult ) =>
 					{
-						const bResult = !err;
-						if ( !bResult )
-						{
-							console.error( err, err.stack );
-							debugger;
-						}
-						resolve( bResult ? data : null );
+						resolve( !err ? data : null );
 					}
 				)
 			} );
