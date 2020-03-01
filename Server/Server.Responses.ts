@@ -163,7 +163,7 @@ export class ServerResponses {
 
 			request.on( 'data', function( chunk : any )
 			{
-				body.push( chunk );
+				body.push( Buffer.from( chunk ) );
 			});
 			
 			request.on( 'end', function()

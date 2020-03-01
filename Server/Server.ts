@@ -1,16 +1,20 @@
 
 import * as http from 'http';
 import * as net from 'net';
-import * as https from 'https';
 import * as fs from 'fs';
 
-import { server as WebSocketServer, IServerConfig, connection as WebSocketConnection, request as WebSocketRequest, IMessage } from 'websocket';
+import {
+	server as WebSocketServer,
+	IServerConfig,
+	connection as WebSocketConnection,
+	request as WebSocketRequest, IMessage
+} from 'websocket';
 
 import  * as GenericUtils from '../Common/GenericUtils';
 import * as ComUtils from '../Common/ComUtils';
 import { AsyncHttpResponse } from './HttpResponse';
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
-import { IServerStorage, StorageManager, EStorageType } from './Server.Storage';
+import { StorageManager, EStorageType } from './Server.Storages';
 import { ServerConfigs } from './Server.Configs';
 
 
@@ -29,12 +33,7 @@ async function CreateServer() : Promise<boolean>
 			const diff = currentTime - startTime;
 			return diff.toString();
 		};
-		console.log( [
-			`Request: ${request.url}`,
-			`Result: ${value.bHasGoodResult}`,
-			`Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`,
-			''
-		].join('\n') );
+		console.log( [ `Request: ${request.url}`, `Result: ${value.bHasGoodResult}`, `Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`, '' ].join('\n') );
 	};
 
 
@@ -84,7 +83,7 @@ async function CreateServer() : Promise<boolean>
 
 		server.listen( listenOptions, () =>
 		{
-			console.log( `Node server created at localhost, port:3000\n` );
+			console.log( `Node server created at localhost, port:3000` );
 		});
 }
 
@@ -97,7 +96,7 @@ async function CreateServer() : Promise<boolean>
 
 		const serverConfig = <IServerConfig>
 		{
-			httpServer : /*server*/ http.createServer().listen( 3001, '::' ),
+			httpServer : /*server*/ http.createServer().listen( 3001, '::', () => console.log( `WebSocket Server created at localhost, port:3001\n` ) ),
 
 		//	autoAcceptConnections : false
 		}
@@ -206,13 +205,40 @@ async function UploadConfigurationFile() : Promise<boolean>
 	return bResult;
 }
 
+import { AWSUtils } from './Utils/AWSUtils';
+
 async function Main()
 {
+	// Id: AKIA6RKO6FQQW6B5VDG2
+	// SecretKey: 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
+	const s3instnce = AWSUtils.S3.CreateInstance( 'AKIA6RKO6FQQW6B5VDG2', 'zB63p7Tu0jnFPTX+3GpCkuiYxTDp9HWYdIwoPOGN', 'eu-central-1' );
+	const bucketName = 'invrsion-productbank-development';
+	
+	/*	LIST TEST */
+//	const s3Objects = await AWSUtils.S3.ListObjects( s3instnce, bucketName, ['PRD'], true );
+//	console.log( s3Objects.length );
+
+	/*	MULTIPLE DONWLOAD TEST */
+//	const resKeys =
+//	[
+//		"PRD9999999999996_0/photo/thumbnail_bottom.png",
+//		"PRD9999999999996_0/photo/thumbnail_front.png",
+//		"PRD9999999999996_0/photo/thumbnail_left.png",
+//		"PRD9999999999996_0/photo/thumbnail_right.png",
+//		"PRD9999999999996_0/photo/thumbnail_top.png",
+//		"PRD9999999999996_0/photo/top.jpg",
+//		"PRD9999999999997_0/photo/back.jpg",
+//		"PRD9999999999997_0/photo/bottom.jpg",
+//		"PRD9999999999997_0/photo/front.jpg"
+//	];	
+//	const buffers = await AWSUtils.S3.DownloadResources( s3instnce, bucketName, resKeys );	
+//	return;
+
 	{
-		const publicIp = await UploadConfigurationFile();
-		if ( !publicIp )
+		const bHasCommittedConfigFile = await UploadConfigurationFile();
+		if ( !bHasCommittedConfigFile )
 		{
-			console.error( "Cannot retrieve public ip" );
+			console.error( "Cannot upload configuration file" );
 			process.exit(1);
 		}
 	}

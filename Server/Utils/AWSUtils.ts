@@ -1,6 +1,4 @@
 
-import * as path from 'path';
-import * as fs from 'fs';
 
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
@@ -49,37 +47,27 @@ export namespace AWSUtils {
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
+		/**
+		 * @returns AWS.S3.Object[] { Key : string, LastModified : Date, ETag : string, Size : number, StorageClass : string }
+		 */
 		public static async ListObjects( s3Instance : AWS.S3, bucketName : string , prefixes : string[] = new Array<string>(), bFilterFolders : boolean = false ) : Promise<AWS.S3.Object[] | null>
 		{
-			const objectsArray = new Array<AWS.S3.Object>();
-			prefixes.push("");
+			let objectsArray = new Array<AWS.S3.Object>();
+			if ( prefixes.length === 0 ) prefixes.unshift("");
 
-			/** AWS.S3.Object
+			const params : AWS.S3.ListObjectsV2Request = 
 			{
-				"Key": "PRD0000000000000_0/photo/back.jpg",
-				"LastModified": "2019-06-13T11:00:36.000Z",
-				"ETag": "\"db3989160b38b549ba961bd9c55bf984\"",
-				"Size": 29294,
-				"StorageClass": "STANDARD"
-			}
-			*/
+				// Name of the bucket to list.
+				Bucket: bucketName,
+			};
+
 			for ( let i = 0; i < prefixes.length; i++ )
 			{
 				const prefix : string = prefixes[i];
-				const params : AWS.S3.ListObjectsV2Request = 
-				{
-					// Name of the bucket to list.
-					Bucket: bucketName,
-					// Limits the response to keys that begin with the specified prefix.
-					Prefix: prefix,
-				};
-
-				let bMustContinue = true;
-				let bErrorFound = false;
+				params.Prefix = prefix; // Limits the response to keys that begin with the specified prefix.
+				let bMustContinue = true, bErrorFound = false;
 				while( bMustContinue && !bErrorFound )
 				{
-
-
 					await s3Instance.listObjectsV2( params ).promise()
 					.then( ( output : AWS.S3.ListObjectsV2Output ) =>
 					{
@@ -90,13 +78,9 @@ export namespace AWSUtils {
 					.catch( ( error : AWS.AWSError ) =>
 					{
 						console.error( `AWSUtils:S3:ListAllObjects: There was a problem trying to list object from "${bucketName}"\nReason: ${error}` );
+						objectsArray = null;
 						bErrorFound = true;
 					} )
-				}
-
-				if ( bErrorFound )
-				{
-					return null;
 				}
 			}
 
@@ -111,18 +95,20 @@ export namespace AWSUtils {
 			{
 				const request = s3Instance.getObject( <AWS.S3.GetObjectRequest>
 					{
+						// The bucket name containing the object. When using this API with an access point, you must direct requests to the access point hostname.
 						Bucket : bucketName,
+						// Key of the object to get.
 						Key : key,
 					}
 				);
-				
-				const buffer = new Buffer(0);
-				request.on( 'httpData', ( chunk : Buffer | Uint8Array ) => buffer.write( chunk.toString('base64') ) );
-				request.on( 'httpDone', () => resolve( buffer ) );
+
+				const buffers = [];
+				request.on( 'httpData', ( chunk : Buffer | Uint8Array ) => buffers.push( chunk ) );
+				request.on( 'httpDone', ( response : AWS.Response<AWS.S3.GetObjectOutput, AWS.AWSError> ) => resolve( Buffer.concat( buffers ) ) );
 				request.on( 'error', ( err: AWS.AWSError, response: AWS.Response<AWS.S3.GetObjectOutput, AWS.AWSError> ) =>
 				{
 					console.error( `AWSUtils:S3:DownloadResource: There was a problem trying to download from "${bucketName}" key "${key} "\nError: ${err}` );
-					resolve(null);
+					resolve( null );
 				});
 				request.send();
 			});
@@ -151,8 +137,11 @@ export namespace AWSUtils {
 			{
 				s3Instance.putObject( <AWS.S3.PutObjectRequest>
 					{
+						// Bucket name to which the PUT operation was initiated. When using this API with an access point, you must direct requests to the access point hostname.
 						Bucket: bucketName,
+						// Object key for which the PUT operation was initiated.
 						Key: key,
+						// Object data.
 						Body: body
 					},
 					( err : AWS.AWSError, data : AWS.S3.PutObjectOutput ) =>
@@ -186,7 +175,7 @@ export namespace AWSUtils {
 		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async CopyObject( s3Instance : AWS.S3, sourceBucketName : string, destBucketName : string, key : string, bMustReplace : boolean = true ) : Promise<boolean>
 		{
-			const bResult = await new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
+			return new Promise<boolean>( ( resolve : ( value?: boolean ) => void ) =>
 			{
 				s3Instance.copyObject( <AWS.S3.CopyObjectRequest>
 					{
@@ -209,7 +198,6 @@ export namespace AWSUtils {
 					}
 				)
 			});
-			return bResult;
 		}
 
 
@@ -270,7 +258,7 @@ export namespace AWSUtils {
 		/////////////////////////////////////////////////////////////////////////////////////////
 		public static async GetObjectMetadata( s3Instance : AWS.S3, bucketName : string, key : string ) : Promise<AWS.S3.HeadObjectOutput | null>
 		{
-			const result = await new Promise<AWS.S3.HeadObjectOutput | null>( ( resolve : (value?: AWS.S3.HeadObjectOutput | null) => void ) => 
+			return new Promise<AWS.S3.HeadObjectOutput | null>( ( resolve : (value?: AWS.S3.HeadObjectOutput | null) => void ) => 
 			{
 				s3Instance.headObject( <AWS.S3.HeadObjectRequest>
 					{
@@ -287,7 +275,6 @@ export namespace AWSUtils {
 					}
 				);
 			});
-			return result;
 		}
 
 	};
@@ -403,8 +390,7 @@ export namespace AWSUtils {
 		 */
 		public async StartInstance( EC2Instance : AWS.EC2, InstanceID : string ) : Promise<boolean>
 		{
-			console.log( `StartInstance: Going to start instance ${InstanceID}` );
-			return await new Promise<boolean>( (resolve) =>
+			return new Promise<boolean>( ( resolve : (value : boolean) => void ) =>
 			{
 				EC2Instance.startInstances( <AWS.EC2.StartInstancesRequest>
 					{
@@ -430,7 +416,6 @@ export namespace AWSUtils {
 		 */
 		public async StopInstance( EC2Instance : AWS.EC2, InstanceID : string, bForce : boolean = false ) : Promise<boolean>
 		{
-			console.log( `StopInstance: Going to stop instance ${InstanceID}` );
 			return new Promise<boolean>( (resolve) =>
 			{
 				EC2Instance.stopInstances( <AWS.EC2.StopInstancesRequest>
@@ -496,7 +481,6 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstanceStatus( EC2Instance : AWS.EC2, InstanceID : string ) : Promise<AWS.EC2.InstanceStatus | null>
 		{
-			console.log( `AWSUtils:EC2:DescribeInstanceStatus: Going to describe status of instance ${InstanceID}` );
 			const status : AWS.EC2.InstanceStatus | null = await this.DescribeInstanceStatus_Internal( EC2Instance, InstanceID );
 			if ( !status )
 			{
@@ -512,7 +496,6 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstance( EC2Instance : AWS.EC2, InstanceID : string ) : Promise<AWS.EC2.Instance | null>
 		{
-			console.log( `AWSUtils:EC2:DescribeInstance: Going to describe instance ${InstanceID}` );
 			const result = await new Promise<AWS.EC2.DescribeInstancesResult | null>( (resolve) =>
 			{
 				EC2Instance.describeInstances( <AWS.EC2.DescribeInstancesRequest>
@@ -556,8 +539,8 @@ export namespace AWSUtils {
 			{
 				const responseObject : IInstanceIPs =
 				{
-					public_IPv4 : instanceData?.PublicIpAddress,
-					public_IPv4_DNS : instanceData?.PublicDnsName
+					public_IPv4 : instanceData.PublicIpAddress || '',
+					public_IPv4_DNS : instanceData.PublicDnsName || ''
 				}
 				return responseObject;
 			}
@@ -575,9 +558,6 @@ export namespace AWSUtils {
 		 */
 		public async HasInstanceDesiredState( EC2Instance : AWS.EC2, InstanceID : string, desiredState : EInstanceStateCode ) : Promise<boolean | null>
 		{
-			const desiredStateName = AWSUtils.EC2.GetInstanceStateNameByCode( desiredState );
-			console.log( `AWSUtils:EC2:HasInstanceDesiredState: Going to check if instance ${InstanceID} has state "${desiredStateName}"` );
-
 			const status : AWS.EC2.InstanceStatus | null = await this.DescribeInstanceStatus_Internal( EC2Instance, InstanceID );
 			if ( status && status.InstanceState )
 			{
@@ -597,13 +577,6 @@ export namespace AWSUtils {
 		 */
 		public async WaitForInstanceStateChange( EC2Instance : AWS.EC2, InstanceID : string, desiredState : EInstanceStateCode, desiredSystemStatus? : AWS.EC2.SummaryStatus ) : Promise<boolean | null>
 		{
-			const desiredStateName = AWSUtils.EC2.GetInstanceStateNameByCode( desiredState );
-			console.log( `AWSUtils:EC2:WaitForInstanceStateChange: Going to wait instance ${InstanceID} to reach state "${desiredStateName}"` );
-			if ( desiredSystemStatus )
-			{
-				console.log( `\tWith System status "${desiredSystemStatus}"` );
-			}
-
 			// Set Time Out
 			let bForcedToReturn = false;
 			{
@@ -674,8 +647,7 @@ export namespace AWSUtils {
 		 */
 		public async DescribeInstanceAttribute( EC2Instance : AWS.EC2, InstanceID : string, attribute : AWS.EC2.InstanceAttributeName ) : Promise<AWS.EC2.InstanceAttribute | null>
 		{
-			console.log( `AWSUtils:EC2:DescribeInstanceAttribute: Going to describe instance ${InstanceID}` );
-			const result = await new Promise<AWS.EC2.InstanceAttribute | null>( (resolve) =>
+			return new Promise<AWS.EC2.InstanceAttribute | null>( ( resolve : (value : AWS.EC2.InstanceAttribute | null ) => void ) =>
 			{
 				EC2Instance.describeInstanceAttribute( <AWS.EC2.DescribeInstanceAttributeRequest>
 					{
@@ -692,13 +664,6 @@ export namespace AWSUtils {
 					}
 				)
 			});
-
-			if ( !result )
-			{
-				console.error( `AWSUtils:EC2:DescribeInstanceAttribute: Cannot describe attribute ${attribute} for instance ${InstanceID}!!` );
-				debugger;
-			}
-			return result;
 		}
 
 
@@ -710,8 +675,7 @@ export namespace AWSUtils {
 		 */
 		public async ModifyInstanceAttribute( EC2Instance : AWS.EC2, InstanceID : string, attributeName : AWS.EC2.InstanceAttributeName, value : string ) : Promise<boolean | null>
 		{
-			console.log( `AWSUtils:EC2:ModifyInstanceAttribute: Going to describe instance ${InstanceID}` );
-			const result = await new Promise<boolean>( (resolve) =>
+			return new Promise<boolean>( (resolve) =>
 			{
 				const params : AWS.EC2.ModifyInstanceAttributeRequest =
 				{
@@ -732,13 +696,6 @@ export namespace AWSUtils {
 					}
 				)
 			} );
-
-			if ( !result )
-			{
-				console.error( `AWSUtils:EC2:ModifyInstanceAttribute: Cannot modify attribute ${attributeName} for instance ${InstanceID}!!` );
-				debugger;
-			}
-			return result;
 		}
 
 

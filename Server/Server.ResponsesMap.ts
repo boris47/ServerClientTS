@@ -7,7 +7,7 @@ import { HTTPCodes } from "./HTTP.Codes";
 import { IServerResponseResult } from "../Common/Interfaces";
 import { ServerResponses } from "./Server.Responses";
 import * as ComUtils from '../Common/ComUtils';
-import { IServerStorage, StorageManager } from "./Server.Storage";
+import { IServerStorage, StorageManager } from "./Server.Storages";
 import * as GenericUtils from '../Common/GenericUtils';
 
 export const NotImplementedResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
