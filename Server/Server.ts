@@ -209,10 +209,8 @@ import { AWSUtils } from './Utils/AWSUtils';
 
 async function Main()
 {
-	// Id: AKIA6RKO6FQQW6B5VDG2
-	// SecretKey: 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
-	const s3instnce = AWSUtils.S3.CreateInstance( 'AKIA6RKO6FQQW6B5VDG2', 'zB63p7Tu0jnFPTX+3GpCkuiYxTDp9HWYdIwoPOGN', 'eu-central-1' );
-	const bucketName = 'invrsion-productbank-development';
+//	const s3instnce = AWSUtils.S3.CreateInstance( '', '', 'eu-central-1' );
+//	const bucketName = 'invrsion-productbank-development';
 	
 	/*	LIST TEST */
 //	const s3Objects = await AWSUtils.S3.ListObjects( s3instnce, bucketName, ['PRD'], true );
