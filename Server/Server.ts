@@ -296,5 +296,16 @@ async function Main()
 
 }
 
+/*
+process.on( 'uncaughtException', ( error: Error ) =>
+{
+	console.error( `Uncaught Exception:\n${error.name}\n${error.message}\n${error.stack}` );
+});
+
+process.on( 'unhandledRejection', ( reason: {} | null | undefined, promise: Promise<any> ) =>
+{
+	console.error( 'Unhandled Rejection' );
+});
+*/
 
 Main();
