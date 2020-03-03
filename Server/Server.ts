@@ -18,6 +18,16 @@ import { StorageManager, EStorageType } from './Server.Storages';
 import { ServerConfigs } from './Server.Configs';
 
 
+
+
+
+
+
+
+
+
+
+
 const ConnectedClients = new Array<WebSocketConnection>();
 
 const serverConfigs = new ServerConfigs();
@@ -206,9 +216,11 @@ async function UploadConfigurationFile() : Promise<boolean>
 }
 
 import { AWSUtils } from './Utils/AWSUtils';
+import { MongoDatabase } from './Utils/MongoDatabase';
 
 async function Main()
 {
+
 //	const s3instnce = AWSUtils.S3.CreateInstance( '', '', 'eu-central-1' );
 //	const bucketName = 'invrsion-productbank-development';
 	
@@ -231,6 +243,11 @@ async function Main()
 //	];	
 //	const buffers = await AWSUtils.S3.DownloadResources( s3instnce, bucketName, resKeys );	
 //	return;
+
+		// DDATABASE
+//		const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+//		const coll = await db.GetCollection( 'coll0' );
+//		const result = await db.FindInCollection( coll, 'a', '1' );
 
 	{
 		const bHasCommittedConfigFile = await UploadConfigurationFile();
