@@ -1,10 +1,27 @@
+
 import { IURLParseResult } from "./Interfaces";
 
 
-export type GenericConstructor<T> = { new( ...Args:any[] ) : T };
+/////////////////////////////////////////////////////////////////////////////////////////
+export class UniqueID
+{
+	private static internalIndex = 0;
+
+	public static Generate() : string
+	{	
+		const time = Math.floor( ( new Date().getTime() + ++UniqueID.internalIndex ) / 16 );
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c)
+		{
+			const random = ( time + ( Math.random() * 16 ) )%16 | 0;
+			return (c === 'x' ? random : ( random & 0x3 | 0x8 ) ).toString( 16 );
+		});
+	}
+	
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+export type GenericConstructor<T> = { new( ...Args:any[] ) : T };
 export function Construct<T>( Constructor: GenericConstructor<T>, ...Args:any[] ): T
 {
 	return new Constructor( Args );
