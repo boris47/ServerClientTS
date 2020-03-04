@@ -17,21 +17,15 @@ import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedRespons
 import { StorageManager, EStorageType } from './Server.Storages';
 import { ServerConfigs } from './Server.Configs';
 
+import { AWSUtils } from './Utils/AWSUtils';
+import { MongoDatabase } from './Utils/MongoDatabase';
+import { UniqueID } from '../Common/GenericUtils';
+import { HTTPCodes } from './HTTP.Codes';
 
-
-
-
-
-
-
-
-
+import { Logger } from '../Common/Logger';
 
 
 const ConnectedClients = new Array<WebSocketConnection>();
-
-const serverConfigs = new ServerConfigs();
-
 
 
 async function CreateServer() : Promise<boolean>
@@ -111,25 +105,19 @@ async function CreateServer() : Promise<boolean>
 		//	autoAcceptConnections : false
 		}
 		const webSocketServer = new WebSocketServer( serverConfig );
-		{
-			webSocketServer.on( 'connect', ( connection: WebSocketConnection ) =>
-			{
+		{		
+	//		webSocketServer.on( 'connect', ( connection: WebSocketConnection ) => {});
+	//		webSocketServer.on( 'close', ( connection: WebSocketConnection, reason: number, desc: string ) =>{}); 
 
-			});
-
-			webSocketServer.on( 'close', ( connection: WebSocketConnection, reason: number, desc: string ) =>
-			{
-
-			});
-
+			// A client is trying to connect to server
 			webSocketServer.on( 'request', ( request: WebSocketRequest ) =>
 			{
-				console.log( `${new Date()} Connection from origin ${request.origin}.` );
+				console.log( `${new Date()} Connection requested from origin ${request.origin}.` );
 
 				if ( !IsOriginAllowed( request.origin ) )
 				{
-					request.reject();
-					console.log( `${new Date()} Connection from origin ${request.origin} rejected.` );
+					request.reject( /* httpStatus */ 401, /* reason */ HTTPCodes[401] );
+					console.log( `${new Date()} Connection from origin "${request.origin}" rejected because unauthorized.` );
 					return;
 				}
 
@@ -179,6 +167,8 @@ async function CreateServer() : Promise<boolean>
 
 async function UploadConfigurationFile() : Promise<boolean>
 {
+	const serverConfigs = new ServerConfigs();
+	
 	let bResult = true;
 	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
@@ -215,11 +205,14 @@ async function UploadConfigurationFile() : Promise<boolean>
 	return bResult;
 }
 
-import { AWSUtils } from './Utils/AWSUtils';
-import { MongoDatabase } from './Utils/MongoDatabase';
 
 async function Main()
 {
+//	console.log( UniqueID.Generate() ); console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
+//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
+//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
+//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
+	
 
 //	const s3instnce = AWSUtils.S3.CreateInstance( '', '', 'eu-central-1' );
 //	const bucketName = 'invrsion-productbank-development';
@@ -249,12 +242,17 @@ async function Main()
 //		const coll = await db.GetCollection( 'coll0' );
 //		const result = await db.FindInCollection( coll, 'a', '1' );
 
+	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
+	if ( !bLoggerCreated )
+	{
+		return process.exit(1);
+	}
 	{
 		const bHasCommittedConfigFile = await UploadConfigurationFile();
 		if ( !bHasCommittedConfigFile )
 		{
 			console.error( "Cannot upload configuration file" );
-			process.exit(1);
+			return process.exit(1);
 		}
 	}
 
@@ -272,7 +270,7 @@ async function Main()
 		if ( !bResultRemote )
 		{
 			console.error( "Remote Storage Unavailable" );
-			process.exit(1);
+			return process.exit(1);
 		}
 	}
 
@@ -281,7 +279,7 @@ async function Main()
 		if ( !bResult )
 		{
 			console.error( "Cannot create server" );
-			process.exit(1);
+			return process.exit(1);
 		}
 	}
 

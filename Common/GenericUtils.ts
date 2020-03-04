@@ -84,6 +84,7 @@ export function FilterArray<T>( myArray: T[], predicate: ( value : T ) => boolea
 
 // 'https://www.google.com/search?&array=["ciao"-"caio2"]&switch'
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export function URl_Parse( url : string ) : IURLParseResult
 {
 	const parts = url.substr( url.indexOf( '?' ) + 1 ).split('&');
