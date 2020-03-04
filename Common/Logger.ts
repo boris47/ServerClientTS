@@ -37,9 +37,9 @@ export class Logger
 
 			if ( fileDescriptor )
 			{
-				this.instance.fileDescriptor = fileDescriptor;
-
 				( this.instance as Logger ) = new Logger();
+				this.instance.fileDescriptor = fileDescriptor;
+				
 				const oldConsoleLog = console.log;
 				console.log = function()
 				{
