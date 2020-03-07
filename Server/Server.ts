@@ -242,11 +242,11 @@ async function Main()
 //		const coll = await db.GetCollection( 'coll0' );
 //		const result = await db.FindInCollection( coll, 'a', '1' );
 
-	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
-	if ( !bLoggerCreated )
-	{
-		return process.exit(1);
-	}
+//	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
+//	if ( !bLoggerCreated )
+//	{
+//		return process.exit(1);
+//	}
 	{
 		const bHasCommittedConfigFile = await UploadConfigurationFile();
 		if ( !bHasCommittedConfigFile )
