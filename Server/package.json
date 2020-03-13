@@ -16,12 +16,14 @@
     "@types/aws-sdk": "=2.7.0",
     "@types/ip-regex": "2.0.0",
     "@types/mongodb": "3.1.31",
+    "@types/nodemailer": "4.6.0",
     "http-status-codes": "=1.4.0",
     "typescript": "=3.7.5",
     "mime-types": "=2.1.26",
     "websocket": "1.0.31",
     "aws-sdk": "=2.621.0",
     "ip-regex": "4.1.0",
-    "mongodb": "3.5.4"
+    "mongodb": "3.5.4",
+    "nodemailer": "6.4.5"
   }
 }
