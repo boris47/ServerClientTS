@@ -1,5 +1,6 @@
 
 import { IURLParseResult } from "./Interfaces";
+import * as crypto from 'crypto';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -8,7 +9,13 @@ export class UniqueID
 	private static internalIndex = 0;
 
 	public static Generate() : string
-	{	
+	{
+	//	return [2, 2, 2, 6].reduce( ( previous : string, length : number ) =>
+	//		{
+	//			return `${previous}-${crypto.randomBytes(length).toString('hex')}`;
+	//		},
+	//		crypto.randomBytes(4).toString('hex')
+	//	);
 		const time = Math.floor( ( new Date().getTime() + ++UniqueID.internalIndex ) / 16 );
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c)
 		{
