@@ -94,6 +94,16 @@ export function FilterArray<T>( myArray: T[], predicate: ( value : T ) => boolea
 /////////////////////////////////////////////////////////////////////////////////////////
 export function URl_Parse( url : string ) : IURLParseResult
 {
+	// import * as querystring from 'querystring';
+	// querystring.parse( 'foo=bar&abc=xyz&abc=123' )
+	// parsed into { foo: 'bar', abc: ['xyz', '123'] }
+
+	// querystring.stringify({ foo: 'bar', baz: ['qux', 'quux'], corge: '' });
+	// Returns 'foo=bar&baz=qux&baz=quux&corge='
+	// -
+	// querystring.stringify({ foo: 'bar', baz: 'qux' }, ';', ':');
+	// Returns 'foo:bar;baz:qux'
+
 	const parts = url.substr( url.indexOf( '?' ) + 1 ).split('&');
 
 	const bIsKeyValuePair = ( entry : string ) : boolean =>
