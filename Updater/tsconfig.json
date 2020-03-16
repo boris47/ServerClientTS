@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"target": "ES5",
+		"module": "commonjs",
+	//	"sourceMap": true,
+		"watch": true,
+		"diagnostics" : true,
+		"extendedDiagnostics" : true,
+		"inlineSourceMap" : true,
+		"noImplicitReturns" : true,
+		"removeComments": true,
+		"downlevelIteration" : true
+    }
+}

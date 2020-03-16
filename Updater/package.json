@@ -1,0 +1,16 @@
+{
+  "name": "Updater",
+  "version": "0.0.0",
+  "description": "",
+  "main": "Server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "=13.7.0",
+    "typescript": "=3.7.5"
+  }
+}
