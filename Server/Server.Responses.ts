@@ -153,7 +153,7 @@ export class ServerResponses {
 	{
 		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
 		{
-			const body : any[] = [];
+			const body : Buffer[] = [];
 
 			request.on('error', function( err : Error )
 			{

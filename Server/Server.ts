@@ -187,8 +187,8 @@ async function UploadConfigurationFile() : Promise<boolean>
 	let bResult = true;
 	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-	const publicIPv6 : string | null = await ComUtils.HTTP_Get( url_v6 );
-	const publicIPv4 : string | null = await ComUtils.HTTP_Get( url_v4 );
+	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString();
+	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString();
 	
 	if ( publicIPv6 )
 	{

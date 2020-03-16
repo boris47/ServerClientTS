@@ -3,21 +3,22 @@ import { ICommonResult } from '../Common/Interfaces';
 import * as http from 'http';
 import * as https from 'https';
 
-export async function HTTP_Get( url : string ) : Promise<string | null>
+export async function HTTP_Get( url : string, headers?: http.OutgoingHttpHeaders ) : Promise<Buffer | null>
 {
-	return await new Promise<string | null>( ( resolve ) =>
+	return await new Promise<Buffer | null>( ( resolve ) =>
 	{
-		const request = https.get( url, function( response : http.IncomingMessage )
+		const request = https.get( url, { headers: headers }, function( response : http.IncomingMessage )
 		{
-			let rawData = "";
+			const body : Buffer[] = [];
 			response.on('data', function( chunk : any )
 			{
-				rawData += chunk;
+				body.push( Buffer.from( chunk ) );
 			});
 
 			response.on('end', function()
 			{
-				resolve( rawData.trim() );
+				const result : Buffer = Buffer.concat( body );
+				resolve( result );
 			});
 
 			response.on( "error", function( err: Error )

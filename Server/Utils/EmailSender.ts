@@ -91,11 +91,7 @@ export class MailService
 					{
 						info.rejected.forEach( ( m : string ) => console.log( `MailService::Email NOT sent to ${m}` ) );
 					}
-					
-/*
-					messageSize
-					messageTime
-*/					
+								
 					console.log( `Email sent, message id "${info.messageId}"` );
 					resolve( true );
 				}
