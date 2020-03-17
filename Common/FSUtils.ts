@@ -9,6 +9,40 @@ export interface IASyncFileReadResult
 }
 
 
+export async function Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
+{
+	const absoluteFiles = new Array<string>();
+	const absoluteDirs = new Array<string>( ...[path.join( absoluteSourceFolder, subfolder || '' )] );
+	while ( absoluteDirs.length > 0 )
+	{
+		const absoluteDir = absoluteDirs.pop();
+		fs.readdirSync( absoluteDir ).forEach( ( fileName : string ) =>
+		{
+			const fullFilePath = path.join( absoluteDir, fileName );
+			( fs.statSync( fullFilePath ).isDirectory() ? absoluteDirs : absoluteFiles ).push( fullFilePath );
+		});
+	}
+
+	const results = new Map<string, (NodeJS.ErrnoException | null )>();
+	for( const absoluteSourceFilePath of absoluteFiles )
+	{
+		const relativeFilePath = absoluteSourceFilePath.replace( path.join( absoluteSourceFolder, subfolder || ''), '' ).replace( '\\\\', '' );
+		const absoluteDestinationFilePath = path.join( absoluteDestinationFolder, relativeFilePath );
+		const absoluteDestinationFolderPath = path.parse( absoluteDestinationFilePath ).dir;
+		EnsureDirectoryExistence( absoluteDestinationFolderPath );
+		await new Promise<void>( ( resolve ) =>
+		{
+			fs.copyFile( absoluteSourceFilePath, absoluteDestinationFilePath, ( err: NodeJS.ErrnoException ) =>
+			{
+				results.set( absoluteSourceFilePath, err );
+				resolve();
+			});
+		});
+	}
+	return results;
+}
+
+
 export async function FileExistsAsync( filePath : string ) : Promise<boolean>
 {
 	const bResult = await new Promise<boolean>( ( resolve ) =>
@@ -61,7 +95,7 @@ export function EnsureDirectoryExistence(filePath: string): void
 	filePathNormalized.forEach( ( sDir : string, index : number ) =>
 	{
 		const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-		if ( ( this.IsDirectory( pathInQuestion ) === false ) && pathInQuestion )
+		if ( ( IsDirectory( pathInQuestion ) === false ) && pathInQuestion )
 		{
 			fs.mkdirSync(pathInQuestion);
 		}
@@ -79,12 +113,8 @@ export function DeleteContentFolder( folderPath: string ): void
 			const filePath = path.join( directoryPath, fileName );
 			if ( IsDirectory( filePath ) )
 			{
-				fs.rmdirSync( filePath, <fs.RmDirOptions>
-				{
-					recursive : true
-				});
-			//	DeleteContentFolder( filePath );
-			//	fs.rmdirSync(filePath);
+				DeleteContentFolder( filePath );
+				fs.rmdirSync(filePath);
 			}
 			else
 			{
