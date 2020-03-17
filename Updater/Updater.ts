@@ -16,7 +16,6 @@ import * as path from 'path';
 import * as ComUtils from '../Common/ComUtils';
 import * as FSUtils from '../Common/FSUtils';
 
-
 const DOWNLOAD_LOCATION 		= path.join( process.cwd(), '../temp' );
 const BASE_GIT_REPOS_API_URL 	= 'https://api.github.com/repos';
 
@@ -40,7 +39,7 @@ interface IGitFileRef
 async function MapRepository( url : string ) : Promise<IGitFileRef[]>
 {
 	const results = new Array<IGitFileRef>();
-	const dirsUrl = new Array<string>(...[url]);
+	const dirsUrl = new Array<string>( ...[ url ] );
 	while( dirsUrl.length > 0 )
 	{
 		const result : Buffer | null = await ComUtils.HTTP_Get( dirsUrl.pop(), { 'User-Agent':'boris47' } );
@@ -208,10 +207,48 @@ async function Execute()
 		const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
 		const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
 		const otherFolders : string[] 	= programDetailsParsed.otherFolders;			// ['Common']
+		FSUtils.DeleteContentFolder( DOWNLOAD_LOCATION );
+		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
 		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
 		if ( bResult )
 		{
-			
+			{
+				const destinationFolder = processDirectory;
+				FSUtils.DeleteContentFolder( destinationFolder );
+				FSUtils.EnsureDirectoryExistence( destinationFolder );
+				const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, mainFolder );
+				for( const [ fileRelativePath, error ] of results.entries() )
+				{
+					if ( error )
+					{
+						console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
+					}
+					else
+					{
+						console.log( `Copied ${fileRelativePath}` );
+					}
+				}
+			}
+			console.log( '.' ); console.log( '.' );
+			for ( let index = 0; index < otherFolders.length; index++ )
+			{
+				const otherFolder = otherFolders[index];
+				const destinationFolder = path.join( processDirectory.substring( 0, processDirectory.lastIndexOf('\\') ), otherFolder );
+				FSUtils.DeleteContentFolder( destinationFolder );
+				FSUtils.EnsureDirectoryExistence( destinationFolder );
+				const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, otherFolder );
+				for( const [ fileRelativePath, error ] of results.entries() )
+				{
+					if ( error )
+					{
+						console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
+					}
+					else
+					{
+						console.log( `Copied ${fileRelativePath}` );
+					}
+				}
+			}
 		}
 	}
 }
