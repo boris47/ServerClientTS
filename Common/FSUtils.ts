@@ -9,6 +9,9 @@ export interface IASyncFileReadResult
 }
 
 
+export const GetUserDataFolder = () => process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
+
+
 export async function Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
 {
 	const absoluteFiles = new Array<string>();

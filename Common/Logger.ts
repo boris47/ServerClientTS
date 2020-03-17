@@ -17,8 +17,7 @@ export class Logger
 		if ( !this.instance )
 		{
 			const logFileName = Logger.CreateLogName();
-			const userDataFolder = process.env.APPDATA || ( process.platform == 'darwin' ? process.env.HOME + '/Library/Preferences' : process.env.HOME + "/.local/share" );
-			const programFolder = path.join( userDataFolder, programName , 'logs');
+			const programFolder = path.join( FSutils.GetUserDataFolder(), programName , 'logs');
 			const finalFilePath = path.join( programFolder, logFileName );
 			FSutils.EnsureDirectoryExistence( programFolder );
 			
