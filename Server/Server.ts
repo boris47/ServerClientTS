@@ -23,14 +23,14 @@ import { UniqueID } from '../Common/GenericUtils';
 import { HTTPCodes } from './HTTP.Codes';
 
 import { Logger } from '../Common/Logger';
-import { ProcessContainer } from '../Common/ProcessContainer';
+import { ProcessManager } from '../Common/ProcessManager';
 
 // Very simple answer
 process.on( 'message', ( message : any ) =>
 {
 	if ( message === 'update' )
 	{
-		process.send( <ProcessContainer.Fork.ISubProcessMessage>
+		process.send( <ProcessManager.Fork.ISubProcessMessage>
 		{
 			processName : 'Server',
 			msg : "Ciao mamma",

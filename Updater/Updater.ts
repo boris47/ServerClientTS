@@ -15,6 +15,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ComUtils from '../Common/ComUtils';
 import * as FSUtils from '../Common/FSUtils';
+import { ProcessManager } from '../Common/ProcessManager';
 
 const DOWNLOAD_LOCATION 		= path.join( process.cwd(), '../temp' );
 const BASE_GIT_REPOS_API_URL 	= 'https://api.github.com/repos';
@@ -196,7 +197,7 @@ async function Execute()
 		{
 			processDirectory : 'E:\\SourceTree\\ServerClientTS\\Server',
 			name: 'Server',
-			pid : 0,
+			pid : 0, // Pheraps is useless
 			user : 'boris47',
 			repositoryName : 'ServerClientTS',
 			mainFolder : 'Server',
@@ -209,6 +210,8 @@ async function Execute()
 		const otherFolders : string[] 	= programDetailsParsed.otherFolders;			// ['Common']
 		FSUtils.DeleteContentFolder( DOWNLOAD_LOCATION );
 		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
+
+		// Donwload Form repository
 		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
 		if ( bResult )
 		{
@@ -230,6 +233,7 @@ async function Execute()
 				}
 			}
 			console.log( '.' ); console.log( '.' );
+			
 			for ( let index = 0; index < otherFolders.length; index++ )
 			{
 				const otherFolder = otherFolders[index];
@@ -249,6 +253,12 @@ async function Execute()
 					}
 				}
 			}
+			
+		}
+
+		// Restart Process
+		{
+			
 		}
 	}
 }

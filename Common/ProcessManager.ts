@@ -5,7 +5,7 @@ import * as child_process from 'child_process';
 import { Logger } from './Logger';
 
 
-export namespace ProcessContainer
+export namespace ProcessManager
 {
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -263,6 +263,37 @@ export namespace ProcessContainer
 	
 			return null;
 		}
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		export const ForkAndLeave = async ( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : Promise<boolean> =>
+		{
+			console.log( `ProcessContainer:ForkAndLeave: Process to execute "${processToExecute}"` );
+			try
+			{
+				child_process.fork
+				(
+					processToExecute,
+					args || [],
+					<child_process.ForkOptions>
+					{
+						cwd : absoluteCWD || process.cwd(),
+						env : Object.assign( {}, process.env, additionalEnvVars || {} ),
+						execArgv : [],
+						detached : true,
+						silent : false // If true, stdin, stdout, and stderr of the child will be piped to the parent, 
+						// otherwise they will be inherited from the parent, see the 'pipe' and 'inherit' options 
+						// for child_process.spawn()'s stdio for more details. Default: false.
+					}
+				).unref();
+				return true;
+			}
+			catch ( e )
+			{
+				console.error( `Cannot fork and leave process ${process}` );
+			}
+			return false;
+		}
 		
 	}
 
@@ -278,7 +309,6 @@ export namespace ProcessContainer
 			exitCode : number;
 			stdOutput : string | null;
 			stdError : string | null;
-
 		}
 
 
