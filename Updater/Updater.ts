@@ -213,8 +213,7 @@ async function Execute()
 		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
 
 		// Donwload Form repository
-//		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
-		const bResult = false
+		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
 		if ( bResult )
 		{
 			{
