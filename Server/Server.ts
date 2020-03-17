@@ -187,8 +187,8 @@ async function UploadConfigurationFile() : Promise<boolean>
 	let bResult = true;
 	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString();
-	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString();
+	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString().trim();
+	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString().trim();
 	
 	if ( publicIPv6 )
 	{
@@ -257,11 +257,11 @@ async function Main()
 //		const coll = await db.GetCollection( 'coll0' );
 //		const result = await db.FindInCollection( coll, 'a', '1' );
 
-//	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
-//	if ( !bLoggerCreated )
-//	{
-//		return process.exit(1);
-//	}
+	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
+	if ( !bLoggerCreated )
+	{
+		return process.exit(1);
+	}
 	{
 		const bHasCommittedConfigFile = await UploadConfigurationFile();
 		if ( !bHasCommittedConfigFile )

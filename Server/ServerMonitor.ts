@@ -1,15 +1,15 @@
 
 import * as fs from 'fs';
-import { ProcessContainer } from '../Common/ProcessContainer';
+import { ProcessManager } from '../Common/ProcessManager';
 
 
 if ( fs.existsSync( 'Server.js' ) )
 {
-	ProcessContainer.Fork.ForkProcess( 'ServerTS', './Server.js' )
-	.then( ( forked : ProcessContainer.Fork.ForkedProcess ) =>
+	ProcessManager.Fork.ForkProcess( 'ServerTS', './Server.js' )
+	.then( ( forked : ProcessManager.Fork.ForkedProcess ) =>
 		{
-			forked.SendMessage( ProcessContainer.Fork.EForkMessageType.UPDATE,
-				( messsage : ProcessContainer.Fork.ISubProcessMessage ) =>
+			forked.SendMessage( ProcessManager.Fork.EForkMessageType.UPDATE,
+				( messsage : ProcessManager.Fork.ISubProcessMessage ) =>
 				{
 					console.log( 'MONITOR received\n' + JSON.stringify( messsage, null, 4 ) );
 				},

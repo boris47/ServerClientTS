@@ -151,7 +151,7 @@ async function Execute()
 	}
 
 	const bUpdateSelf = args.includes('--self');
-	const bUpdateProgram = args.includes('--program');
+	const bUpdateProgram = args.includes('--update');
 	const bCheckVersion = args.includes('--version');
 
 	if ( bUpdateSelf && bUpdateProgram && bCheckVersion )
@@ -204,6 +204,7 @@ async function Execute()
 			otherFolders : ['Common']
 		};
 		const processDirectory			= programDetailsParsed.processDirectory;		// E:\\SourceTree\\ServerClientTS\\Server
+		const processName				= programDetailsParsed.name;					// Server
 		const user : string				= programDetailsParsed.user;					// boris47
 		const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
 		const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
@@ -212,7 +213,8 @@ async function Execute()
 		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
 
 		// Donwload Form repository
-		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
+//		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
+		const bResult = false
 		if ( bResult )
 		{
 			{
@@ -258,7 +260,13 @@ async function Execute()
 
 		// Restart Process
 		{
-			
+			const bResult1 = await ProcessManager.Spawn.SpawnProcess( 'npm', ['install'], undefined, processDirectory ).AsPromise();
+			const bResult2 = await ProcessManager.Spawn.SpawnProcess( '"./node_modules/.bin/tsc.cmd"', [
+				'-p', 'tsconfig.json',
+				'--watch', 'false'
+			], undefined, processDirectory ).AsPromise();
+			const bResult3 = ProcessManager.Spawn.SpawnAndLeave( 'node',  [`${processName}.js`], undefined, processDirectory );
+			console.log(bResult1 && bResult2 && bResult3 );
 		}
 	}
 }
