@@ -31,37 +31,38 @@ interface IGitFileRef
 	git_url : string;
 	download_url : string;
 	type : string;
+	content : string;
+	encoding : string;
 	_links : {
 		[key:string] : string
 	}
 }
 
 
-async function MapRepository( url : string ) : Promise<IGitFileRef[]>
+async function MapRepository( url : string, user : string ) : Promise<IGitFileRef[]>
 {
-	const results = new Array<IGitFileRef>();
-	const dirsUrl = new Array<string>( ...[ url ] );
-	while( dirsUrl.length > 0 )
+	const gitFilesMapped = new Array<IGitFileRef>(), dirsUrl = new Array<string>( ...[ url ] );
+	while ( dirsUrl.length > 0 )
 	{
-		const result : Buffer | null = await ComUtils.HTTP_Get( dirsUrl.pop(), { 'User-Agent':'boris47' } );
-		if( !result )
+		const result : Buffer | null = await ComUtils.HTTP_Get( dirsUrl.pop(),
 		{
-			results.splice( 0, results.length );
-			break;
-		}
-
-		const resultParsed = JSON.parse( result.toString() );
-		resultParsed.forEach( ( r : IGitFileRef ) =>
-		{
-			if ( r.type === 'dir' )
-			{
-				dirsUrl.push( r.url );
-			}
-			else
-			{
-				results.push( r );
+			headers : {
+				'User-Agent': user,
+				'Accept-Encoding': 'gzip, deflate, br',
+				'Accept' : '*/*',
+				'Cache-Control' : 'no-cache',
 			}
 		});
+		if ( result )
+		{
+			const str = result.toString();
+			const resultParsed : IGitFileRef[] = JSON.parse( str );
+			if ( Array.isArray( resultParsed ) )
+			{
+				dirsUrl.push( ...resultParsed.filter( ( r : IGitFileRef ) => r.type === 'dir' ).map( d => d.url ) );
+				gitFilesMapped.push( ...resultParsed.filter( ( r : IGitFileRef ) => r.type === 'file' ) );
+			}
+		}
 	}
 	/*
 	{
@@ -81,26 +82,83 @@ async function MapRepository( url : string ) : Promise<IGitFileRef[]>
 		}
     },
 	*/
-	return results;
+	return gitFilesMapped;
 }
 
-async function DownloadFiles( downloadLocation : string, fileRefs : IGitFileRef[] ) : Promise<boolean>
+
+async function DownloadFiles( downloadLocation : string, user : string, fileRefs : IGitFileRef[] ) : Promise<boolean>
 {
-	for( const fileRef of fileRefs )
-	{
-		const relativeFilePath = fileRef.path;
-		const fileUrlPath = fileRef.url;
-		console.log( `Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
-		const result : Buffer | null = await ComUtils.HTTP_Get( fileUrlPath );
-		if ( result )
+	return Promise.all
+	(
+		fileRefs.map( ( fileRef : IGitFileRef ) =>
 		{
-			const absoluteFilePath = path.join( downloadLocation, relativeFilePath );
-			const folderPath = path.parse( absoluteFilePath ).dir;
-			FSUtils.EnsureDirectoryExistence( folderPath );
-			fs.writeFileSync( absoluteFilePath, result );
-		}
-	};
-	return true;
+			const relativeFilePath = fileRef.path,  fileUrlPath = fileRef.url;
+			console.log( `DownloadFiles: Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
+			return ComUtils.HTTP_Get( fileUrlPath,
+			{
+				headers : {
+					'User-Agent': user,
+				}
+			} )
+			.then( ( result : Buffer | null ) =>
+			{
+				if ( result )
+				{
+					const stringified = result.toString();
+					const fileref = <IGitFileRef>JSON.parse( stringified );
+					if ( !fileref.content )
+					{
+						console.error( `DownloadFiles:Error: Content undefined:\n${JSON.stringify( fileref, null, '\t' )}` );
+						return false;
+					}
+					
+					if ( !fileref.content ) debugger;
+
+					const content = Buffer.from( fileref.content, <BufferEncoding>fileref.encoding ).toString();
+					const absoluteFilePath = path.join( downloadLocation, relativeFilePath );
+					const folderPath = path.parse( absoluteFilePath ).dir;
+					FSUtils.EnsureDirectoryExistence( folderPath );
+
+					return new Promise<boolean>( ( resolve ) =>
+					{
+						fs.writeFile( absoluteFilePath, content, ( err: NodeJS.ErrnoException ) =>
+						{
+							if ( err )
+							{
+								console.error( `DownloadFiles:Error: ${err.name}:${err.message}` );
+							}
+							resolve( !err );
+						})
+					});
+				}
+				return false;
+			});
+		})
+	)
+	.then( ( results : boolean[] ) => results.reduce( ( prev: boolean, curr : boolean ) => prev && curr, true ) );
+
+//	let bResult = true;
+//	for( const fileRef of fileRefs )
+//	{
+//		const relativeFilePath = fileRef.path,  fileUrlPath = fileRef.url;
+//		console.log( `Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
+//		const result : Buffer | null = await ComUtils.HTTP_Get( fileUrlPath, { 'User-Agent': user } );
+//		if ( result )
+//		{
+//			const stringified = result.toString();
+//			const fileref = <IGitFileRef>JSON.parse( stringified );
+//			if ( !fileref.content ) debugger;
+//
+//			const content = Buffer.from( fileref.content, <BufferEncoding>fileref.encoding ).toString();
+//
+//			const absoluteFilePath = path.join( downloadLocation, relativeFilePath );
+//			const folderPath = path.parse( absoluteFilePath ).dir;
+//			FSUtils.EnsureDirectoryExistence( folderPath );
+//			fs.writeFileSync( absoluteFilePath, content );
+//			bResult = bResult && ( content.length === fileRef.size );
+//		}
+//	};
+//	return bResult;
 }
 
 async function SyncRepositoryFolders( downloadLocation : string, user : string, repositoryName : string, mainFolder : string, otherFolder : string[] ) : Promise<boolean>
@@ -108,8 +166,8 @@ async function SyncRepositoryFolders( downloadLocation : string, user : string, 
 	let bGlobalResult = true;
 	{
 		const fullUrlMainFolder = `${BASE_GIT_REPOS_API_URL}/${user}/${repositoryName}/contents/${mainFolder}?ref=master`;
-		const fileMap : IGitFileRef[] = await MapRepository( fullUrlMainFolder );
-		bGlobalResult = bGlobalResult && await DownloadFiles( downloadLocation, fileMap );
+		const fileMap : IGitFileRef[] = await MapRepository( fullUrlMainFolder, user );
+		bGlobalResult = bGlobalResult && await DownloadFiles( downloadLocation, user, fileMap );
 	}
 
 	bGlobalResult = bGlobalResult && await Promise.all
@@ -117,7 +175,7 @@ async function SyncRepositoryFolders( downloadLocation : string, user : string, 
 		otherFolder.map( ( otherFolderName : string ) =>
 		{
 			const fullUrlMainFolder = `${BASE_GIT_REPOS_API_URL}/${user}/${repositoryName}/contents/${otherFolderName}?ref=master`;
-			return MapRepository( fullUrlMainFolder ).then( ( fileRefs : IGitFileRef[] ) => DownloadFiles( downloadLocation, fileRefs ) );
+			return MapRepository( fullUrlMainFolder, user ).then( ( fileRefs : IGitFileRef[] ) => DownloadFiles( downloadLocation, user, fileRefs ) );
 		})
 	)
 	.then( ( results : boolean[] ) => results.reduce( ( prev : boolean, curr : boolean ) => prev && curr, true ) );
@@ -126,11 +184,11 @@ async function SyncRepositoryFolders( downloadLocation : string, user : string, 
 }
 
 
-
 async function UpdateSelf()
 {
 
 }
+
 
 async function UpdateProgram( programDetailsParsed : any ) : Promise<boolean>
 {
@@ -180,8 +238,13 @@ async function Execute()
 
 		// https://raw.githubusercontent.com/boris47/ServerClientTS/master/Server/Utils/AWSUtils.ts
 		const requestUrl = `https://raw.githubusercontent.com/${user}/${repositoryName}/master/${mainFolder}/package.json`;
-		const packageJsonText : Buffer | null = await ComUtils.HTTP_Get( requestUrl );
-		if( packageJsonText )
+		const packageJsonText : Buffer | null = await ComUtils.HTTP_Get( requestUrl,
+			{
+				headers : {
+					'User-Agent': user
+				}
+			});
+		if ( packageJsonText )
 		{
 			const packageJsonParsed = JSON.parse( packageJsonText.toString() );
 			const version = packageJsonParsed.version;

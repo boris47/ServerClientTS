@@ -1,3 +1,3 @@
 @echo off
 
-node Updater.js --update
+node Updater.js --update > output.log
