@@ -19,7 +19,7 @@ export async function HTTP_Get( URL : string, requestOptions?: https.RequestOpti
 	//		protocol : "https:"
 	//	};
 
-		const request = https.get( /*requestOptions */ URL, requestOptions, function( response : http.IncomingMessage )
+		const request = https.get( /*requestOptions */ URL, requestOptions || {}, function( response : http.IncomingMessage )
 		{
 			let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 
