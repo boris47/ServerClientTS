@@ -4,7 +4,7 @@ import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
 
-export async function HTTP_Get( URL : string, headers?: http.OutgoingHttpHeaders ) : Promise<Buffer | null>
+export async function HTTP_Get( URL : string, requestOptions?: https.RequestOptions ) : Promise<Buffer | null>
 {
 	return await new Promise<Buffer | null>( ( resolve ) =>
 	{
@@ -19,7 +19,7 @@ export async function HTTP_Get( URL : string, headers?: http.OutgoingHttpHeaders
 	//		protocol : "https:"
 	//	};
 
-		const request = https.get( /*requestOptions */ URL, { headers: headers }, function( response : http.IncomingMessage )
+		const request = https.get( /*requestOptions */ URL, requestOptions, function( response : http.IncomingMessage )
 		{
 			let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 
