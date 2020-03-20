@@ -4,6 +4,7 @@ import * as MongoDB from 'mongodb';
 
 export class MongoDatabase
 {
+	private client : MongoDB.MongoClient = null;
 	private connection : MongoDB.MongoClient = null;
 	private database : MongoDB.Db = null;
 
@@ -13,38 +14,59 @@ export class MongoDatabase
 		const uri = `mongodb+srv://${username}:${encodeURIComponent(password)}@cluster-${clasterName}.mongodb.net`;
 		const client = new MongoDB.MongoClient( uri, <MongoDB.MongoClientOptions>
 			{
-				// MongoDB.MongoClientOptions
 				useNewUrlParser: true,
 
 				useUnifiedTopology: true
 			}
 		);
 
-		const connection : MongoDB.MongoClient | null = await client.connect().catch( ( err: Error ) =>
+		const connection : MongoDB.MongoClient | null = await client.connect().catch( ( err: MongoDB.MongoError ) =>
 		{
 			if ( err )
 			{
-				console.error( `${err.name}: ${err.message}` );
+				console.error( `MongoDatabase:CreateConnection: ${err.name}: ${err.message}` );
 			}
 			return null;
 		});
 
-		const database : MongoDB.Db = connection.db( databaseName );
-
+		
 		if ( connection )
 		{
+			const database : MongoDB.Db = connection.db( databaseName );
 			const instance = new MongoDatabase();
 			instance.connection = connection;
 			instance.database = database;
+			instance.client = client;
 			return instance;
 		}
 
 		return null;
 	}
 
-	public static async CloseClient( database : MongoDB.Db ) : Promise<void>
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async CloseClient( database : MongoDatabase ) : Promise<boolean>
 	{
-		
+		return new Promise<boolean>( ( resolve : ( value : boolean ) => void ) =>
+		{
+/*			database.client.close( false, ( error: MongoDB.MongoError, result: void ) =>
+			{
+				if ( error )
+				{
+					console.error( `MongoDatabase:CloseClient: Cannot close connection "${database.database.databaseName}"\n${error.name}:${error.message}` );
+				}
+				resolve( !error );
+			});
+*/
+			database.connection.close( false, ( error: MongoDB.MongoError, result: void ) =>
+			{
+				if ( error )
+				{
+					console.error( `MongoDatabase:CloseClient: Cannot close connection "${database.database.databaseName}"\n${error.name}:${error.message}` );
+				}
+				resolve( !error );
+			});
+		});
 	}
 
 

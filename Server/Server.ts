@@ -252,10 +252,15 @@ async function Main()
 //	const buffers = await AWSUtils.S3.DownloadResources( s3instnce, bucketName, resKeys );	
 //	return;
 
-		// DDATABASE
-//		const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+	// DATABASE
+//	const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+//	if ( db )
+//	{
 //		const coll = await db.GetCollection( 'coll0' );
 //		const result = await db.FindInCollection( coll, 'a', '1' );
+//		const bClosed = await MongoDatabase.CloseClient( db );
+//	}
+
 
 	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
 	if ( !bLoggerCreated )
