@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-export interface IASyncFileReadResult
+export interface IASyncFileOpResult
 {
 	bHasGoodResult : boolean;
 
@@ -46,6 +46,17 @@ export async function Copy( absoluteSourceFolder : string, absoluteDestinationFo
 }
 
 
+export function LogIfError( result : IASyncFileOpResult )
+{
+	if ( !result.bHasGoodResult )
+	{
+		const { name, message } = <NodeJS.ErrnoException>result.data;
+		console.error( `${name}:${message}` )
+	}
+	return result;
+}
+
+
 export async function FileExistsAsync( filePath : string ) : Promise<boolean>
 {
 	const bResult = await new Promise<boolean>( ( resolve ) =>
@@ -58,13 +69,32 @@ export async function FileExistsAsync( filePath : string ) : Promise<boolean>
 	return bResult;
 }
 
-export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileReadResult>
+
+export async function WriteFileAsync( filePath : string, data: any ) : Promise<IASyncFileOpResult>
 {
-	const readPromiseResult = await new Promise<IASyncFileReadResult>( ( resolve ) =>
+	const readPromiseResult = await new Promise<IASyncFileOpResult>( ( resolve ) =>
+	{
+		fs.writeFile( filePath, data, ( err: NodeJS.ErrnoException ) =>
+		{
+			const result = <IASyncFileOpResult>
+			{
+				bHasGoodResult : !err,
+				data : err
+			}
+			resolve( result );
+		});
+	});
+	return readPromiseResult;
+}
+
+
+export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileOpResult>
+{
+	const readPromiseResult = await new Promise<IASyncFileOpResult>( ( resolve ) =>
 	{
 		fs.readFile( filePath, 'utf8', ( err: NodeJS.ErrnoException, data: string ) =>
 		{
-			const result = <IASyncFileReadResult>
+			const result = <IASyncFileOpResult>
 			{
 				bHasGoodResult : !err,
 				data : err ? err : data
