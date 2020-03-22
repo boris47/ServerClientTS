@@ -1,3 +1,5 @@
 @echo off
 
-node Updater.js --update > output.log
+node Updater.js --update
+
+pause
