@@ -40,8 +40,6 @@ interface IGitFileRef
 	}
 }
 
-const CreateUserAgent = ( base : string ) => `${base}_${GenericUtils.UniqueID.Generate()}`;
-
 async function MapRepository( url : string, user : string ) : Promise<(IGitFileRef | null)[]>
 {
 	const gitFilesMapped = new Array<IGitFileRef>();
@@ -49,7 +47,7 @@ async function MapRepository( url : string, user : string ) : Promise<(IGitFileR
 	while ( dirsUrl.length > 0 )
 	{
 		const dirToMap = dirsUrl.pop();
-		const result : Buffer | null = await ComUtils.HTTP_Get( dirToMap, {	headers : { 'User-Agent': CreateUserAgent(user) } } );
+		const result : Buffer | null = await ComUtils.HTTP_Get( dirToMap, {	headers : { 'User-Agent': user } } );
 
 		const resultParsed : IGitFileRef[] = JSON.parse( result?.toString() || null );
 		if ( Array.isArray( resultParsed ) )
@@ -93,7 +91,7 @@ async function DownloadFiles( downloadLocation : string, user : string, fileRef 
 
 	console.log( `DownloadFiles: Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
 
-	return ComUtils.HTTP_Get( fileUrlPath, { headers : { 'User-Agent': CreateUserAgent(user) } } ).then( ( result : Buffer | null ) =>
+	return ComUtils.HTTP_Get( fileUrlPath, { headers : { 'User-Agent': user } } ).then( ( result : Buffer | null ) =>
 	{
 		const fileref = <IGitFileRef>JSON.parse( result?.toString() || null );
 		if ( !fileref || !fileref.content )
@@ -155,7 +153,7 @@ async function UpdateProgram() : Promise<boolean>
 		user : 'boris47',
 		repositoryName : 'ServerClientTS',
 		mainFolder : 'Server',
-		otherFolders : ['Common']
+		otherFolders : [/*'Common'*/]
 	};
 	const processDirectory			= programDetailsParsed.processDirectory;		// E:\\SourceTree\\ServerClientTS\\Server
 	const processName				= programDetailsParsed.name;					// Server
@@ -169,8 +167,8 @@ async function UpdateProgram() : Promise<boolean>
 	let bOverhaulResult = true;
 
 	// Donwload Form repository
-	bOverhaulResult = bOverhaulResult && await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
-	if ( bOverhaulResult )
+//	bOverhaulResult = bOverhaulResult && await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
+	if ( bOverhaulResult && false )
 	{
 		{
 			const destinationFolder = processDirectory;
@@ -190,7 +188,7 @@ async function UpdateProgram() : Promise<boolean>
 			}
 		}
 		console.log( '.' ); console.log( '.' );
-		
+		/*
 		for ( let index = 0; index < otherFolders.length; index++ )
 		{
 			const otherFolder = otherFolders[index];
@@ -210,19 +208,19 @@ async function UpdateProgram() : Promise<boolean>
 				}
 			}
 		}
-		
+		*/
 	}
 
 	if ( bOverhaulResult )
 	{
 		// Restart Process
-		const processSequence = new ProcessManager.Spawn.ProcessesPiper.ProcessesPiper( 'npm', false, false, ['install'], undefined, processDirectory );
-		processSequence.Pipe( '"./node_modules/.bin/tsc.cmd"', false, false, [ '-p', 'tsconfig.json', '--watch', 'false' ], undefined, processDirectory );
+		const processSequence = new ProcessManager.ProcessSequence.Sequence( 'npm', [ 'install' ], undefined, processDirectory, false, false );
+		processSequence.AddProcess( '"./node_modules/.bin/tsc.cmd"', [ '-p', 'tsconfig.json', '--watch', 'false' ], undefined, processDirectory, false, false );
 		processSequence.SetEndSequenceCallback
 		(
-			() => ProcessManager.Spawn.SpawnAndLeave( 'node', undefined, [`Server.js`], undefined, processDirectory )
+			(result : boolean) => ProcessManager.Spawn.SpawnAndLeave( 'node', [`Server.js`], undefined, processDirectory )
 		);
-		bOverhaulResult = bOverhaulResult && await processSequence.LaunchSequence();
+		bOverhaulResult = bOverhaulResult && await processSequence.Execute();
 	}
 	return bOverhaulResult;
 }
@@ -261,10 +259,10 @@ async function Execute()
 		const packageJsonBuffer : Buffer | null = await ComUtils.HTTP_Get( requestUrl,
 		{
 			headers : {
-				'User-Agent': CreateUserAgent(user)
+				'User-Agent': user
 			}
 		});
-		const currentPackageJsonText : string | null	= await FSUtils.ReadFileAsync( './package.json' ).then( ( result : FSUtils.IASyncFileOpResult ) => result.bHasGoodResult ? String( result.data ) : null );
+		const currentPackageJsonText : string | null = await FSUtils.ReadFileAsync( './package.json' ).then( ( result : FSUtils.IASyncFileOpResult ) => result.bHasGoodResult ? String( result.data ) : null );
 		if ( packageJsonBuffer && currentPackageJsonText )
 		{
 			const packageJsonParsed = <IPackageJSON>JSON.parse( packageJsonBuffer.toString() );
@@ -293,7 +291,7 @@ async function Execute()
 		const packageJsonText : Buffer | null = await ComUtils.HTTP_Get( requestUrl,
 		{
 			headers : {
-				'User-Agent': CreateUserAgent(user)
+				'User-Agent': user
 			}
 		});
 		if ( packageJsonText )

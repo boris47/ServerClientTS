@@ -433,7 +433,7 @@ export namespace ProcessManager
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		export const SpawnProcess = ( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : SpawnedProcess =>
+		export const SpawnProcess = ( processToExecute : string, stdin? : string|null, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : SpawnedProcess =>
 		{
 			const spawmProcess = () => child_process.spawn
 			(
@@ -448,6 +448,7 @@ export namespace ProcessManager
 			);
 
 			const child = spawmProcess();
+			child.stdin.end( stdin );
 			return new SpawnedProcess( child, path.join( absoluteCWD, processToExecute ), spawmProcess );
 		}
 
@@ -485,6 +486,103 @@ export namespace ProcessManager
 			return false;
 		}
 
+	}
+
+	export namespace ProcessSequence
+	{
+
+		export interface IProcessSequenceItem
+		{
+			processToExecute : string;
+			args? : string[];
+			additionalEnvVars? : Object;
+			absoluteCWD? : string;
+			transferOutputToNextItem? : boolean;
+			bCriticalProcessResult? : boolean
+		}
+
+		export class Sequence
+		{
+			private readonly processSeqence = new Array<IProcessSequenceItem>();
+			private currentItemIndex = 0;
+			private endPromiseGoodSequenceCallback : (v:boolean) => void = null;
+			private endPromiseBadSequenceCallback : (v?:any) => void = null;
+			private endSequenceCallback : (v:boolean) => void = null;
+			
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			constructor( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string, transferOutputToNextItem? : boolean, bCriticalProcessResult? : boolean )
+			{
+				this.AddProcess( processToExecute, args, additionalEnvVars, absoluteCWD, transferOutputToNextItem, bCriticalProcessResult );
+			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			public AddProcess( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string, transferOutputToNextItem? : boolean, bCriticalProcessResult? : boolean ) : void
+			{
+				this.processSeqence.push
+				(
+					{ processToExecute, args, additionalEnvVars, absoluteCWD, transferOutputToNextItem, bCriticalProcessResult }
+				);
+			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			public SetEndSequenceCallback( cb : ( v: boolean ) => void )
+			{
+				this.endSequenceCallback = cb;
+			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			public Restart()
+			{
+				this.currentItemIndex = 0;
+				this.Execute();
+			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			public Execute() : Promise<boolean>
+			{
+				return new Promise<boolean>( ( resolve, reject ) =>
+				{
+					this.endPromiseGoodSequenceCallback = resolve;
+					this.endPromiseBadSequenceCallback = reject;
+					this.Next();
+				});
+			}
+
+
+			/////////////////////////////////////////////////////////////////////////////////////////
+			private Next( stdin?: string )
+			{
+				const nextProcess = this.processSeqence[ this.currentItemIndex ];
+				if ( !nextProcess )
+				{
+					this.endPromiseGoodSequenceCallback(true);
+					this.endSequenceCallback( true );
+					return;
+				}
+
+				this.currentItemIndex ++;
+				const { processToExecute, args, additionalEnvVars, absoluteCWD, transferOutputToNextItem, bCriticalProcessResult } = nextProcess;
+				const process = ProcessManager.Spawn.SpawnProcess( processToExecute, stdin, args, additionalEnvVars, absoluteCWD );
+				process.OnExitOrClose( ( processResult: Spawn.ISpawnProcessResult ) =>
+				{
+					if ( !bCriticalProcessResult || bCriticalProcessResult && processResult.exitCode === 0 )
+					{	
+						this.Next( transferOutputToNextItem ? processResult.stdOutput : undefined );
+					}
+					else
+					{
+						this.endPromiseBadSequenceCallback();
+						this.endSequenceCallback( false );
+					}
+				});	
+			}
+		}
 	}
 
 	 
