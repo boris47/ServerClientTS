@@ -15,7 +15,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as ComUtils from '../Common/ComUtils';
 import * as FSUtils from '../Common/FSUtils';
+import * as GenericUtils from '../Common/GenericUtils';
 import { ProcessManager } from '../Common/ProcessManager';
+import { IPackageJSON } from '../Common/IPackageJSON';
 
 const DOWNLOAD_LOCATION 		= path.join( process.cwd(), '../temp' );
 const BASE_GIT_REPOS_API_URL 	= 'https://api.github.com/repos';
@@ -31,37 +33,33 @@ interface IGitFileRef
 	git_url : string;
 	download_url : string;
 	type : string;
+	content : string;
+	encoding : string;
 	_links : {
 		[key:string] : string
 	}
 }
 
-
-async function MapRepository( url : string ) : Promise<IGitFileRef[]>
+async function MapRepository( url : string, user : string ) : Promise<(IGitFileRef | null)[]>
 {
-	const results = new Array<IGitFileRef>();
+	const gitFilesMapped = new Array<IGitFileRef>();
 	const dirsUrl = new Array<string>( ...[ url ] );
-	while( dirsUrl.length > 0 )
+	while ( dirsUrl.length > 0 )
 	{
-		const result : Buffer | null = await ComUtils.HTTP_Get( dirsUrl.pop(), { 'User-Agent':'boris47' } );
-		if( !result )
-		{
-			results.splice( 0, results.length );
-			break;
-		}
+		const dirToMap = dirsUrl.pop();
+		const result : Buffer | null = await ComUtils.HTTP_Get( dirToMap, {	headers : { 'User-Agent': user } } );
 
-		const resultParsed = JSON.parse( result.toString() );
-		resultParsed.forEach( ( r : IGitFileRef ) =>
+		const resultParsed : IGitFileRef[] = JSON.parse( result?.toString() || null );
+		if ( Array.isArray( resultParsed ) )
 		{
-			if ( r.type === 'dir' )
-			{
-				dirsUrl.push( r.url );
-			}
-			else
-			{
-				results.push( r );
-			}
-		});
+			dirsUrl.push( ...resultParsed.filter( ( r : IGitFileRef ) => r.type === 'dir' ).map( d => d.url ) );
+			gitFilesMapped.push( ...resultParsed.filter( ( r : IGitFileRef ) => r.type === 'file' ) );
+		}
+		else
+		{
+			console.error( `MapRepository:Expected array of items form dir '${dirToMap}' but received\n${result?.toString()}` );
+			gitFilesMapped.push( null );
+		}
 	}
 	/*
 	{
@@ -81,50 +79,60 @@ async function MapRepository( url : string ) : Promise<IGitFileRef[]>
 		}
     },
 	*/
-	return results;
+	return gitFilesMapped;
 }
 
-async function DownloadFiles( downloadLocation : string, fileRefs : IGitFileRef[] ) : Promise<boolean>
+async function DownloadFiles( downloadLocation : string, user : string, fileRef : IGitFileRef ) : Promise<boolean>
 {
-	for( const fileRef of fileRefs )
+	if ( !fileRef ) return false;
+
+	const relativeFilePath = fileRef.path
+	const fileUrlPath = fileRef.url;
+
+	console.log( `DownloadFiles: Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
+
+	return ComUtils.HTTP_Get( fileUrlPath, { headers : { 'User-Agent': user } } ).then( ( result : Buffer | null ) =>
 	{
-		const relativeFilePath = fileRef.path;
-		const fileUrlPath = fileRef.url;
-		console.log( `Downloading '${relativeFilePath}' from '${fileUrlPath}'` );
-		const result : Buffer | null = await ComUtils.HTTP_Get( fileUrlPath );
-		if ( result )
+		const fileref = <IGitFileRef>JSON.parse( result?.toString() || null );
+		if ( !fileref || !fileref.content )
 		{
-			const absoluteFilePath = path.join( downloadLocation, relativeFilePath );
-			const folderPath = path.parse( absoluteFilePath ).dir;
-			FSUtils.EnsureDirectoryExistence( folderPath );
-			fs.writeFileSync( absoluteFilePath, result );
+			console.error( `DownloadFiles:Error: fileref is invalid:\n${JSON.stringify( fileref || {}, null, '\t' )}` );
+			return false;
 		}
-	};
-	return true;
+
+		// Create folder tree if necessary
+		const absoluteFilePath = path.join( downloadLocation, relativeFilePath );
+		FSUtils.EnsureDirectoryExistence( path.parse( absoluteFilePath ).dir );
+		
+		// Apply decoding
+		const content = Buffer.from( fileref.content, <BufferEncoding>fileref.encoding ).toString();
+		return FSUtils.WriteFileAsync( absoluteFilePath, content )
+		.then( ( result: FSUtils.IASyncFileOpResult ) => FSUtils.LogIfError( result ).bHasGoodResult );
+	})
 }
 
-async function SyncRepositoryFolders( downloadLocation : string, user : string, repositoryName : string, mainFolder : string, otherFolder : string[] ) : Promise<boolean>
+async function SyncRepositoryFolders( downloadLocation : string, user : string, repositoryName : string, mainFolder : string, otherFolders : string[] ) : Promise<boolean>
 {
-	let bGlobalResult = true;
-	{
-		const fullUrlMainFolder = `${BASE_GIT_REPOS_API_URL}/${user}/${repositoryName}/contents/${mainFolder}?ref=master`;
-		const fileMap : IGitFileRef[] = await MapRepository( fullUrlMainFolder );
-		bGlobalResult = bGlobalResult && await DownloadFiles( downloadLocation, fileMap );
-	}
-
-	bGlobalResult = bGlobalResult && await Promise.all
+	// MAP FILE TO DONWLAOD
+	const toFolderGitPath = ( u : string, r : string, fn : string ) => `${BASE_GIT_REPOS_API_URL}/${u}/${r}/contents/${fn}?ref=master`;
+	const fileMapped : ( IGitFileRef | null )[] = await Promise.all
 	(
-		otherFolder.map( ( otherFolderName : string ) =>
-		{
-			const fullUrlMainFolder = `${BASE_GIT_REPOS_API_URL}/${user}/${repositoryName}/contents/${otherFolderName}?ref=master`;
-			return MapRepository( fullUrlMainFolder ).then( ( fileRefs : IGitFileRef[] ) => DownloadFiles( downloadLocation, fileRefs ) );
-		})
-	)
-	.then( ( results : boolean[] ) => results.reduce( ( prev : boolean, curr : boolean ) => prev && curr, true ) );
+		[ toFolderGitPath( user, repositoryName, mainFolder ), ...otherFolders.map( ( otherFolderName : string ) => toFolderGitPath( user, repositoryName, otherFolderName ) ) ]
+		.map
+		(
+			( folderToMap : string ) => MapRepository( folderToMap, user )
+		)
+	).then( ( mappedArrays : IGitFileRef[][] ) => mappedArrays.reduce( ( previousValue: IGitFileRef[], currentValue: IGitFileRef[] ) => [ ...previousValue, ...currentValue ] ) )
 	
-	return bGlobalResult;
+	// DOWNLOAD THE MAPPED FILES
+	return Promise.all
+	(
+		fileMapped.map
+		(
+			( fileMapped : IGitFileRef | null ) => DownloadFiles( downloadLocation, user, fileMapped )
+		)
+	).then( ( results : boolean []) => results.every( v => v ) );
 }
-
 
 
 async function UpdateSelf()
@@ -132,13 +140,89 @@ async function UpdateSelf()
 
 }
 
-async function UpdateProgram( programDetailsParsed : any ) : Promise<boolean>
+
+async function UpdateProgram() : Promise<boolean>
 {
+	//	const programDetilsText = fs.readFileSync( 0, 'utf-8' );
+	//	const programDetilsParsed = JSON.parse( programDetilsText );
+	const programDetailsParsed =
+	{
+		processDirectory : 'E:\\SourceTree\\ServerClientTS\\Server',
+		name: 'Server',
+		pid : 0, // Pheraps is useless
+		user : 'boris47',
+		repositoryName : 'ServerClientTS',
+		mainFolder : 'Server',
+		otherFolders : [/*'Common'*/]
+	};
+	const processDirectory			= programDetailsParsed.processDirectory;		// E:\\SourceTree\\ServerClientTS\\Server
+	const processName				= programDetailsParsed.name;					// Server
 	const user : string				= programDetailsParsed.user;					// boris47
 	const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
 	const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
 	const otherFolders : string[] 	= programDetailsParsed.otherFolders;			// ['Common']
-	return SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
+	FSUtils.DeleteContentFolder( DOWNLOAD_LOCATION );
+	FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
+
+	let bOverhaulResult = true;
+
+	// Donwload Form repository
+//	bOverhaulResult = bOverhaulResult && await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
+	if ( bOverhaulResult && false )
+	{
+		{
+			const destinationFolder = processDirectory;
+			FSUtils.DeleteContentFolder( destinationFolder );
+			FSUtils.EnsureDirectoryExistence( destinationFolder );
+			const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, mainFolder );
+			for( const [ fileRelativePath, error ] of results.entries() )
+			{
+				if ( error )
+				{
+					console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
+				}
+				else
+				{
+					console.log( `Copied ${fileRelativePath}` );
+				}
+			}
+		}
+		console.log( '.' ); console.log( '.' );
+		/*
+		for ( let index = 0; index < otherFolders.length; index++ )
+		{
+			const otherFolder = otherFolders[index];
+			const destinationFolder = path.join( processDirectory.substring( 0, processDirectory.lastIndexOf('\\') ), otherFolder );
+			FSUtils.DeleteContentFolder( destinationFolder );
+			FSUtils.EnsureDirectoryExistence( destinationFolder );
+			const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, otherFolder );
+			for( const [ fileRelativePath, error ] of results.entries() )
+			{
+				if ( error )
+				{
+					console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
+				}
+				else
+				{
+					console.log( `Copied ${fileRelativePath}` );
+				}
+			}
+		}
+		*/
+	}
+
+	if ( bOverhaulResult )
+	{
+		// Restart Process
+		const processSequence = new ProcessManager.ProcessSequence.Sequence( 'npm', [ 'install' ], undefined, processDirectory, false, false );
+		processSequence.AddProcess( '"./node_modules/.bin/tsc.cmd"', [ '-p', 'tsconfig.json', '--watch', 'false' ], undefined, processDirectory, false, false );
+		processSequence.SetEndSequenceCallback
+		(
+			(result : boolean) => ProcessManager.Spawn.SpawnAndLeave( 'node', [`Server.js`], undefined, processDirectory )
+		);
+		bOverhaulResult = bOverhaulResult && await processSequence.Execute();
+	}
+	return bOverhaulResult;
 }
 
 
@@ -161,13 +245,38 @@ async function Execute()
 
 	if ( bUpdateSelf )
 	{
+		const programDetailsParsed =
+		{
+			user : 'boris47',
+			repositoryName : 'ServerClientTS',
+			mainFolder : 'Updater',
+		};
+		const user : string				= programDetailsParsed.user;					// boris47
+		const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
+		const mainFolder : string 		= programDetailsParsed.mainFolder;				// Updater
 
+		const requestUrl = `https://raw.githubusercontent.com/${user}/${repositoryName}/master/${mainFolder}/package.json`;
+		const packageJsonBuffer : Buffer | null = await ComUtils.HTTP_Get( requestUrl,
+		{
+			headers : {
+				'User-Agent': user
+			}
+		});
+		const currentPackageJsonText : string | null = await FSUtils.ReadFileAsync( './package.json' ).then( ( result : FSUtils.IASyncFileOpResult ) => result.bHasGoodResult ? String( result.data ) : null );
+		if ( packageJsonBuffer && currentPackageJsonText )
+		{
+			const packageJsonParsed = <IPackageJSON>JSON.parse( packageJsonBuffer.toString() );
+			const currentPackageJson = JSON.parse( currentPackageJsonText ).version;
+			const versionOnGithub = packageJsonParsed.version;
+			const currentVersion = currentPackageJson.version;
+			
+		}
 	}
 
 	if ( bCheckVersion )
 	{
 		// const programDetailsText = fs.readFileSync( 0, 'utf-8' );
-		// const programDetailsParsed = JSON.parse( programDetailsText );	
+		// const programDetailsParsed = JSON.parse( programDetailsText );
 		const programDetailsParsed =
 		{
 			user : 'boris47',
@@ -178,10 +287,14 @@ async function Execute()
 		const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
 		const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
 
-		// https://raw.githubusercontent.com/boris47/ServerClientTS/master/Server/Utils/AWSUtils.ts
 		const requestUrl = `https://raw.githubusercontent.com/${user}/${repositoryName}/master/${mainFolder}/package.json`;
-		const packageJsonText : Buffer | null = await ComUtils.HTTP_Get( requestUrl );
-		if( packageJsonText )
+		const packageJsonText : Buffer | null = await ComUtils.HTTP_Get( requestUrl,
+		{
+			headers : {
+				'User-Agent': user
+			}
+		});
+		if ( packageJsonText )
 		{
 			const packageJsonParsed = JSON.parse( packageJsonText.toString() );
 			const version = packageJsonParsed.version;
@@ -191,82 +304,7 @@ async function Execute()
 
 	if ( bUpdateProgram )
 	{
-	//	const programDetilsText = fs.readFileSync( 0, 'utf-8' );
-	//	const programDetilsParsed = JSON.parse( programDetilsText );
-		const programDetailsParsed =
-		{
-			processDirectory : 'E:\\SourceTree\\ServerClientTS\\Server',
-			name: 'Server',
-			pid : 0, // Pheraps is useless
-			user : 'boris47',
-			repositoryName : 'ServerClientTS',
-			mainFolder : 'Server',
-			otherFolders : ['Common']
-		};
-		const processDirectory			= programDetailsParsed.processDirectory;		// E:\\SourceTree\\ServerClientTS\\Server
-		const processName				= programDetailsParsed.name;					// Server
-		const user : string				= programDetailsParsed.user;					// boris47
-		const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
-		const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
-		const otherFolders : string[] 	= programDetailsParsed.otherFolders;			// ['Common']
-		FSUtils.DeleteContentFolder( DOWNLOAD_LOCATION );
-		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
-
-		// Donwload Form repository
-		const bResult = await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
-		if ( bResult )
-		{
-			{
-				const destinationFolder = processDirectory;
-				FSUtils.DeleteContentFolder( destinationFolder );
-				FSUtils.EnsureDirectoryExistence( destinationFolder );
-				const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, mainFolder );
-				for( const [ fileRelativePath, error ] of results.entries() )
-				{
-					if ( error )
-					{
-						console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
-					}
-					else
-					{
-						console.log( `Copied ${fileRelativePath}` );
-					}
-				}
-			}
-			console.log( '.' ); console.log( '.' );
-			
-			for ( let index = 0; index < otherFolders.length; index++ )
-			{
-				const otherFolder = otherFolders[index];
-				const destinationFolder = path.join( processDirectory.substring( 0, processDirectory.lastIndexOf('\\') ), otherFolder );
-				FSUtils.DeleteContentFolder( destinationFolder );
-				FSUtils.EnsureDirectoryExistence( destinationFolder );
-				const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, otherFolder );
-				for( const [ fileRelativePath, error ] of results.entries() )
-				{
-					if ( error )
-					{
-						console.error( `Error copying ${fileRelativePath}: ${error.name}:${error.message}` );
-					}
-					else
-					{
-						console.log( `Copied ${fileRelativePath}` );
-					}
-				}
-			}
-			
-		}
-
-		// Restart Process
-		{
-			const bResult1 = await ProcessManager.Spawn.SpawnProcess( 'npm', ['install'], undefined, processDirectory ).AsPromise();
-			const bResult2 = await ProcessManager.Spawn.SpawnProcess( '"./node_modules/.bin/tsc.cmd"', [
-				'-p', 'tsconfig.json',
-				'--watch', 'false'
-			], undefined, processDirectory ).AsPromise();
-			const bResult3 = ProcessManager.Spawn.SpawnAndLeave( 'node',  [`${processName}.js`], undefined, processDirectory );
-			console.log(bResult1 && bResult2 && bResult3 );
-		}
+		UpdateProgram();
 	}
 }
 
