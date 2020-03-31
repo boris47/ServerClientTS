@@ -1,5 +1,4 @@
 
-import { IURLParseResult } from "./Interfaces";
 import * as crypto from 'crypto';
 
 
@@ -36,6 +35,21 @@ export function Construct<T>( Constructor: GenericConstructor<T>, ...Args:any[] 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+export function IsTypeOf( value : any, type : any ) : boolean
+{
+	typeof type === 'string' ? ( ( el:any ) => typeof el === type ) : ( ( el:any ) => el instanceof type );
+	if ( type === 'string' )
+	{
+		return typeof value === type;
+	}
+	else
+	{
+		return value instanceof type;
+	}
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export function DelayMS( ms : number ) : Promise<void>
 {
 	return new Promise<void>( ( resolve ) =>
@@ -57,25 +71,14 @@ export function ToBuffer( data : ( number[] | Uint8Array | string | ArrayBuffer 
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-/**
- * Return the same array but filtered of element not responding to given predicate
- * @param myArray 
- * @param predicate 
- */
-export function FilterArray<T>( myArray: T[], predicate: ( value : T ) => boolean )
-{
-	if( predicate )
-	{
-		for ( let index = myArray.length - 1; index >= 0; index-- )
-		{
-			const element : T = myArray[index];
-			if ( !predicate( element ) )
-			{
-				myArray.splice( index, 1 );
-			}
-		}
-	}
-	return myArray;
+export interface IURLParseResult {
+
+	KeyValues : Map<string, string>;
+
+	Switches : string[];
+
+	Arrays : Map<string, string[]>;
+
 }
 
 /**

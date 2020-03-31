@@ -2,6 +2,7 @@
 import * as http from 'http';
 import * as net from 'net';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import {
 	server as WebSocketServer,
@@ -25,6 +26,7 @@ import { HTTPCodes } from './HTTP.Codes';
 import { Logger } from '../Common/Logger';
 import { ProcessManager } from '../Common/ProcessManager';
 
+/*
 // Very simple answer
 process.on( 'message', ( message : any ) =>
 {
@@ -38,9 +40,16 @@ process.on( 'message', ( message : any ) =>
 		});
 	}
 });
+*/
 
 
 const ConnectedClients = new Array<WebSocketConnection>();
+
+const ServerInfo =
+{
+	HTTP_SERVER_PORT : 3000,
+	WEBSOCKET_SERVER_PORT : 3001
+}
 
 
 async function CreateServer() : Promise<boolean>
@@ -54,27 +63,24 @@ async function CreateServer() : Promise<boolean>
 		};
 		console.log( [ `Request: ${request.url}`, `Result: ${value.bHasGoodResult}`, `Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`, '' ].join('\n') );
 	};
-
-
-	let bResult = true;
-
-	const serverOptions  = <http.ServerOptions>
+	
+	// HTTP SERVER
 	{
+		const serverOptions  = <http.ServerOptions>
+		{
+	
+		};
+	
+		const listenOptions = <net.ListenOptions>
+		{
+			port : ServerInfo.HTTP_SERVER_PORT,
+			host : '::'
+		}
 
-	};
-
-	const listenOptions = <net.ListenOptions>
-	{
-		port : 3000,
-		host : '::'
-	}
-
-	const server : http.Server = http.createServer( serverOptions );
-	{
+		const server : http.Server = http.createServer( serverOptions );
 		server.on( 'error', function( err : Error )
 		{
 			console.error( err.name, err.message );
-			bResult = false;
 		})
 		
 		server.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
@@ -84,15 +90,8 @@ async function CreateServer() : Promise<boolean>
 			const availableMethods : IResponseMethods = ResponsesMap[identifier];
 			if ( availableMethods )
 			{
-				const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()];
-				if ( method )
-				{
-					method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
-				}
-				else // Method Not Allowed
-				{
-					MethodNotAllowed.applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
-				}
+				const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()] || MethodNotAllowed;
+				method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 			else
 			{
@@ -106,16 +105,27 @@ async function CreateServer() : Promise<boolean>
 		});
 }
 
-	// Web socket server setup
+	// WEBSOCKET SETUP
 	{
 		const IsOriginAllowed = ( origin : string ) : boolean =>
 		{
 			return true;
 		}
 
+		const serverOptions  = <http.ServerOptions>
+		{
+	
+		};
+	
+		const listenOptions = <net.ListenOptions>
+		{
+			port : ServerInfo.WEBSOCKET_SERVER_PORT,
+			host : '::'
+		}
+
 		const serverConfig = <IServerConfig>
 		{
-			httpServer : /*server*/ http.createServer().listen( 3001, '::', () => console.log( `WebSocket Server created at localhost, port:3001\n` ) ),
+			httpServer : http.createServer( serverOptions ).listen( listenOptions, () => console.log( `WebSocket Server created at localhost, port:3001\n` ) ),
 
 		//	autoAcceptConnections : false
 		}
@@ -172,13 +182,10 @@ async function CreateServer() : Promise<boolean>
 				});
 			});
 		}
-
 	}
-
-
-
-	return bResult;
+	return true;
 }
+
 
 async function UploadConfigurationFile() : Promise<boolean>
 {
@@ -187,17 +194,17 @@ async function UploadConfigurationFile() : Promise<boolean>
 	let bResult = true;
 	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString().trim();
-	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString().trim();
+	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
+	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
 	
 	if ( publicIPv6 )
 	{
-		console.log( "Server", 'publicIP', publicIPv6 );
+		console.log( "Server", 'publicIPv6', publicIPv6 );
 		serverConfigs.SetCurrentPublicIP( publicIPv6 );
 	}
 	else if ( publicIPv4 )
 	{
-		console.log( "Server", 'publicIP', publicIPv4 );
+		console.log( "Server", 'publicIPv4', publicIPv4 );
 		serverConfigs.SetCurrentPublicIP( publicIPv4 );
 	}
 	else
@@ -206,8 +213,8 @@ async function UploadConfigurationFile() : Promise<boolean>
 		bResult = false;
 	}
 
-	serverConfigs.SetWebSocketPort( 3001 );
-	serverConfigs.SetRequestListenerPort( 3000 );
+	serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
+	serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
 	
 	if ( bResult )
 	{
@@ -223,12 +230,6 @@ async function UploadConfigurationFile() : Promise<boolean>
 
 async function Main()
 {
-//	console.log( UniqueID.Generate() ); console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
-//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
-//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
-//	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );	console.log( UniqueID.Generate() );
-	
-
 //	const s3instnce = AWSUtils.S3.CreateInstance( '', '', 'eu-central-1' );
 //	const bucketName = 'invrsion-productbank-development';
 	
@@ -239,41 +240,35 @@ async function Main()
 	/*	MULTIPLE DONWLOAD TEST */
 //	const resKeys =
 //	[
-//		"PRD9999999999996_0/photo/thumbnail_bottom.png",
-//		"PRD9999999999996_0/photo/thumbnail_front.png",
-//		"PRD9999999999996_0/photo/thumbnail_left.png",
-//		"PRD9999999999996_0/photo/thumbnail_right.png",
-//		"PRD9999999999996_0/photo/thumbnail_top.png",
-//		"PRD9999999999996_0/photo/top.jpg",
-//		"PRD9999999999997_0/photo/back.jpg",
 //		"PRD9999999999997_0/photo/bottom.jpg",
 //		"PRD9999999999997_0/photo/front.jpg"
 //	];	
 //	const buffers = await AWSUtils.S3.DownloadResources( s3instnce, bucketName, resKeys );	
 //	return;
 
-	// DATABASE
-//	const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
-//	if ( db )
-//	{
-//		const coll = await db.GetCollection( 'coll0' );
-//		const result = await db.FindInCollection( coll, 'a', '1' );
-//		const bClosed = await MongoDatabase.CloseClient( db );
-//	}
 
-
+	// LOGGER
 	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
 	if ( !bLoggerCreated )
 	{
 		return process.exit(1);
+
 	}
+
+	// DATABASE
 	{
-		const bHasCommittedConfigFile = await UploadConfigurationFile();
-		if ( !bHasCommittedConfigFile )
+		const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+		if ( !db )
 		{
-			console.error( "Cannot upload configuration file" );
-			return process.exit(1);
+			console.error( "Database Unavailable" );
+			process.exit(1);
 		}
+	//	if ( db )
+	//	{
+	//		const coll = await db.GetCollection( 'coll0' );
+	//		const result = await db.FindInCollection( coll, 'a', '1' );
+	//		const bClosed = await MongoDatabase.CloseClient( db );
+	//	}
 	}
 
 	const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
@@ -290,6 +285,16 @@ async function Main()
 		if ( !bResultRemote )
 		{
 			console.error( "Remote Storage Unavailable" );
+			return process.exit(1);
+		}
+	}
+
+	// SERVER CONFIG
+	{
+		const bHasCommittedConfigFile = await UploadConfigurationFile();
+		if ( !bHasCommittedConfigFile )
+		{
+			console.error( "Cannot upload configuration file" );
 			return process.exit(1);
 		}
 	}

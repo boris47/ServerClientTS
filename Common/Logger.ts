@@ -6,9 +6,9 @@ import * as FSutils from './FSUtils';
 
 export class Logger
 {
-	public static readonly instance : Logger = null;
+	private static instance : Logger = null;
 	
-	private fileDescriptor = null;
+	private fileDescriptor : number = null;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,7 @@ export class Logger
 
 			if ( fileDescriptor )
 			{
-				( this.instance as Logger ) = new Logger();
+				this.instance = new Logger();
 				this.instance.fileDescriptor = fileDescriptor;
 				
 				const oldConsoleLog = console.log;
@@ -58,10 +58,10 @@ export class Logger
 					this.instance.Close();
 				});
 				console.log( "LOG FILE PATH", finalFilePath );
-				return true;
 			}
+			return !!fileDescriptor;
 		}
-		return false;
+		return true;
 	}
 
 
@@ -96,7 +96,7 @@ export class Logger
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public Log( messages : IArguments ) : void
 	{
-		if ( !Logger.instance )
+		if ( !this.fileDescriptor )
 		{
 			console.error( `Logger need a static initialization` )
 			return;
@@ -111,7 +111,7 @@ export class Logger
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public Error( messages : IArguments ) : void
 	{
-		if ( !Logger.instance )
+		if ( !this.fileDescriptor )
 		{
 			console.error( `Logger need a static initialization` )
 			return;

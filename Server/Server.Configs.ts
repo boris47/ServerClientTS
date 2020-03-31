@@ -3,65 +3,68 @@ import * as ipRegex from 'ip-regex';
 import { IServerConfigs } from '../Common/Interfaces';
 
 
-export class ServerConfigs implements IServerConfigs {
-	
+export class ServerConfigs implements IServerConfigs
+{	
 	public get PublicIP() : string
 	{
-		return this.ServerPublicIP;
+		return this.serverPublicIP;
 	}
 
 	public get WebSocketPort() : number
 	{
-		return this.ServerWebSocketPort;
+		return this.serverWebSocketPort;
 	}
 
 	public get RequestsListenerPort() : number
 	{
-		return this.ServerRequestsListenerPort;
+		return this.serverRequestsListenerPort;
 	}
 	
 
-	private ServerPublicIP : string | null = null;
-	private ServerWebSocketPort = -1;
-	private ServerRequestsListenerPort = -1;
+	private serverPublicIP : string | null = null;
+	private serverWebSocketPort = -1;
+	private serverRequestsListenerPort = -1;
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public IsValid() : boolean
 	{
 		return this.PublicIP !== null && this.WebSocketPort > -1 && this.RequestsListenerPort > -1;
 	}
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public SetCurrentPublicIP( PublicIP : string ) : boolean
 	{
 		if( ipRegex.v4({ exact: true }).test( PublicIP ) || ipRegex.v6({ exact: true }).test( PublicIP ) )
 		{
-			this.ServerPublicIP = PublicIP;
+			this.serverPublicIP = PublicIP;
 			return true;
 		}
 		return false;
 	}
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public SetWebSocketPort( Port : number ) : boolean
 	{
-		if ( Port !== this.ServerRequestsListenerPort )
+		if ( Port !== this.serverRequestsListenerPort )
 		{
-			this.ServerWebSocketPort = Port;
+			this.serverWebSocketPort = Port;
 			return true;
 		}
 		return false;
 	}
 
 
-	public SetRequestListenerPort( Port : number ) : boolean
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public SetHTTPServerPort( Port : number ) : boolean
 	{
-		if ( Port !== this.ServerWebSocketPort )
+		if ( Port !== this.serverWebSocketPort )
 		{
-			this.ServerRequestsListenerPort = Port;
+			this.serverRequestsListenerPort = Port;
 			return true;
 		}
 		return false;
 	}
-
 }

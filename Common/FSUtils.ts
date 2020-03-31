@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as ArrayUtils from './ArrayUtils';
 
 export interface IASyncFileOpResult
 {
@@ -12,27 +13,16 @@ export interface IASyncFileOpResult
 export const GetUserDataFolder = () => process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export async function Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
 {
-	const absoluteFiles = new Array<string>();
-	const absoluteDirs = new Array<string>( ...[path.join( absoluteSourceFolder, subfolder || '' )] );
-	while ( absoluteDirs.length > 0 )
-	{
-		const absoluteDir = absoluteDirs.pop();
-		fs.readdirSync( absoluteDir ).forEach( ( fileName : string ) =>
-		{
-			const fullFilePath = path.join( absoluteDir, fileName );
-			( fs.statSync( fullFilePath ).isDirectory() ? absoluteDirs : absoluteFiles ).push( fullFilePath );
-		});
-	}
-
+	const mapped : IMappedFolderData = MapFolder( path.join( absoluteSourceFolder, subfolder || '' ) );
 	const results = new Map<string, (NodeJS.ErrnoException | null )>();
-	for( const absoluteSourceFilePath of absoluteFiles )
+	for( const absoluteSourceFilePath of mapped.files )
 	{
 		const relativeFilePath = absoluteSourceFilePath.replace( path.join( absoluteSourceFolder, subfolder || ''), '' ).replace( '\\\\', '' );
 		const absoluteDestinationFilePath = path.join( absoluteDestinationFolder, relativeFilePath );
-		const absoluteDestinationFolderPath = path.parse( absoluteDestinationFilePath ).dir;
-		EnsureDirectoryExistence( absoluteDestinationFolderPath );
+		EnsureDirectoryExistence( path.parse( absoluteDestinationFilePath ).dir );
 		await new Promise<void>( ( resolve ) =>
 		{
 			fs.copyFile( absoluteSourceFilePath, absoluteDestinationFilePath, ( err: NodeJS.ErrnoException ) =>
@@ -46,6 +36,7 @@ export async function Copy( absoluteSourceFolder : string, absoluteDestinationFo
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export function LogIfError( result : IASyncFileOpResult )
 {
 	if ( !result.bHasGoodResult )
@@ -57,22 +48,23 @@ export function LogIfError( result : IASyncFileOpResult )
 }
 
 
-export async function FileExistsAsync( filePath : string ) : Promise<boolean>
+/////////////////////////////////////////////////////////////////////////////////////////
+export function FileExistsAsync( filePath : string ) : Promise<boolean>
 {
-	const bResult = await new Promise<boolean>( ( resolve ) =>
+	return new Promise<boolean>( ( resolve ) =>
 	{
 		fs.exists( filePath, ( exists : boolean ) =>
 		{
 			resolve( exists );
 		});
 	});
-	return bResult;
 }
 
 
-export async function WriteFileAsync( filePath : string, data: any ) : Promise<IASyncFileOpResult>
+/////////////////////////////////////////////////////////////////////////////////////////
+export function WriteFileAsync( filePath : string, data: any ) : Promise<IASyncFileOpResult>
 {
-	const readPromiseResult = await new Promise<IASyncFileOpResult>( ( resolve ) =>
+	return new Promise<IASyncFileOpResult>( ( resolve ) =>
 	{
 		fs.writeFile( filePath, data, ( err: NodeJS.ErrnoException ) =>
 		{
@@ -84,13 +76,13 @@ export async function WriteFileAsync( filePath : string, data: any ) : Promise<I
 			resolve( result );
 		});
 	});
-	return readPromiseResult;
 }
 
 
-export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileOpResult>
+/////////////////////////////////////////////////////////////////////////////////////////
+export function ReadFileAsync( filePath : string ) : Promise<IASyncFileOpResult>
 {
-	const readPromiseResult = await new Promise<IASyncFileOpResult>( ( resolve ) =>
+	return new Promise<IASyncFileOpResult>( ( resolve ) =>
 	{
 		fs.readFile( filePath, 'utf8', ( err: NodeJS.ErrnoException, data: string ) =>
 		{
@@ -102,63 +94,88 @@ export async function ReadFileAsync( filePath : string ) : Promise<IASyncFileOpR
 			resolve( result );
 		});
 	});
-	return readPromiseResult;
 }
 
 
-export function IsDirectory(dpath: any): boolean
+/////////////////////////////////////////////////////////////////////////////////////////
+export function IsDirectory( directoryPath: string ): boolean
 {
 	let result = false;
 	try
 	{
-		result = fs.lstatSync(dpath).isDirectory();
+		result = fs.lstatSync( directoryPath ).isDirectory();
 	}
-	catch ( e )
-	{
-		result = false;
-	}
+	catch ( e ) {}
 	return result;
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 /** Ensure that a folder exist, creating all directory tree if needed */
-export function EnsureDirectoryExistence(filePath: string): void
+export function EnsureDirectoryExistence( filePath: string ): void
 {
 	const filePathNormalized: string[] = path.normalize(filePath).split(path.sep);
 	filePathNormalized.forEach( ( sDir : string, index : number ) =>
 	{
 		const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-		if ( ( IsDirectory( pathInQuestion ) === false ) && pathInQuestion )
+		if ( ( pathInQuestion.length > 0 && IsDirectory( pathInQuestion ) === false ) )
 		{
 			fs.mkdirSync(pathInQuestion);
 		}
 	});
 }
 
-/** If directory exists, clear all the content */
-export function DeleteContentFolder( folderPath: string ): void
+
+///////////////////////////////////////////
+export interface IMappedFolderData
 {
-	const directoryPath: string = path.normalize(folderPath);
-	if ( IsDirectory( directoryPath ) )
-	{
-		fs.readdirSync( directoryPath ).forEach( ( fileName: string ) =>
-		{
-			const filePath = path.join( directoryPath, fileName );
-			if ( IsDirectory( filePath ) )
-			{
-				DeleteContentFolder( filePath );
-				fs.rmdirSync(filePath);
-			}
-			else
-			{
-				fs.unlinkSync(filePath);
-			}
-		});
-	}
+	files : string[];
+	folders : string[];
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
+export function MapFolder( folderPath: string ): IMappedFolderData | null
+{
+	let result : IMappedFolderData | null = null;
 
+	if ( IsDirectory( folderPath ) )
+	{
+		result = <IMappedFolderData>{ files : new Array<string>(), folders : new Array<string>() };
+		const directoriesPath = new Array<string>( path.normalize( folderPath ) );
+		while( directoriesPath.length > 0 )
+		{
+			const dPath = directoriesPath.pop();
+			fs.readdirSync( dPath ).map( fp => path.join( dPath, fp ) ).forEach( ( fp: string ) =>
+			{
+				if ( IsDirectory( fp ) )
+				{
+					directoriesPath.push( fp );
+					result.folders.push( fp );
+				}
+				else
+				{
+					result.files.push( fp );
+				}
+			});
+		}
+	}
+
+	return result;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/** If directory exists, clear all the content */
+export function DeleteContentFolder( folderPath: string ): void
+{
+	const mapped : IMappedFolderData = MapFolder( folderPath );
+	mapped.files.forEach( filePath => fs.unlinkSync(filePath) );
+	mapped.folders.reverse().forEach( directoryPath => fs.rmdirSync(directoryPath) );
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 /** (Promise) Returns the size in Bytes of the given file or directory, or null in case of error
  * 
  * @param {string} filePath The path of file or directory
@@ -166,10 +183,11 @@ export function DeleteContentFolder( folderPath: string ): void
  */
 export function GetFileSizeInBytesOf( filePath : string ) : number | null
 {
-	if ( fs.existsSync( filePath ) )
+	let result : number | null = null;
+	try
 	{
-		const stat : fs.Stats = fs.lstatSync( filePath );
-		return stat.size;
+		result = fs.lstatSync( filePath ).size;
 	}
-	return null;
+	catch ( e ) {}
+	return result;
 }

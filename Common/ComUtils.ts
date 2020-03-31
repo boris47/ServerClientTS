@@ -1,9 +1,32 @@
 
-import { ICommonResult } from '../Common/Interfaces';
 import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+export interface ICommonResult
+{
+	bHasGoodResult : boolean;
+	
+	body : Buffer | null;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+export interface IClientRequestResult extends ICommonResult
+{
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+export interface IServerResponseResult extends ICommonResult
+{
+
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export async function HTTP_Get( URL : string, requestOptions?: https.RequestOptions ) : Promise<Buffer | null>
 {
 	return await new Promise<Buffer | null>( ( resolve ) =>
@@ -75,6 +98,7 @@ export async function HTTP_Get( URL : string, requestOptions?: https.RequestOpti
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buffer, cb? : ( value: T ) => void  ) : Promise<T>
 {
 	const resultObject = <T>
@@ -89,6 +113,8 @@ export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buf
 	return resultObject
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb? : (value: T) => void ) : Promise<T>
 {
 	let msg = '';
