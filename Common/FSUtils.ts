@@ -114,15 +114,15 @@ export function IsDirectory( directoryPath: string ): boolean
 /** Ensure that a folder exist, creating all directory tree if needed */
 export function EnsureDirectoryExistence( filePath: string ): void
 {
-	const filePathNormalized: string[] = path.normalize(filePath).split(path.sep);
-	filePathNormalized.forEach( ( sDir : string, index : number ) =>
+	const filePathNormalized: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
+	for (let index = 0; index < filePathNormalized.length; index++)
 	{
 		const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-		if ( ( pathInQuestion.length > 0 && IsDirectory( pathInQuestion ) === false ) )
+		if ( ( !IsDirectory( pathInQuestion ) ) )
 		{
 			fs.mkdirSync(pathInQuestion);
 		}
-	});
+	};
 }
 
 
@@ -135,13 +135,16 @@ export interface IMappedFolderData
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export function MapFolder( folderPath: string ): IMappedFolderData | null
+export function MapFolder( folderPath: string ): IMappedFolderData
 {
-	let result : IMappedFolderData | null = null;
+	const result : IMappedFolderData = <IMappedFolderData>
+	{
+		files : new Array<string>(),
+		folders : new Array<string>()
+	};
 
 	if ( IsDirectory( folderPath ) )
 	{
-		result = <IMappedFolderData>{ files : new Array<string>(), folders : new Array<string>() };
 		const directoriesPath = new Array<string>( path.normalize( folderPath ) );
 		while( directoriesPath.length > 0 )
 		{
