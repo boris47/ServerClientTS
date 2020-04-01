@@ -5,7 +5,7 @@ import * as path from 'path'
 import * as mime from 'mime-types';
 
 import { HTTPCodes } from './HTTP.Codes';
-import { IServerResponseResult } from '../Common/Interfaces';
+
 import * as ComUtils from '../Common/ComUtils';
 import * as FSUtils from '../Common/FSUtils';
 import { IServerRequestInternalOptions } from './Server.ResponsesMap';
@@ -42,9 +42,9 @@ export class ServerResponses {
 	}
 
 	
-	public static async DownloadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
+	public static async DownloadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
-		const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, <IServerRequestInternalOptions>{} );
+		const result : ComUtils.IServerResponseResult = await ServerResponses.Request_PUT( request, response, <IServerRequestInternalOptions>{} );
 		if ( !result.bHasGoodResult )
 		{
 			return result;
@@ -68,7 +68,7 @@ export class ServerResponses {
 	}
 
 
-	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
+	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
 
@@ -110,9 +110,9 @@ export class ServerResponses {
 
 
 	/** End the response with value passed with 'serverRequestInternalOptions' */
-	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
+	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
-		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
+		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
 			response.on( 'error', ( err : Error ) =>
 			{
@@ -149,9 +149,9 @@ export class ServerResponses {
 
 	
 	/** Receive data storing them into buffer inside returne value body */
-	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<IServerResponseResult>
+	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
-		return new Promise<IServerResponseResult>( ( resolve : ( value: IServerResponseResult ) => void ) =>
+		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
 			const body : Buffer[] = [];
 

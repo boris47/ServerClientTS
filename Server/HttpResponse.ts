@@ -1,7 +1,8 @@
 
 import http = require('http');
-import { IServerResponseResult } from '../Common/Interfaces';
 import { HTTPCodes } from './HTTP.Codes';
+import { IServerResponseResult } from '../Common/ComUtils';
+
 
 
 
