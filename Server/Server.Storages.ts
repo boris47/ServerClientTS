@@ -38,7 +38,7 @@ export interface IServerStorage
 
 class ServerStorage_FileSystem implements IServerStorage
 {
-	private m_Storage : Map<string, string> = new Map<string, string>();
+	private m_Storage : Map<string, Buffer> = new Map<string, Buffer>();
 	private m_StorageName : string = '';
 	private m_IsInitialized : boolean = false;
 
@@ -71,7 +71,7 @@ class ServerStorage_FileSystem implements IServerStorage
 			{
 				readReasult.data = '{}';
 			}
-			let parsed : { [Key:string] : string } = null;
+			let parsed : { [Key:string] : number[] } = null;
 			try
 			{
 				parsed = JSON.parse( readReasult.data as string );
@@ -86,27 +86,26 @@ class ServerStorage_FileSystem implements IServerStorage
 			{
 				for( const Key in parsed )
 				{
-					const value = parsed[Key];
-					this.m_Storage.set( Key, value );
+					const buffer = parsed[Key];
+					this.m_Storage.set( Key, Buffer.from( buffer ) );
 				}
-				return true;
 			}
 		}
-		return false;
+		return readReasult.bHasGoodResult;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage() : Promise<boolean>
 	{
 		let objectToSave = {};
-		this.m_Storage.forEach( ( value: string, Key: string ) =>
+		this.m_Storage.forEach( ( value: Buffer, Key: string ) =>
 		{
-			objectToSave[Key] = value;
+			objectToSave[Key] = value.toJSON().data;
 		});
 
 		const bResult = await new Promise<boolean>( ( resolve ) =>
 		{
-			fs.writeFile( this.m_StorageName, JSON.stringify( objectToSave, null, '\t' ), ( err: NodeJS.ErrnoException ) =>
+			fs.writeFile( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ), ( err: NodeJS.ErrnoException ) =>
 			{
 				resolve(!err);
 			})
@@ -119,18 +118,18 @@ class ServerStorage_FileSystem implements IServerStorage
 	public async ClearStorage() : Promise<boolean>
 	{
 		this.m_Storage.clear();
-
-		if ( fs.existsSync( this.m_StorageName ) )
-		{
-			fs.unlinkSync( this.m_StorageName );
-		}
-
+		
 		const folderPath = path.parse( this.m_StorageName ).dir;
-		if ( fs.existsSync( folderPath ) )
-		{
-			fs.rmdirSync( folderPath );
-		}
+		
+		// Clear existing storage
+		FSUtils.DeleteFolderContent( folderPath );
 
+		// Re-create folder and file
+		FSUtils.EnsureDirectoryExistence( folderPath );
+		if ( !fs.existsSync( this.m_StorageName ) )
+		{
+			fs.writeFileSync( this.m_StorageName, "{}", 'utf8' );
+		}
 		return true;
 	}
 
@@ -140,7 +139,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		const bAlreadyExists = this.m_Storage.has( Key );
 		if ( !bAlreadyExists || bForced )
 		{
-			this.m_Storage.set( Key, data.toString() );
+			this.m_Storage.set( Key, data );
 		}
 		return true;
 	}

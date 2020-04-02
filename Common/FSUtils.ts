@@ -170,7 +170,7 @@ export function MapFolder( folderPath: string ): IMappedFolderData
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /** If directory exists, clear all the content */
-export function DeleteContentFolder( folderPath: string ): void
+export function DeleteFolderContent( folderPath: string ): void
 {
 	const mapped : IMappedFolderData = MapFolder( folderPath );
 	mapped.files.forEach( filePath => fs.unlinkSync(filePath) );
