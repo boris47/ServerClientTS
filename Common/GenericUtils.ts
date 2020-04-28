@@ -1,6 +1,5 @@
 
-import * as crypto from 'crypto';
-
+//	import * as crypto from 'crypto';
 
 /////////////////////////////////////////////////////////////////////////////////////////
 export class UniqueID
@@ -26,147 +25,25 @@ export class UniqueID
 }
 
 
-/////////////////////////////////////////////////////////////////////////////////////////
 export type GenericConstructor<T> = { new( ...Args:any[] ) : T };
-export function Construct<T>( Constructor: GenericConstructor<T>, ...Args:any[] ): T
+export default class GenericUtils
 {
-	return new Constructor( Args );
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function IsTypeOf( value : any, type : any ) : boolean
-{
-	typeof type === 'string' ? ( ( el:any ) => typeof el === type ) : ( ( el:any ) => el instanceof type );
-	if ( type === 'string' )
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static Instanciate<T>( Constructor: GenericConstructor<T>, ...Args:any[] ): T
 	{
-		return typeof value === type;
-	}
-	else
-	{
-		return value instanceof type;
-	}
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function DelayMS( ms : number ) : Promise<void>
-{
-	return new Promise<void>( ( resolve ) =>
-	{
-		const callback = () =>
-		{
-			resolve();
-		}
-		setTimeout( callback, ms );
-	});
-};
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function ToBuffer( data : ( number[] | Uint8Array | string | ArrayBuffer | SharedArrayBuffer ), ...argArray: any[] )
-{
-	return Buffer.from.call( Buffer, data, argArray );
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export interface IURLParseResult {
-
-	KeyValues : Map<string, string>;
-
-	Switches : string[];
-
-	Arrays : Map<string, string[]>;
-
-}
-
-/**
- * https://www.google.com/search?
- * // Key Value pair
- * biw=1920
- * // Array
- * &array=["ciao"-"caio2"]
- * // Switches
- * &mamma
- * &meli
- */
-
-// 'https://www.google.com/search?&array=["ciao"-"caio2"]&switch'
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function URl_Parse( url : string ) : IURLParseResult
-{
-	// import * as querystring from 'querystring';
-	// querystring.parse( 'foo=bar&abc=xyz&abc=123' )
-	// parsed into { foo: 'bar', abc: ['xyz', '123'] }
-
-	// querystring.stringify({ foo: 'bar', baz: ['qux', 'quux'], corge: '' });
-	// Returns 'foo=bar&baz=qux&baz=quux&corge='
-	// -
-	// querystring.stringify({ foo: 'bar', baz: 'qux' }, ';', ':');
-	// Returns 'foo:bar;baz:qux'
-
-	const parts = url.substr( url.indexOf( '?' ) + 1 ).split('&');
-
-	const bIsKeyValuePair = ( entry : string ) : boolean =>
-	{
-		if ( !bIsArray( entry ) && !bHasSwitches( entry ) )
-		{
-			return true;
-		}
-		return false;
+		return new Constructor( Args );
 	}
 
-	const bHasSwitches = ( entry : string ) : boolean =>
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static IsTypeOf<T = any>(value: T, type: string | { new(...args: any[]): T; }): value is T
 	{
-		return !entry.includes('=');
+		return (typeof type === 'string' ? (e: any) => typeof e === type : (e: any) => e instanceof type)(value);
 	}
 
-	const bIsArray = ( entry : string ) =>
-	{
-		const value = entry.split('=')[1];
-		return ( value?.startsWith('[') && value?.endsWith(']') ) || false;
-	}
 
-	const result : IURLParseResult = <IURLParseResult>{};
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static DelayMS( ms : number ) : Promise<void>
 	{
-		const keyValues = new Map<string, string>();
-		const switches = new Array<string>();
-		const arrays = new Map<string, string[]>();
-		
-		parts.forEach( ( entry : string ) =>
-		{
-			// KeyValues map
-			{
-				if ( bIsKeyValuePair( entry ) )
-				{
-					const pair = entry.split('=');
-					keyValues.set( pair[0], pair[1] );
-				}
-			}
-			// Switchers
-			{
-				if ( bHasSwitches( entry ) )
-				{
-					switches.push( entry );
-				}
-			}
-			// Arrays
-			{
-				if ( bIsArray( entry ) )
-				{
-					const key = entry.split('=')[0];
-					const array = entry.split('=')[1];
-					const arrayContent = array.substring( 1, array.length - 1 );
-					arrays.set( key, arrayContent.split('-').filter( s => s.length > 0 ).map( s => s.replace(/"/g, '') ) );
-				}
-			}
-		});
-
-		result.KeyValues = keyValues;
-		result.Switches = switches;
-		result.Arrays = arrays;
-	}
-	return result;
+		return new Promise<void>( ( resolve ) => setTimeout( resolve, ms ) );
+	};
 }

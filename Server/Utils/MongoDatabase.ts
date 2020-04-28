@@ -133,8 +133,10 @@ export class MongoDatabase
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public UpdateOneInCollection( collection : MongoDB.Collection<any>, filterKey: string, filterValue: string, newValue : any ) : Promise<boolean>
 	{
-		const searchFilter = {};
-		searchFilter[filterKey] = filterValue;
+		const searchFilter =
+		{
+			[filterKey] : filterValue
+		};
 		return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 		{
 			collection.updateOne( searchFilter, newValue,
@@ -154,8 +156,10 @@ export class MongoDatabase
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public FindInCollection( collection : MongoDB.Collection<any>, filterKey: string, filterValue: string ) : Promise<any | null>
 	{
-		const searchFilter = {};
-		searchFilter[filterKey] = filterValue;
+		const searchFilter =
+		{
+			[filterKey] : filterValue
+		};
 		return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 		{
 			collection.findOne( searchFilter,
@@ -175,8 +179,10 @@ export class MongoDatabase
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public RemoveFromCollection( collection : MongoDB.Collection<any>, filterKey: string, filterValue: string ) : Promise<boolean>
 	{
-		const searchFilter = {};
-		searchFilter[filterKey] = filterValue;
+		const searchFilter =
+		{
+			[filterKey] : filterValue
+		};
 		return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 		{
 			collection.deleteOne( searchFilter,

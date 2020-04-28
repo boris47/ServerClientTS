@@ -1,22 +1,86 @@
 {
-  "name": "client",
-  "version": "1.0.0",
-  "description": "",
-  "main": "Client.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "=13.7.0",
-    "@types/mime-types": "=2.1.0",
-    "@types/websocket": "0.0.38",
-    "@types/ip-regex": "2.0.0",
-    "typescript": "=3.8.3",
-    "mime-types": "=2.1.26",
-    "websocket": "1.0.31",
-    "ip-regex": "4.1.0"
-  }
+	"name": "client_ts",
+	"productName": "ClientTs",
+	"version": "0.0.0",
+	"author": "r.leogrande<leogranderoberto@gmailcom>",
+	"description": "My client side electron app",
+	"license": "",
+	"main": "./dist/electron/main.js",
+	"scripts": {
+		"dev": "npm run compileCode && electron-webpack && electron-webpack dev",
+		"compile": "electron-webpack",
+		"dist": "npm run compileCode && electron-webpack && electron-builder",
+		"dist:dir": "npm run compileCode && electron-webpack && electron-builder --dir -c.compression=store -c.mac.identity=null",
+		"compileCode": "call \"./node_modules/.bin/tsc.cmd\" -p \"tsconfig.json\"",
+		"postinstall": ""
+	},
+	"electronWebpack": {
+		"staticSourceDirectory": "static",
+		"whiteListedModules": [
+			"vue",
+			"electron",
+			"vue-router"
+		],
+		"main": {
+			"webpackConfig": "webpack.main.additions.js",
+			"sourceDirectory": "src/main",
+			"extraEntries": [
+				"@/preload.js"
+			]
+		},
+		"renderer": {
+			"webpackConfig": "webpack.renderer.additions.js",
+			"template": "src/template.html",
+			"dll": [
+				"vue",
+				"vue-router"
+			]
+		}
+	},
+	"build": {
+		"productName": "ClientTS",
+		"appId": "ClientTS",
+		"directories": {
+			"output": "build"
+		},
+		"files": [
+			"dist/**/*"
+		],
+		"electronDownload": {
+			"cache": "cache"
+		},
+		"win": {
+			"icon": "build/icons/icon.ico"
+		}
+	},
+	"dependencies": {
+		"electron-log": "4.1.1",
+		"electron-updater": "4.2.5",
+		"ip-regex": "4.1.0",
+		"mime-types": "2.1.27",
+		"source-map-support": "0.5.19",
+		"vue": "2.6.11",
+		"vue-router": "3.1.6",
+		"websocket": "1.0.31"
+	},
+	"devDependencies": {
+		"@types/electron-devtools-installer": "2.2.0",
+		"@types/ip-regex": "4.1.1",
+		"@types/mime-types": "2.1.0",
+		"@types/node": "12.12.6",
+		"@types/source-map-support": "0.5.1",
+		"@types/webpack": "4.41.12",
+		"@types/websocket": "1.0.0",
+		"electron": "8.2.3",
+		"electron-builder": "22.5.1",
+		"electron-devtools-installer": "3.0.0",
+		"electron-webpack": "2.8.2",
+		"electron-webpack-ts": "4.0.1",
+		"electron-webpack-vue": "2.4.0",
+		"ts-loader": "7.0.1",
+		"typescript": "3.8.3",
+		"vue-loader": "15.9.1",
+		"vue-template-compiler": "2.6.11",
+		"webpack": "4.43.0"
+	}
 }

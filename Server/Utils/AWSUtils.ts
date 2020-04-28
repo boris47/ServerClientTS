@@ -3,7 +3,8 @@
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
 
-import  * as GenericUtils from '../../Common/GenericUtils';
+import GenericUtils from '../../Common/GenericUtils';
+import { IIndexableObject } from '../../Common/Interfaces';
 
 
 export namespace AWSUtils {
@@ -102,7 +103,7 @@ export namespace AWSUtils {
 					}
 				);
 
-				const buffers = [];
+				const buffers : any[] = [];
 				request.on( 'httpData', ( chunk : Buffer | Uint8Array ) => buffers.push( chunk ) );
 				request.on( 'httpDone', ( response : AWS.Response<AWS.S3.GetObjectOutput, AWS.AWSError> ) => resolve( Buffer.concat( buffers ) ) );
 				request.on( 'error', ( err: AWS.AWSError, response: AWS.Response<AWS.S3.GetObjectOutput, AWS.AWSError> ) =>
@@ -677,7 +678,7 @@ export namespace AWSUtils {
 		{
 			return new Promise<boolean>( (resolve) =>
 			{
-				const params : AWS.EC2.ModifyInstanceAttributeRequest =
+				const params : AWS.EC2.ModifyInstanceAttributeRequest & IIndexableObject =
 				{
 					// The ID of the instance.
 					InstanceId : InstanceID

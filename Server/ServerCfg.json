@@ -1,0 +1,5 @@
+{
+	"serverPublicIP": "2001:b07:ae6:2f48:68ae:e7bf:8ef3:6d53",
+	"serverWebSocketPort": 3001,
+	"serverRequestsListenerPort": 3000
+}

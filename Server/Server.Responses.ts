@@ -7,7 +7,7 @@ import * as mime from 'mime-types';
 import { HTTPCodes } from './HTTP.Codes';
 
 import * as ComUtils from '../Common/ComUtils';
-import * as FSUtils from '../Common/FSUtils';
+import FSUtils from '../Common/FSUtils';
 import { IServerRequestInternalOptions } from './Server.ResponsesMap';
 
 
@@ -37,7 +37,6 @@ export class ServerResponses {
 		}
 
 		response.statusCode = errCode;
-	//	response.statusMessage = msg;
 		response.end( msg );
 	}
 

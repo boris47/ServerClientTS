@@ -1,14 +1,82 @@
 {
+	/**
+	* Path to base configuration file to inherit from. Requires TypeScript version 2.1 or later.
+	*/
+	"extends": "./node_modules/electron-webpack/tsconfig-base.json",
 	"compilerOptions": {
-		"target": "ES6",
-		"module": "commonjs",
-	//	"sourceMap": true,
-		"watch": true,
-		"diagnostics" : true,
-		"extendedDiagnostics" : true,
-		"inlineSourceMap" : true,
-		"noImplicitReturns" : true,
-		"strictNullChecks": true,
+		/*
+		* Target is related to the output of your code, i.e. the compiled code targets a specific language variant.
+		* If you specify ES5 (not to be confused with ES2015), the compiled code can be run by ES5-compliant browsers and engines like Node.
+		* If you specify ES6 (== ES2015), the compiled code cannot be run by browsers or engines that do not yet support ES6 (ES2015) features. 
+		*/
+		"target": "ES2018",
+		/*
+		* Module defines the output module resolution system that is used.
+		* For example, if you would use “es2015” here, it would assume that your Javascript engine
+		* is capable of parsing es2015 import statements (e.g. this would fail in Node.js 8).
+		* If you would set this to “commonjs”, it would export the module using the exports property (and therefore would run in e.g. Node.js 8).
+		*/
+		"module": "CommonJS",
+		/*
+		* This configures how the compiler tries to find your modules (resolve them).
+		* There are two strategies for doing so: classic or node.
+		* I set this to node because I am used to how node resolves modules.
+		* Node is now Typescript’s default mode of module resolution, i.e. classic is mostly present for backwards compatibility.
+		*/
+		"moduleResolution": "Node",
+		/*
+		* Also related to the output of your code, this tells the compiler which language features are available when the compiled code is run.
+		* In most cases this would be the same as “target”, except if you polyfilled the runtime environment.
+		* For example, you might have polyfilled the Promise class in an ES5 environment.
+		*/
+		"lib": [
+			"DOM", "ES2018", "ESNext"
+		],
+		/*
+		* Specify list of directories for type definition files to be included. Requires TypeScript version 2.0 or later.
+		*/
+		"typeRoots": [
+			"./src/types",
+			"./node_modules/@types",
+		],
+		"strict": true,
+		/*
+		* Enable strict null checks. Requires TypeScript version 2.0 or later.
+		*/
+		"strictNullChecks": false,
+		/*
+		* Report error when not all code paths in function return a value.
+		*/
+		"noImplicitReturns": true,
+		/*
+		* Watch input files.
+		*/
+		"watch": false,
+		/*
+		* Generates corresponding '.map' file.
+		*/
+		//"sourceMap": true,
+	//	"inlineSourceMap": true,
 		"removeComments": true
-    }
+	},
+	/*
+	* Specifies a list of files to be excluded from compilation.
+	* The 'exclude' property only affects the files included via the 'include' property and not the 'files' property.
+	* Glob patterns require TypeScript version 2.0 or later.
+	*/
+	"exclude": [
+		".electron-vue",
+		"node_modules",
+		"./node_modules/@types",
+	],
+	/*
+	* Specifies a list of glob patterns that match files to be included in compilation.
+	* If no 'files' or 'include' property is present in a tsconfig.json, the compiler defaults to including all files
+	* in the containing directory and subdirectories except those specified by 'exclude'.
+	* Requires TypeScript version 2.0 or later.
+	*/
+	"include": [
+		"**/*.ts",
+		".node_modules/**/*.ts",
+	]
 }

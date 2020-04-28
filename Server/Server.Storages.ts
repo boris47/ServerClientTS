@@ -2,13 +2,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import * as FSUtils from '../Common/FSUtils';
-import * as GenericUtils from '../Common/GenericUtils';
+import FSUtils from '../Common/FSUtils';
+import GenericUtils, { GenericConstructor } from '../Common/GenericUtils';
 import { AWSUtils } from './Utils/AWSUtils';
+import { IIndexableObject } from '../Common/Interfaces';
 
-export async function StorageFactory<T extends IServerStorage>( Class : GenericUtils.GenericConstructor<T>, ...Args: any[] ) : Promise<T>
+export async function StorageFactory<T extends IServerStorage>( Class : GenericConstructor<T>, ...Args: any[] ) : Promise<T>
 {
-	return GenericUtils.Construct( Class, Args );
+	return GenericUtils.Instanciate( Class, Args );
 }
 
 export enum EStorageType
@@ -64,17 +65,18 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		// Load storage file
 		const filePath = this.m_StorageName;
-		const readReasult = await FSUtils.ReadFileAsync( filePath );
-		if ( readReasult.bHasGoodResult )
+		const readReasult: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync( filePath );
+		if ( Buffer.isBuffer(readReasult) )
 		{
-			if( readReasult.data === "" )
+			let asString = readReasult.toString('utf-8');
+			if( asString === "" )
 			{
-				readReasult.data = '{}';
+				asString = '{}';
 			}
 			let parsed : { [Key:string] : number[] } = null;
 			try
 			{
-				parsed = JSON.parse( readReasult.data as string );
+				parsed = JSON.parse( asString );
 			}
 			catch( e )
 			{
@@ -90,14 +92,15 @@ class ServerStorage_FileSystem implements IServerStorage
 					this.m_Storage.set( Key, Buffer.from( buffer ) );
 				}
 			}
+			return true;
 		}
-		return readReasult.bHasGoodResult;
+		return false;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage() : Promise<boolean>
 	{
-		let objectToSave = {};
+		let objectToSave : IIndexableObject = {};
 		this.m_Storage.forEach( ( value: Buffer, Key: string ) =>
 		{
 			objectToSave[Key] = value.toJSON().data;
@@ -122,7 +125,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		const folderPath = path.parse( this.m_StorageName ).dir;
 		
 		// Clear existing storage
-		FSUtils.DeleteFolderContent( folderPath );
+		FSUtils.DeleteFolder( folderPath );
 
 		// Re-create folder and file
 		FSUtils.EnsureDirectoryExistence( folderPath );
@@ -155,7 +158,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		if ( this.HasResource( Key ) )
 		{
-			return Buffer.from( this.m_Storage.get( Key ) );
+			return this.m_Storage.get( Key );
 		}
 		return null;
 	}
@@ -163,9 +166,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResources( Keys : string[] ) : Promise<( Buffer | null )[]>
 	{
-		return ( await Promise.all( Keys.map( k => this.GetResource(k) ) ) )
-		.filter( s => !!s )
-		.map( s => Buffer.from(s) );
+		return ( await Promise.all( Keys.map( k => this.GetResource(k) ) ) ).filter( s => !!s );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

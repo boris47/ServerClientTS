@@ -3,12 +3,10 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import * as FSUtils from '../Common/FSUtils';
-import * as ComUtils from '../Common/ComUtils';
-import { IClientRequestResult } from '../Common/Interfaces';
+import FSUtils from '../../../../Common/FSUtils';
+import * as ComUtils from '../../../../Common/ComUtils';
+import { IClientRequestResult } from '../../../../Common/Interfaces';
 import * as mime from 'mime-types';
-import * as Genericutils from '../Common/Genericutils';
-import { Client_UrlPathBuilder } from './Client.UrlPathBuilder';
 
 
 export interface IClientRequestInternalOptions
@@ -17,9 +15,7 @@ export interface IClientRequestInternalOptions
 	Storage?: string;
 	Key? : string;
 	Value? : any;
-	Headers? : {
-		[key:string] : any
-	};
+	Headers? : Map<string, string | number | string[]>;
 	FileStream? : fs.ReadStream;
 }
 
@@ -29,8 +25,11 @@ export class ClientRequests {
 	public static async DownloadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
 		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
+
+		const requestPath = new URLSearchParams();
+		requestPath.set('file', path.parse( absoluteFilePath ).base);
+		options.path = '?' + requestPath.toString();
 		options.method = 'get';
-		options.path = new Client_UrlPathBuilder( options.path ).AddKeyValue( 'file', path.parse( absoluteFilePath ).base ).Get();
 
 		const result : IClientRequestResult = await ClientRequests.Request_GET( options, <IClientRequestInternalOptions>{} );
 		if ( !result.bHasGoodResult )
@@ -84,13 +83,14 @@ export class ClientRequests {
 			return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `Cannot obtain size of file ${AbsoluteFilePath}` );
 		}
 
-		clientRequestInternalOptions.Headers =
-		{
-			'content-type' : contentType,
-			'content-length' : sizeInBytes
-		};
+		clientRequestInternalOptions.Headers = new Map();
+		clientRequestInternalOptions.Headers.set( 'content-type', contentType );
+		clientRequestInternalOptions.Headers.set( 'content-length', sizeInBytes );
 		clientRequestInternalOptions.FileStream = fs.createReadStream( AbsoluteFilePath );
-		options.path = new Client_UrlPathBuilder( options.path ).AddKeyValue( 'file', filePathParsed.base ).Get();
+
+		const requestPath = new URLSearchParams();
+		requestPath.set('file', filePathParsed.base);
+		options.path = requestPath.toString();
 
 		return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
 	}
@@ -102,10 +102,10 @@ export class ClientRequests {
 		{
 			if ( clientRequestInternalOptions.Storage && clientRequestInternalOptions.Key )
 			{
-				options.path = new Client_UrlPathBuilder( options.path )
-				.AddKeyValue( 'stg', clientRequestInternalOptions.Storage )
-				.AddKeyValue( 'key', clientRequestInternalOptions.Key )
-				.Get();
+				const path = new URLSearchParams();
+				path.set( 'stg', clientRequestInternalOptions.Storage );
+				path.set( 'key', clientRequestInternalOptions.Key );
+				options.path += '?' + path.toString();
 			}
 
 			const request : http.ClientRequest = http.request( options );
@@ -152,10 +152,10 @@ export class ClientRequests {
 		{
 			if ( clientRequestInternalOptions.Storage && clientRequestInternalOptions.Key )
 			{
-				options.path = new Client_UrlPathBuilder( options.path )
-				.AddKeyValue( 'stg', clientRequestInternalOptions.Storage )
-				.AddKeyValue( 'key', clientRequestInternalOptions.Key )
-				.Get();
+				const requestPath = new URLSearchParams();
+				requestPath.set( 'stg', clientRequestInternalOptions.Storage );
+				requestPath.set( 'key', clientRequestInternalOptions.Key );
+				options.path += '?' + requestPath.toString();
 			}
 			
 
@@ -182,9 +182,8 @@ export class ClientRequests {
 			// Set headers
 			if ( clientRequestInternalOptions.Headers )
 			{
-				for( const key in clientRequestInternalOptions.Headers )
+				for( let [key, value] of clientRequestInternalOptions.Headers )
 				{
-					const value = clientRequestInternalOptions.Headers[key];
 					request.setHeader( key, value );
 				}
 			}

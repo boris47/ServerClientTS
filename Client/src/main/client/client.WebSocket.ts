@@ -1,7 +1,8 @@
 
+
 import { client as WebSocketClient, IClientConfig, connection as WebSocketConnection, IMessage } from 'websocket';
 
-
+import * as https from 'https';
 
 export function Client_SetupWebSocket() : Promise<null | Error>
 {
@@ -15,11 +16,13 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 		//	fragmentationThreshold : 16					// Default 16 ( Kib )
 		//	maxReceivedFrameSize : 1					// Default 1 ( Mib )
 		//	maxReceivedMessageSize: 8					// Default 8 ( Mib )
-		/*	tlsOptions	: <https.RequestOptions>
+			tlsOptions	: <https.RequestOptions>
 			{
-
+				auth : null, // ClientRequestArgs.auth?: string | null | undefined
+				cert : undefined, // string | Buffer | (string | Buffer)[] | undefined
+				headers : undefined, //{ [header: string]: number | string | string[] | undefined; } | undefined
 			}
-		*/
+		
 		//	webSocketVersion : 13						/// Default 13
 		}
 
@@ -46,7 +49,7 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 
 			connection.on( 'message', ( data: IMessage ) =>
 			{
-				let buffered : Buffer | null = null;
+			/*	let buffered : Buffer | null = null;
 				switch( data.type )
 				{
 					case 'utf8' :
@@ -60,7 +63,7 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 						buffered = data.binaryData ? Buffer.from( data.binaryData ) : Buffer.from( '' );
 						break;
 					}
-				}
+				}*/
 			});
 
 			connection.send( "Ciao, sono un client" );

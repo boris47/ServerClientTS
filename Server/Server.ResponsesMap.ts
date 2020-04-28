@@ -4,35 +4,38 @@ import * as fs from 'fs';
 
 import { AsyncHttpResponse } from "./HttpResponse";
 import { HTTPCodes } from "./HTTP.Codes";
-import { IServerResponseResult } from "../Common/Interfaces";
+
 import { ServerResponses } from "./Server.Responses";
 import * as ComUtils from '../Common/ComUtils';
 import { IServerStorage, StorageManager } from "./Server.Storages";
-import * as GenericUtils from '../Common/GenericUtils';
+import GenericUtils from '../Common/GenericUtils';
 
-export const NotImplementedResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+export const NotImplementedResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
-		Value : GenericUtils.ToBuffer( HTTPCodes[404] )
+		Value : Buffer.from( HTTPCodes[404] )
 	}
-	const result : IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
 	return result;
 });
 
 
-export const MethodNotAllowed = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+export const MethodNotAllowed = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
-		Value : GenericUtils.ToBuffer( HTTPCodes[405] )
+		Value : Buffer.from( HTTPCodes[405] )
 	};
-	const result : IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
 	return result;
 });
 
 export interface IResponseMethods
 {
+	[key:string]: () => AsyncHttpResponse;
 	post? 		: () => AsyncHttpResponse;
 	get? 		: () => AsyncHttpResponse;
 	put? 		: () => AsyncHttpResponse;
@@ -59,19 +62,19 @@ interface ServerResponseMap
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const pingResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const pingResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
-		Value : GenericUtils.ToBuffer( 'Ping Response' )
+		Value : Buffer.from( 'Ping Response' )
 	};
-	const result : IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
+	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
 	return result;
 });
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const uploadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const uploadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
 	const fileName = request.url.split('=')[1];
@@ -83,7 +86,7 @@ const uploadResponse = () => new AsyncHttpResponse( async ( request : http.Incom
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const downloadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const downloadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
 	const fileName = request.url.split('=')[1];
@@ -95,11 +98,11 @@ const downloadResponse = () => new AsyncHttpResponse( async ( request : http.Inc
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Get = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const storage_Get = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
-	const parseResults = GenericUtils.URl_Parse( request.url );
-	const key = parseResults.KeyValues.get( 'key' );
-	const storageID = parseResults.KeyValues.get( 'stg' );
+	const searchParams = new URLSearchParams( request.url.split('?')[1] );
+	const key = searchParams.get( 'key' );
+	const storageID = searchParams.get( 'stg' );
 	const storage : IServerStorage = StorageManager.GetStorage( storageID );
 	if( !storage )
 	{
@@ -117,11 +120,11 @@ const storage_Get = () => new AsyncHttpResponse( async ( request : http.Incoming
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Put = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const storage_Put = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
-	const parseResults = GenericUtils.URl_Parse( request.url );
-	const key = parseResults.KeyValues.get( 'key' );
-	const storageID = parseResults.KeyValues.get( 'stg' );
+	const searchParams = new URLSearchParams( request.url.split('?')[1] );
+	const key = searchParams.get( 'key' );
+	const storageID = searchParams.get( 'stg' );
 	const storage : IServerStorage = StorageManager.GetStorage( storageID );
 	if( !storage )
 	{
@@ -134,7 +137,7 @@ const storage_Put = () => new AsyncHttpResponse( async ( request : http.Incoming
 	{
 		Key : key
 	};
-	const result : IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
+	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
 	if ( result.bHasGoodResult )
 	{
 		await storage.AddResource( key, result.body, false );
@@ -143,11 +146,11 @@ const storage_Put = () => new AsyncHttpResponse( async ( request : http.Incoming
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Delete = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult> =>
+const storage_Delete = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
-	const parseResults = GenericUtils.URl_Parse( request.url );
-	const key = parseResults.KeyValues.get( 'key' );
-	const storageID = parseResults.KeyValues.get( 'stg' );
+	const parsedUrl = new URL( request.url );
+	const key = parsedUrl.searchParams.get( 'key' );
+	const storageID = parsedUrl.searchParams.get( 'stg' );
 	const storage : IServerStorage = StorageManager.GetStorage( storageID );
 	if( !storage )
 	{

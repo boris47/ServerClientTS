@@ -2,12 +2,14 @@
 	"compilerOptions": {
 		"target": "ES6",
 		"module": "commonjs",
-	//	"sourceMap": true,
 		"watch": true,
-		"diagnostics" : true,
-		"extendedDiagnostics" : true,
+		"strict": true,
+		"strictNullChecks": false,
 		"inlineSourceMap" : true,
 		"noImplicitReturns" : true,
 		"removeComments": true
-    }
+	},
+	"exclude": [
+		"node_modules"
+	]
 }

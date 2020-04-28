@@ -1,11 +1,12 @@
 
 import * as http from 'http';
 
-import { IClientRequestResult } from '../Common/Interfaces';
+import { IClientRequestResult } from '../../../../Common/Interfaces';
 import { ClientRequests, IClientRequestInternalOptions } from './Client.Requests';
 
 export interface IRequestsMethods
 {
+	[key:string] :( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>; 
 	post? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
 	get? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
 	put? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;

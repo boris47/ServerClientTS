@@ -11,20 +11,17 @@ import {
 	request as WebSocketRequest, IMessage
 } from 'websocket';
 
-import  * as GenericUtils from '../Common/GenericUtils';
+import GenericUtils from '../Common/GenericUtils';
 import * as ComUtils from '../Common/ComUtils';
-import { AsyncHttpResponse } from './HttpResponse';
+
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
 import { StorageManager, EStorageType } from './Server.Storages';
 import { ServerConfigs } from './Server.Configs';
 
-import { AWSUtils } from './Utils/AWSUtils';
 import { MongoDatabase } from './Utils/MongoDatabase';
-import { UniqueID } from '../Common/GenericUtils';
 import { HTTPCodes } from './HTTP.Codes';
 
 import { Logger } from '../Common/Logger';
-import { ProcessManager } from '../Common/ProcessManager';
 
 /*
 // Very simple answer
@@ -54,14 +51,20 @@ const ServerInfo =
 
 async function CreateServer() : Promise<boolean>
 {
-	const reportResponseResult = ( request : http.IncomingMessage, value : any, startTime : number ) : void =>
+	const reportResponseResult = ( request : http.IncomingMessage, value : ComUtils.IServerResponseResult, startTime : number ) : void =>
 	{
 		const getDiffMillisecondsStr = ( startTime : number, currentTime : number ) : string =>
 		{
 			const diff = currentTime - startTime;
 			return diff.toString();
 		};
-		console.log( [ `Request: ${request.url}`, `Result: ${value.bHasGoodResult}`, `Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`, '' ].join('\n') );
+		console.log(
+		`Request: ${request.url}
+		 Result: ${value.bHasGoodResult}
+		 Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}
+		 Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms
+		`);
+//		console.log( [ `Request: ${request.url}`, `Result: ${value.bHasGoodResult}`, `Time: ${getDiffMillisecondsStr(startTime, Date.now())}ms`, '' ].join('\n') );
 	};
 	
 	// HTTP SERVER
@@ -86,11 +89,12 @@ async function CreateServer() : Promise<boolean>
 		server.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
 			const startTime = Date.now();
+			console.log("request.url", request.url);
 			const identifier : string = request.url.split('?')[0];
 			const availableMethods : IResponseMethods = ResponsesMap[identifier];
 			if ( availableMethods )
 			{
-				const method : () => AsyncHttpResponse = availableMethods[request.method.toLowerCase()] || MethodNotAllowed;
+				const method = availableMethods[request.method.toLowerCase()] || ( () => MethodNotAllowed );
 				method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 			else
@@ -103,7 +107,7 @@ async function CreateServer() : Promise<boolean>
 		{
 			console.log( `Node server created at localhost, port:3000` );
 		});
-}
+	}
 
 	// WEBSOCKET SETUP
 	{
@@ -248,7 +252,7 @@ async function Main()
 
 
 	// LOGGER
-	const bLoggerCreated = await Logger.Initialize( 'ServerTS' );
+	const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
 	if ( !bLoggerCreated )
 	{
 		return process.exit(1);

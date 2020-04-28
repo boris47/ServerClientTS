@@ -1,129 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ArrayUtils from './ArrayUtils';
-
-export interface IASyncFileOpResult
-{
-	bHasGoodResult : boolean;
-
-	data : NodeJS.ErrnoException | string;
-}
-
-
-export const GetUserDataFolder = () => process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export async function Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
-{
-	const mapped : IMappedFolderData = MapFolder( path.join( absoluteSourceFolder, subfolder || '' ) );
-	const results = new Map<string, (NodeJS.ErrnoException | null )>();
-	for( const absoluteSourceFilePath of mapped.files )
-	{
-		const relativeFilePath = absoluteSourceFilePath.replace( path.join( absoluteSourceFolder, subfolder || ''), '' ).replace( '\\\\', '' );
-		const absoluteDestinationFilePath = path.join( absoluteDestinationFolder, relativeFilePath );
-		EnsureDirectoryExistence( path.parse( absoluteDestinationFilePath ).dir );
-		await new Promise<void>( ( resolve ) =>
-		{
-			fs.copyFile( absoluteSourceFilePath, absoluteDestinationFilePath, ( err: NodeJS.ErrnoException ) =>
-			{
-				results.set( absoluteSourceFilePath, err );
-				resolve();
-			});
-		});
-	}
-	return results;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function LogIfError( result : IASyncFileOpResult )
-{
-	if ( !result.bHasGoodResult )
-	{
-		const { name, message } = <NodeJS.ErrnoException>result.data;
-		console.error( `${name}:${message}` )
-	}
-	return result;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function FileExistsAsync( filePath : string ) : Promise<boolean>
-{
-	return new Promise<boolean>( ( resolve ) =>
-	{
-		fs.exists( filePath, ( exists : boolean ) =>
-		{
-			resolve( exists );
-		});
-	});
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function WriteFileAsync( filePath : string, data: any ) : Promise<IASyncFileOpResult>
-{
-	return new Promise<IASyncFileOpResult>( ( resolve ) =>
-	{
-		fs.writeFile( filePath, data, ( err: NodeJS.ErrnoException ) =>
-		{
-			const result = <IASyncFileOpResult>
-			{
-				bHasGoodResult : !err,
-				data : err
-			}
-			resolve( result );
-		});
-	});
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function ReadFileAsync( filePath : string ) : Promise<IASyncFileOpResult>
-{
-	return new Promise<IASyncFileOpResult>( ( resolve ) =>
-	{
-		fs.readFile( filePath, 'utf8', ( err: NodeJS.ErrnoException, data: string ) =>
-		{
-			const result = <IASyncFileOpResult>
-			{
-				bHasGoodResult : !err,
-				data : err ? err : data
-			}
-			resolve( result );
-		});
-	});
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function IsDirectory( directoryPath: string ): boolean
-{
-	let result = false;
-	try
-	{
-		result = fs.lstatSync( directoryPath ).isDirectory();
-	}
-	catch ( e ) {}
-	return result;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/** Ensure that a folder exist, creating all directory tree if needed */
-export function EnsureDirectoryExistence( filePath: string ): void
-{
-	const filePathNormalized: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
-	for (let index = 0; index < filePathNormalized.length; index++)
-	{
-		const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-		if ( ( !IsDirectory( pathInQuestion ) ) )
-		{
-			fs.mkdirSync(pathInQuestion);
-		}
-	};
-}
+import GenericUtils from './GenericUtils';
 
 
 ///////////////////////////////////////////
@@ -133,64 +10,159 @@ export interface IMappedFolderData
 	folders : string[];
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export function MapFolder( folderPath: string ): IMappedFolderData
+export default class FSUtils
 {
-	const result : IMappedFolderData = <IMappedFolderData>
+	/**  */
+	public static GetUserDataFolder()
 	{
-		files : new Array<string>(),
-		folders : new Array<string>()
-	};
+		return process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
+	}
 
-	if ( IsDirectory( folderPath ) )
+	public static IsError( result : any ): result is NodeJS.ErrnoException
 	{
-		const directoriesPath = new Array<string>( path.normalize( folderPath ) );
-		while( directoriesPath.length > 0 )
+		return result instanceof Error;
+	}
+
+	/**  */
+	public static async Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
+	{
+		const mapped : IMappedFolderData = FSUtils.MapFolder( path.join( absoluteSourceFolder, subfolder || '' ) );
+		const results = new Map<string, (NodeJS.ErrnoException | null )>();
+		for( const absoluteSourceFilePath of mapped.files )
 		{
-			const dPath = directoriesPath.pop();
-			fs.readdirSync( dPath ).map( fp => path.join( dPath, fp ) ).forEach( ( fp: string ) =>
+			const relativeFilePath = absoluteSourceFilePath.replace( path.join( absoluteSourceFolder, subfolder || ''), '' ).replace( '\\\\', '' );
+			const absoluteDestinationFilePath = path.join( absoluteDestinationFolder, relativeFilePath );
+			FSUtils.EnsureDirectoryExistence( path.parse( absoluteDestinationFilePath ).dir );
+			await new Promise<void>( ( resolve ) =>
 			{
-				if ( IsDirectory( fp ) )
+				fs.copyFile( absoluteSourceFilePath, absoluteDestinationFilePath, ( err: NodeJS.ErrnoException ) =>
 				{
-					directoriesPath.push( fp );
-					result.folders.push( fp );
-				}
-				else
-				{
-					result.files.push( fp );
-				}
+					results.set( absoluteSourceFilePath, err );
+					resolve();
+				});
 			});
 		}
+		return results;
 	}
 
-	return result;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/** If directory exists, clear all the content */
-export function DeleteFolderContent( folderPath: string ): void
-{
-	const mapped : IMappedFolderData = MapFolder( folderPath );
-	mapped.files.forEach( filePath => fs.unlinkSync(filePath) );
-	mapped.folders.reverse().forEach( directoryPath => fs.rmdirSync(directoryPath) );
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/** (Promise) Returns the size in Bytes of the given file or directory, or null in case of error
- * 
- * @param {string} filePath The path of file or directory
- * @returns {number|null} Size in Bytes or Null
- */
-export function GetFileSizeInBytesOf( filePath : string ) : number | null
-{
-	let result : number | null = null;
-	try
+	/**  */
+	public LogIfError( result? : NodeJS.ErrnoException )
 	{
-		result = fs.lstatSync( filePath ).size;
+		if ( GenericUtils.IsTypeOf(result, Error) )
+		{
+			const { name, message } = result;
+			console.error( `${name}:${message}` )
+		}
+		return result;
 	}
-	catch ( e ) {}
-	return result;
+
+
+	/**  */
+	public static FileExistsAsync( filePath : string ) : Promise<boolean>
+	{
+		return new Promise<boolean>( ( resolve ) =>
+		{
+			fs.exists( filePath, ( exists : boolean ) => resolve( exists ));
+		});
+	}
+
+	
+	/**  */
+	public static WriteFileAsync( filePath : string, data: string | Buffer ) : Promise<NodeJS.ErrnoException | null>
+	{
+		return new Promise( ( resolve ) =>
+		{
+			fs.writeFile( filePath, Buffer.isBuffer(data) ? data : Buffer.from(data, 'utf-8'), ( err: NodeJS.ErrnoException ) => resolve( err ) );
+		});
+	}
+
+
+	/**  */
+	public static ReadFileAsync( filePath : string ) : Promise<NodeJS.ErrnoException | Buffer>
+	{
+		return new Promise( ( resolve ) =>
+		{
+			fs.readFile( filePath, null, ( err: Error, data: Buffer ) => resolve( err ? err : data ) );
+		});
+	}
+
+
+	/**  */
+	public static IsDirectorySafe( directoryPath: string ): boolean
+	{
+		let result = false;
+		try{ result = fs.lstatSync( directoryPath ).isDirectory(); } catch ( e ) {}
+		return result;
+	}
+
+	
+	/** Ensure that a folder exist, creating all directory tree if needed */
+	public static EnsureDirectoryExistence( filePath: string ): void
+	{
+		const filePathNormalized: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
+		for (let index = 0; index < filePathNormalized.length; index++)
+		{
+			const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
+			if ( ( !FSUtils.IsDirectorySafe( pathInQuestion ) ) )
+			{
+				fs.mkdirSync(pathInQuestion);
+			}
+		};
+	}
+
+
+	/**  */
+	public static MapFolder( folderPath: string ): IMappedFolderData
+	{
+		const result : IMappedFolderData = <IMappedFolderData>
+		{
+			files : new Array<string>(),
+			folders : new Array<string>()
+		};
+	
+		if ( FSUtils.IsDirectorySafe( folderPath ) )
+		{
+			const directoriesPath = new Array<string>( path.normalize( folderPath ) );
+			while( directoriesPath.length > 0 )
+			{
+				const dPath = directoriesPath.pop();
+				fs.readdirSync( dPath ).map( fp => path.join( dPath, fp ) ).forEach( ( fp: string ) =>
+				{
+					if ( FSUtils.IsDirectorySafe( fp ) )
+					{
+						directoriesPath.push( fp );
+						result.folders.push( fp );
+					}
+					else
+					{
+						result.files.push( fp );
+					}
+				});
+			}
+		}
+	
+		return result;
+	}
+
+	
+	/** If directory exists, clear all the content */
+	public static DeleteFolder( folderPath: string ): void
+	{
+		const mapped : IMappedFolderData = FSUtils.MapFolder( folderPath );
+		mapped.files.forEach( filePath => fs.unlinkSync(filePath) );
+		mapped.folders.reverse().forEach( directoryPath => fs.rmdirSync(directoryPath) );
+	}
+
+
+	/** (Promise) Returns the size in Bytes of the given file or directory, or null in case of error */
+	public static GetFileSizeInBytesOf( filePath : string ) : number | null
+	{
+		let result : number | null = null;
+		try
+		{
+			result = fs.lstatSync( filePath ).size;
+		}
+		catch ( e ) {}
+		return result;
+	}
 }

@@ -1,10 +1,8 @@
 
 import * as http from 'http';
-import * as https from 'https';
 import * as fs from 'fs';
-import * as path from 'path';
 
-import { IServerConfigs, IClientRequestResult } from '../Common/Interfaces'
+import { IServerConfigs, IClientRequestResult } from '../../../../Common/Interfaces'
 import { IClientRequestInternalOptions } from './Client.Requests';
 import * as ClientWebSocket from './Client.WebSocket';
 import { IRequestsMethods, RequestsMap } from './Client.RequestsMap';
@@ -36,6 +34,7 @@ interface IClientRequest {
 	OnResolve : ResolveDelegate | null;
 	OnReject : RejectDelegate | null;
 }
+
 
 
 async function ProcessRequest( request : IClientRequest ) : Promise<void>
@@ -92,7 +91,7 @@ async function Request( path : string, method : string, args:IClientRequestInter
 }
 
 
-async function RequestServerPing() : Promise<boolean>
+export async function RequestServerPing() : Promise<boolean>
 {
 	return new Promise<boolean>(( resolve : (value: boolean) => void ) =>
 	{
@@ -110,7 +109,7 @@ async function RequestServerPing() : Promise<boolean>
 }
 
 
-async function RequestGetData<T>( key : string ) : Promise<T|null>
+export async function RequestGetData<T>( key : string ) : Promise<T|null>
 {
 	return new Promise<T|null>(( resolve : (value: T|null) => void ) =>
 	{
@@ -127,7 +126,7 @@ async function RequestGetData<T>( key : string ) : Promise<T|null>
 	});
 }
 
-async function RequestSetData( Key : string, Value: any ) : Promise<boolean>
+export async function RequestPutData( Key : string, Value: any ) : Promise<boolean>
 {
 	return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 	{
@@ -144,8 +143,7 @@ async function RequestSetData( Key : string, Value: any ) : Promise<boolean>
 	});
 }
 
-
-async function RequestFileDownload( FileName : string ) : Promise<boolean>
+export async function RequestFileDownload( FileName : string ) : Promise<boolean>
 {
 	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
 	{
@@ -162,7 +160,7 @@ async function RequestFileDownload( FileName : string ) : Promise<boolean>
 	});
 }
 
-async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
+export async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
 {
 	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
 	{
@@ -180,71 +178,11 @@ async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
 }
 
 
-
-async function Main()
+/** Should set serverPublicIp and port */
+export async function InstallRequestsProcessor( ServerIp?: string, Port?: number )
 {
 	const bResult = await ClientWebSocket.Client_SetupWebSocket();
-	{
-		RequestServerPing()
-		.then( ( bCanContinue : boolean ) =>
-		{
-			return bCanContinue ? RequestFileUpload( path.join( process.cwd(), 'Client.js' ) ) : Promise.reject(false);
-		})
-		.then( ( bCanContinue : boolean ) =>
-		{
-			return bCanContinue ? RequestFileDownload( './Server.js' ) : Promise.reject(false);
-		})
-		.then( ( bCanContinue : boolean ) =>
-		{
-			return bCanContinue ? RequestSetData( 'MyDataName', '123' ) : Promise.reject(false);
-		})
-		.then( ( bCanContinue : boolean ) =>
-		{
-			return bCanContinue ? RequestGetData<string>( 'MyDataName' ) : Promise.reject(null);
-		})
-		.then( ( value: string | null ) =>
-		{
-			console.log( "Value", value?.toString() );
-		})
-		.catch( reason => console.error(reason) );
+	
 
-	}
-
-	{
-//		Request( '/ping', 'get' );
-//		Request( '/upload', 'put', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Client.js' }, (msg:Buffer) => console.log(msg.toString()), ( err:Error ) => console.error(err) );
-//		Request( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: './Server.js' } );
-//		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Key : 'MyDataName', Value: '123' } );
-//		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Key: 'MyDataName' } );
-	}
+	return bResult;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-////////   	WEBSOCKET SETUP
-
-
-
-
-
-
-
-
-
-Main();
-
-
-
-
-
-
