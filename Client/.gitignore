@@ -1,5 +1,6 @@
 .vscode
 /dist
 /build
+/cache
 
 package-lock.json
