@@ -93,12 +93,12 @@ async function CreateServer() : Promise<boolean>
 			const availableMethods : IResponseMethods = ResponsesMap[identifier];
 			if ( availableMethods )
 			{
-				const method = availableMethods[request.method.toLowerCase()] || MethodNotAllowed ;
-				method( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
+				const method = availableMethods[request.method.toLowerCase()] || ( () => MethodNotAllowed );
+				method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 			else
 			{
-				NotImplementedResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
+				NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 		})
 

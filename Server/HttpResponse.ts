@@ -36,3 +36,19 @@ export class HttpResponse
     }
 
 }
+
+export class AsyncHttpResponse
+{
+	private asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult> = null;
+
+	constructor( asyncFunction : ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<IServerResponseResult>, headers : any[] = [] )
+	{
+		this.asyncFunction = asyncFunction;
+    }
+
+	public async applyToResponse( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<IServerResponseResult>
+	{
+		return this.asyncFunction( request, response );
+    }
+	
+}
