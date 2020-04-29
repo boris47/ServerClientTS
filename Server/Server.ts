@@ -89,17 +89,16 @@ async function CreateServer() : Promise<boolean>
 		server.on('request', ( request : http.IncomingMessage, response : http.ServerResponse ) =>
 		{
 			const startTime = Date.now();
-			console.log("request.url", request.url);
 			const identifier : string = request.url.split('?')[0];
 			const availableMethods : IResponseMethods = ResponsesMap[identifier];
 			if ( availableMethods )
 			{
-				const method = availableMethods[request.method.toLowerCase()] || ( () => MethodNotAllowed );
-				method().applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
+				const method = availableMethods[request.method.toLowerCase()] || MethodNotAllowed ;
+				method( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 			else
 			{
-				NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
+				NotImplementedResponse( request, response ).then( ( value ) => reportResponseResult( request, value, startTime ) );
 			}
 		})
 

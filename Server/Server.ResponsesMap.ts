@@ -2,7 +2,6 @@
 import * as http from 'http';
 import * as fs from 'fs';
 
-import { AsyncHttpResponse } from "./HttpResponse";
 import { HTTPCodes } from "./HTTP.Codes";
 
 import { ServerResponses } from "./Server.Responses";
@@ -10,7 +9,7 @@ import * as ComUtils from '../Common/ComUtils';
 import { IServerStorage, StorageManager } from "./Server.Storages";
 import GenericUtils from '../Common/GenericUtils';
 
-export const NotImplementedResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+export const NotImplementedResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
@@ -19,10 +18,10 @@ export const NotImplementedResponse = new AsyncHttpResponse( async ( request : h
 	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
 	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
 	return result;
-});
+};
 
 
-export const MethodNotAllowed = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+export const MethodNotAllowed = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
@@ -31,16 +30,16 @@ export const MethodNotAllowed = new AsyncHttpResponse( async ( request : http.In
 	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
 	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
 	return result;
-});
+};
 
 export interface IResponseMethods
 {
-	[key:string]: () => AsyncHttpResponse;
-	post? 		: () => AsyncHttpResponse;
-	get? 		: () => AsyncHttpResponse;
-	put? 		: () => AsyncHttpResponse;
-	patch? 		: () => AsyncHttpResponse;
-	delete? 	: () => AsyncHttpResponse;
+	[key:string]: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	get? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	put? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	patch? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
 }
 
 export interface IServerRequestInternalOptions
@@ -62,7 +61,7 @@ interface ServerResponseMap
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const pingResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const pingResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
 	{
@@ -70,11 +69,11 @@ const pingResponse = () => new AsyncHttpResponse( async ( request : http.Incomin
 	};
 	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_GET( request, response, options );
 	return result;
-});
+};
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const uploadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const uploadResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
 	const fileName = request.url.split('=')[1];
@@ -83,10 +82,10 @@ const uploadResponse = () => new AsyncHttpResponse( async ( request : http.Incom
 		FileName : fileName
 	};
 	return await ServerResponses.DownloadFile( request, response, options );
-});
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const downloadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const downloadResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
 	const fileName = request.url.split('=')[1];
@@ -95,10 +94,10 @@ const downloadResponse = () => new AsyncHttpResponse( async ( request : http.Inc
 		FileName : fileName
 	};
 	return await ServerResponses.UploadFile( request, response, options );
-});
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Get = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const storage_Get = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const searchParams = new URLSearchParams( request.url.split('?')[1] );
 	const key = searchParams.get( 'key' );
@@ -117,10 +116,10 @@ const storage_Get = () => new AsyncHttpResponse( async ( request : http.Incoming
 		Value : await storage.GetResource( key )
 	};
 	return await ServerResponses.Request_GET( request, response, options );
-});
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Put = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const storage_Put = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const searchParams = new URLSearchParams( request.url.split('?')[1] );
 	const key = searchParams.get( 'key' );
@@ -143,10 +142,10 @@ const storage_Put = () => new AsyncHttpResponse( async ( request : http.Incoming
 		await storage.AddResource( key, result.body, false );
 	}
 	return result;
-});
+};
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const storage_Delete = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const storage_Delete = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const parsedUrl = new URL( request.url );
 	const key = parsedUrl.searchParams.get( 'key' );
@@ -176,7 +175,7 @@ const storage_Delete = () => new AsyncHttpResponse( async ( request : http.Incom
 		ServerResponses.EndResponseWithError( response, err, 404 );
 		return ComUtils.ResolveWithError( "/localstorage:delete", err );
 	}
-});
+};
 
 
 
