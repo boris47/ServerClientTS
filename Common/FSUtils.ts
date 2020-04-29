@@ -57,7 +57,7 @@ export default class FSUtils
 	}
 
 
-	/**  */
+	/** @returns Boolean */
 	public static FileExistsAsync( filePath : string ) : Promise<boolean>
 	{
 		return new Promise<boolean>( ( resolve ) =>
@@ -67,7 +67,7 @@ export default class FSUtils
 	}
 
 	
-	/**  */
+	/** @returns NodeJS.ErrnoException | null */
 	public static WriteFileAsync( filePath : string, data: string | Buffer ) : Promise<NodeJS.ErrnoException | null>
 	{
 		return new Promise( ( resolve ) =>

@@ -18,6 +18,12 @@ export enum EStorageType
 	REMOTE
 }
 
+interface ILocalStorage
+{
+	/** Key : Uint8Array */
+	[Key:string] : number[]
+}
+
 export interface IServerStorage
 {
 	Initialize( StorageName : string ) : Promise<boolean>;
@@ -68,12 +74,8 @@ class ServerStorage_FileSystem implements IServerStorage
 		const readReasult: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync( filePath );
 		if ( Buffer.isBuffer(readReasult) )
 		{
-			let asString = readReasult.toString('utf-8');
-			if( asString === "" )
-			{
-				asString = '{}';
-			}
-			let parsed : { [Key:string] : number[] } = null;
+			const asString = readReasult.toString('utf-8');
+			let parsed : ILocalStorage | null = null;
 			try
 			{
 				parsed = JSON.parse( asString );
@@ -106,15 +108,8 @@ class ServerStorage_FileSystem implements IServerStorage
 			objectToSave[Key] = value.toJSON().data;
 		});
 
-		const bResult = await new Promise<boolean>( ( resolve ) =>
-		{
-			fs.writeFile( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ), ( err: NodeJS.ErrnoException ) =>
-			{
-				resolve(!err);
-			})
-		});
-
-		return bResult;
+		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
+		return !result;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -158,7 +153,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		if ( this.HasResource( Key ) )
 		{
-			return this.m_Storage.get( Key );
+			return this.m_Storage.get( Key ) || null;
 		}
 		return null;
 	}
@@ -278,7 +273,7 @@ export class StorageManager
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async CreateNewStorage( type: EStorageType, StorageName : string ) : Promise<IServerStorage | null>
 	{
-		let storage : IServerStorage = null;
+		let storage : IServerStorage | null = null;
 		switch (type)
 		{
 			case EStorageType.LOCAL:
