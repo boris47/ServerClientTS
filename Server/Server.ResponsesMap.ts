@@ -140,7 +140,7 @@ const storage_Put = () => new AsyncHttpResponse( async ( request : http.Incoming
 	const result : ComUtils.IServerResponseResult = await ServerResponses.Request_PUT( request, response, options );
 	if ( result.bHasGoodResult )
 	{
-		await storage.AddResource( key, result.body, false );
+		await storage.AddResource( key, result.body, true );
 	}
 	return result;
 });

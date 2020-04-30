@@ -1,6 +1,7 @@
 
 import * as http from 'http';
 import * as fs from 'fs';
+import * as path from 'path';
 
 import { IServerConfigs, IClientRequestResult } from '../../../../Common/Interfaces'
 import { IClientRequestInternalOptions } from './Client.Requests';
@@ -62,14 +63,14 @@ async function ProcessRequest( request : IClientRequest ) : Promise<void>
 	// Execute the request
 	const options = Object.assign({}, CommonOptions, request );
 	const result : IClientRequestResult = await method( options, request.reqArgs );
-	if ( result && result.bHasGoodResult )
+	if ( result.bHasGoodResult )
 	{
 		console.log( `Request "${request.path}" satisfied\nResult: ${result.bHasGoodResult}` );
 		return request.OnResolve?.call( request, result.body );
 	}
 	else
 	{
-		const err = `Request "${request.path}" failed\nServer Say:\n${result.body?.toString()}`;
+		const err = `Request "${request.path}" failed\nError:\n${result.body?.toString()}`;
 		console.error( err );
 		return request.OnReject?.call( request, new Error( err ) );
 	}
@@ -109,70 +110,46 @@ export async function RequestServerPing() : Promise<boolean>
 }
 
 
-export async function RequestGetData<T>( key : string ) : Promise<T|null>
+export async function RequestGetData( Key : string ) : Promise<Buffer|Error>
 {
-	return new Promise<T|null>(( resolve : (value: T|null) => void ) =>
+	return new Promise<Buffer|Error>(( resolve ) =>
 	{
-		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Storage:'local', Key: key },
-			( body: Buffer ) =>
-			{
-				resolve( <T>( <unknown>body ) );
-			},
-			( err: Error ) =>
-			{
-				resolve( null );
-			}
+		Request( '/storage', 'get', <IClientRequestInternalOptions>{ Storage:'local', Key : Key },
+			( body: Buffer ) => resolve(body),
+			( err: Error ) => resolve(err)
 		);
 	});
 }
 
-export async function RequestPutData( Key : string, Value: any ) : Promise<boolean>
+export async function RequestPutData( Key : string, Value: any ) : Promise<Buffer|Error>
 {
-	return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
+	return new Promise<Buffer|Error>(( resolve ) =>
 	{
 		Request( '/storage', 'put', <IClientRequestInternalOptions>{ Storage:'local', Key : Key, Value: Value },
-			( body: Buffer ) =>
-			{
-				resolve( true );
-			},
-			( err: Error ) =>
-			{
-				resolve( false );
-			}
+			( body: Buffer ) => resolve(body),
+			( err: Error ) => resolve(err)
 		);
 	});
 }
 
-export async function RequestFileDownload( FileName : string ) : Promise<boolean>
+export async function RequestFileDownload( FileName : string, DownloadLocation : string ) : Promise<Buffer|Error>
 {
-	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
+	return new Promise<Buffer|Error>(( resolve ) =>
 	{
-		Request( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: FileName },
-			( body: Buffer ) =>
-			{
-				resolve( true );
-			},
-			( err: Error ) =>
-			{
-				resolve( false );
-			}
+		Request( '/download', 'get', <IClientRequestInternalOptions>{ AbsoluteFilePath: path.join(DownloadLocation, FileName) },
+			( body: Buffer ) => resolve(body),
+			( err: Error ) => resolve(err)
 		);
 	});
 }
 
-export async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<boolean>
+export async function RequestFileUpload( AbsoluteFilePath : string ) : Promise<Buffer|Error>
 {
-	return new Promise<boolean>(( resolve : ( value: boolean ) => void ) =>
+	return new Promise<Buffer|Error>(( resolve ) =>
 	{
 		Request( '/upload', 'put', <IClientRequestInternalOptions>{ AbsoluteFilePath: AbsoluteFilePath },
-			( body: Buffer ) =>
-			{
-				resolve( true );
-			},
-			( err: Error ) =>
-			{
-				resolve( false );
-			}
+			( body: Buffer ) => resolve(body),
+			( err: Error ) => resolve(err)
 		);
 	});
 }

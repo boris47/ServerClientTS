@@ -15,7 +15,7 @@ export enum EComunications
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
-	/** string -> Buffer | NodeJS.ErrnoException */
+	/** string -> NodeJS.ErrnoException | Buffer */
 	READ_FILE = 'READ_FILE',
 	/** string, Buffer -> NodeJS.ErrnoException | null */
 	WRITE_FILE = 'WRITE_FILE',
@@ -24,28 +24,28 @@ export enum EComunications
 	/////////////////////////////////////////////////
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
-	/** string -> any */
+	/** string -> Buffer | Error */
 	REQ_GET = 'REQ_GET',
 
-	/** string, any -> boolean */
+	/** string, any -> Buffer | Error */
 	REQ_PUT = 'REQ_PUT',
+
+	/** string -> Buffer | Error */
+	REQ_UPLOAD = 'REQ_UPLOAD',
+
+	/** string -> Buffer | Error */
+	REQ_DOWNLOAD = 'REQ_DOWNLOAD',
 }
 
 export enum EMessageContent
 {
 	UNMODIFIED,
-	BOOLEAN,
-	NUMBER,
-	STRING,
-	BUFFER,
-	OBJECT,
-	ARRAY,
-	ERROR,
+	BOOLEAN = 'Boolean',
+	NUMBER = 'Number',
+	STRING = 'String',
+	BUFFER = 'Uint8Array',
+	OBJECT = 'Object',
+	ARRAY = 'Array',
+	ERROR = 'Error',
+	NULL = 'Null',
 }
-
-export interface IMessage
-{
-	dataType: EMessageContent,
-	data: string | boolean | number | Buffer | Error | Object | Array<any>;
-}
-

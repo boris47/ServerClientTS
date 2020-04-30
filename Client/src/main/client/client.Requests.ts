@@ -28,7 +28,7 @@ export class ClientRequests {
 
 		const requestPath = new URLSearchParams();
 		requestPath.set('file', path.parse( absoluteFilePath ).base);
-		options.path = '?' + requestPath.toString();
+		options.path += '?' + requestPath.toString();
 		options.method = 'get';
 
 		const result : IClientRequestResult = await ClientRequests.Request_GET( options, <IClientRequestInternalOptions>{} );
@@ -37,22 +37,22 @@ export class ClientRequests {
 			return result;
 		}
 
-		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
+		const writeError : NodeJS.ErrnoException = await new Promise( ( resolve ) =>
 		{
 			const folderPath = path.parse( absoluteFilePath ).dir;
 			FSUtils.EnsureDirectoryExistence(folderPath);
 			fs.writeFile( absoluteFilePath, result.body, function( err : NodeJS.ErrnoException )
 			{
-				resolve( !err );
+				resolve( err );
 			});
 		});
-		if ( !bHasWriteGoodResult )
+		if ( writeError )
 		{
 			if ( fs.existsSync( absoluteFilePath ) )
 			{
 				fs.unlinkSync( absoluteFilePath );
 			}
-			return ComUtils.ResolveWithError( `ClientRequests:DownloadFile`, `Upload request of ${absoluteFilePath} failed` );
+			return ComUtils.ResolveWithError( `ClientRequests:DownloadFile`, `Upload request of ${absoluteFilePath} failed\n${writeError}` );
 		}
 		return ComUtils.ResolveWithGoodResult<IClientRequestResult>( Buffer.from( "Done" ) );
 	}
@@ -90,7 +90,7 @@ export class ClientRequests {
 
 		const requestPath = new URLSearchParams();
 		requestPath.set('file', filePathParsed.base);
-		options.path = requestPath.toString();
+		options.path += '?' + requestPath.toString();
 
 		return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
 	}
@@ -114,7 +114,7 @@ export class ClientRequests {
 				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
-					ComUtils.ResolveWithError( 'ClientRequests:Request_GET', `${response.statusCode}:${response.statusMessage}`, resolve );
+					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[StatusCode]', `${response.statusCode}:${response.statusMessage}`, resolve );
 					return;
 				}
 
@@ -122,7 +122,7 @@ export class ClientRequests {
 
 				response.on( 'error', ( err : Error ) =>
 				{
-					ComUtils.ResolveWithError( 'ClientRequests:Request_GET', `${err.name}:${err.message}`, resolve );
+					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
 
 				response.on( 'data', function( chunk : any )
@@ -139,7 +139,7 @@ export class ClientRequests {
 
 			request.on('error', function( err : Error )
 			{
-				return ComUtils.ResolveWithError( 'ClientRequests:Request_GET', `${err.name}:${err.message}`, resolve );
+				return ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[RequestError]', `${err.name}:${err.message}`, resolve );
 			})
 			request.end();
 		});
@@ -165,7 +165,7 @@ export class ClientRequests {
 				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
-					ComUtils.ResolveWithError( "ClientRequests:Request_PUT", `${response.statusCode}:${response.statusMessage}`, resolve );
+					ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[StatusCode]", `${response.statusCode}:${response.statusMessage}`, resolve );
 				}
 			});
 
@@ -176,7 +176,7 @@ export class ClientRequests {
 			
 			request.on('error', function( err : Error )
 			{
-				ComUtils.ResolveWithError( "ClientRequests:Request_PUT", `${err.name}:${err.message}`, resolve );
+				ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[RequestError]", `${err.name}:${err.message}`, resolve );
 			});
 
 			// Set headers

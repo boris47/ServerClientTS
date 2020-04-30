@@ -1,7 +1,20 @@
 
 
 import { ipcRenderer } from 'electron';
-import { EComunications, IMessage, EMessageContent } from '../icpComs';
+import { EComunications, EMessageContent } from '../icpComs';
+
+
+const MappedOps : {[key:string]: Function} =
+{
+	[EMessageContent.BOOLEAN] : ( value: any ) => Boolean(value),
+	[EMessageContent.NUMBER]: ( value: any ) => Number(value),
+	[EMessageContent.STRING]: ( value: any ) => String(value),
+	[EMessageContent.BUFFER]: ( value: any ) => Buffer.from(value),
+	[EMessageContent.OBJECT]: ( value: any ) => Object.assign({}, value),
+	[EMessageContent.ARRAY]: ( value: any ) => Array.from(value),
+	[EMessageContent.ERROR]: ( value: any ) => Object.assign(new Error(), value),
+	[EMessageContent.NULL]: ( value: any ) => value,
+}
 
 export class ICP_RendererComs
 {
@@ -12,52 +25,18 @@ export class ICP_RendererComs
 	 */
 	public static async Invoke<T = any>(channel: EComunications, arg0?: string | string[], args?: any | any[]): Promise<T | null>
 	{
-		const result: IMessage = await Promise.resolve(ipcRenderer.invoke(channel, arg0, args));
-		let converted = null;
-
-		console.log( "DETECTED TYPE", Object.prototype.toString.call(result.data) );
+		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, arg0, args));
+		const typeString = Object.prototype.toString.call(result);
+		const type = typeString.substring('[object '.length, typeString.lastIndexOf(']'));		
+	//	console.log( channel, arg0, args, typeString, type )
 		
-		switch( result.dataType )
+		const ctor = MappedOps[type];
+		if ( ctor )
 		{
-			case EMessageContent.UNMODIFIED:
-			{
-				converted = result.data;
-			} break
-			case EMessageContent.BOOLEAN:
-			{
-				converted = Boolean(result.data as Boolean);
-			} break
-			case EMessageContent.NUMBER:
-			{
-				converted = Number(result.data as Number );
-			} break
-			case EMessageContent.STRING:
-			{
-				converted = String(result.data as String);
-			} break
-			case EMessageContent.BUFFER:
-			{
-				converted = Buffer.from( result.data as Uint8Array );
-			} break
-			case EMessageContent.OBJECT:
-			{
-				converted = Object.create(result.data as Object);
-			} break
-			case EMessageContent.ARRAY:
-			{
-				converted = Array.from(result.data as any[]);
-			} break
-			case EMessageContent.ERROR:
-			{
-				const error = result.data as Error;
-				converted = new Error( error.message );
-				converted.name = error.name;
-				converted.stack = error.stack;
-			} break
-			default: console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${arg0}, ${args})` );
+			return ctor(result) as T;
 		}
-
-		return converted as T;
+		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${arg0}, ${args})` );
+		return null;
 	}
 
 

@@ -132,7 +132,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public async AddResource( Key : string, data : Buffer, bForced : boolean = false ) : Promise<boolean>
+	public async AddResource( Key : string, data : Buffer, bForced : boolean = true ) : Promise<boolean>
 	{
 		const bAlreadyExists = this.m_Storage.has( Key );
 		if ( !bAlreadyExists || bForced )

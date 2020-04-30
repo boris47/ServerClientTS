@@ -1,7 +1,7 @@
 
 
 import * as electron from 'electron';
-import { EComunications, IMessage, EMessageContent } from '../icpComs';
+import { EComunications } from '../icpComs';
 
 import FSUtils from '../../../Common/FSUtils';
 import * as RequestProcessor from './client/client.RequestProcessor';
@@ -21,32 +21,25 @@ export function SetupMainHandlers()
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
-	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, keys: string[]): IMessage | null =>
+	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, keys: string[]): any | null =>
 	{
 		console.log( EComunications.ELECTRON_CALL, keys );
-		const result: any | null = GetElectronProperty(keys);
-		if (result)
-		{
-			return { dataType: EMessageContent.UNMODIFIED, data: result };
-		}
-		return null;
+		return GetElectronProperty(keys);
 	});
 	
-	electron.ipcMain.handle(EComunications.USERAPPPATH, (event: Electron.IpcMainInvokeEvent): IMessage | null =>
+	electron.ipcMain.handle(EComunications.USERAPPPATH, (event: Electron.IpcMainInvokeEvent): string | null =>
 	{
 		console.log( EComunications.USERAPPPATH );
-		const result = electron?.app?.getPath('appData') || null;
-		return { dataType: result ? EMessageContent.STRING : EMessageContent.UNMODIFIED, data: result };
+		return electron?.app?.getPath('appData') || null;
 	});
 
-	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, keys: string[], args: any[]): IMessage | null =>
+	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, keys: string[], args: any[]): any | null =>
 	{
 		console.log( EComunications.ELECTRON_CALL, keys, args );
 		let result: any | null = null;
 		try
 		{
 			result = GetElectronProperty(keys)(...args);
-			return { dataType: EMessageContent.UNMODIFIED, data: result };
 		}
 		catch (ex)
 		{
@@ -59,18 +52,16 @@ export function SetupMainHandlers()
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
-	electron.ipcMain.handle(EComunications.READ_FILE, async (event: Electron.IpcMainInvokeEvent, filePath: string): Promise<IMessage> =>
+	electron.ipcMain.handle(EComunications.READ_FILE, async (event: Electron.IpcMainInvokeEvent, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
 	{
 		console.log( EComunications.READ_FILE, filePath );
-		const result: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync(filePath);
-		return { dataType: Buffer.isBuffer(result) ? EMessageContent.BUFFER : EMessageContent.ERROR, data: result };
+		return FSUtils.ReadFileAsync(filePath);
 	});
 
-	electron.ipcMain.handle(EComunications.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, filePath: string, data: string | Buffer): Promise<IMessage | null> =>
+	electron.ipcMain.handle(EComunications.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>
 	{
 		console.log( EComunications.WRITE_FILE, filePath, data );
-		const result: NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync(filePath, data);
-		return { dataType: result ? EMessageContent.ERROR : EMessageContent.UNMODIFIED, data: result };
+		return FSUtils.WriteFileAsync(filePath, data);
 	});
 
 
@@ -78,17 +69,27 @@ export function SetupMainHandlers()
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
 
-	electron.ipcMain.handle(EComunications.REQ_GET, async (event: Electron.IpcMainInvokeEvent, url: string ): Promise<IMessage | null> =>
+	electron.ipcMain.handle(EComunications.REQ_GET, async (event: Electron.IpcMainInvokeEvent, key: string ): Promise<Buffer | Error> =>
 	{
-		console.log( EComunications.REQ_GET, url );
-		throw Error("NOT IMPLEMENTED");
-	//	return null;
+		console.log( EComunications.REQ_GET, key );
+		return RequestProcessor.RequestGetData(key);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, key: string, value: any ): Promise<IMessage | null> =>
+	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, key: string, value: any ): Promise<Buffer | Error> =>
 	{
 		console.log( EComunications.REQ_PUT, key, value );
-		const answer = await RequestProcessor.RequestPutData( key, value );
-		return { dataType : EMessageContent.BOOLEAN, data: answer };
+		return RequestProcessor.RequestPutData( key, value );
+	});
+
+	electron.ipcMain.handle(EComunications.REQ_UPLOAD, async (event: Electron.IpcMainInvokeEvent, absoluteFilePath: string ): Promise<Buffer | Error> =>
+	{
+		console.log( EComunications.REQ_UPLOAD, absoluteFilePath );
+		return RequestProcessor.RequestFileUpload(absoluteFilePath);
+	});
+
+	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, fileName: string, downloadLocation: string ): Promise<Buffer | Error> =>
+	{
+		console.log( EComunications.REQ_DOWNLOAD, fileName );
+		return RequestProcessor.RequestFileDownload(fileName, downloadLocation);
 	});
 }
