@@ -48,9 +48,7 @@ export interface IServerRequestInternalOptions
 	FileName? : string;
 	Key? : string;
 	Value? : Buffer | null;
-	Headers? : {
-		[key:string] : any
-	};
+	Headers? : http.OutgoingHttpHeaders;
 	FileStream? : fs.ReadStream;
 }
 
