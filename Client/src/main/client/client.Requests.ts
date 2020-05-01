@@ -69,23 +69,24 @@ export class ClientRequests {
 		}
 
 		const filePathParsed = path.parse( AbsoluteFilePath );
-		// Check if content type can be found
-		const contentType : string | false = mime.lookup( filePathParsed.ext );
-		if ( contentType === false )
-		{
-			return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `Cannot define content type for file ${AbsoluteFilePath}` );
-		}
 
-		// Check file Size
-		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( AbsoluteFilePath );
-		if ( sizeInBytes === null )
-		{
-			return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `Cannot obtain size of file ${AbsoluteFilePath}` );
-		}
-
+		// Headers
 		clientRequestInternalOptions.Headers = new Map();
-		clientRequestInternalOptions.Headers.set( 'content-type', contentType );
-		clientRequestInternalOptions.Headers.set( 'content-length', sizeInBytes );
+		{
+			// Check if content type can be found
+			// Considering https://stackoverflow.com/a/1176031 && https://stackoverflow.com/a/12560996 but appling https://stackoverflow.com/a/28652339
+			const contentType : string = mime.lookup( filePathParsed.ext ) || 'application/octet-stream';
+			clientRequestInternalOptions.Headers.set( 'content-type', contentType );
+			
+			// Check file Size
+			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( AbsoluteFilePath );
+			if ( sizeInBytes === null )
+			{
+				return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `Cannot obtain size of file ${AbsoluteFilePath}` );
+			}
+			clientRequestInternalOptions.Headers.set( 'content-length', sizeInBytes );
+		}
+
 		clientRequestInternalOptions.FileStream = fs.createReadStream( AbsoluteFilePath );
 
 		const requestPath = new URLSearchParams();

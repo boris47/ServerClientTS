@@ -41,6 +41,7 @@ export class ServerResponses {
 	}
 
 	
+	/** Client -> Server */
 	public static async DownloadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		const result : ComUtils.IServerResponseResult = await ServerResponses.Request_PUT( request, response, <IServerRequestInternalOptions>{} );
@@ -66,7 +67,7 @@ export class ServerResponses {
 		return ComUtils.ResolveWithGoodResult( result.body );
 	}
 
-
+	/** Server -> Client */
 	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
@@ -79,29 +80,23 @@ export class ServerResponses {
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
 
-		// Check if content type can be found
-		const contentType : string | false = mime.lookup( path.parse(filePath).ext );
-		if ( contentType === false )
+		serverRequestInternalOptions.Headers = {};
 		{
-			const err = `Cannot define content type for file ${filePath}`;
-			ServerResponses.EndResponseWithError( response, err, 400 );
-			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+			// Check if content type can be found
+			const contentType : string = mime.lookup( path.parse(filePath).ext ) || 'application/octet-stream';
+			serverRequestInternalOptions.Headers['content-type'] = contentType;
+	
+			// Check file Size
+			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( filePath );
+			if ( sizeInBytes === null )
+			{
+				const err = `Cannot obtain size of file ${filePath}`;
+				ServerResponses.EndResponseWithError( response, err, 400 );
+				return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
+			}
+			serverRequestInternalOptions.Headers['content-length'] = sizeInBytes;
 		}
 
-		// Check file Size
-		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( filePath );
-		if ( sizeInBytes === null )
-		{
-			const err = `Cannot obtain size of file ${filePath}`;
-			ServerResponses.EndResponseWithError( response, err, 400 );
-			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
-		}
-
-		serverRequestInternalOptions.Headers =
-		{
-			'content-type' : contentType,
-			'content-length' : sizeInBytes
-		};
 		serverRequestInternalOptions.FileStream = fs.createReadStream( filePath );
 
 		return ServerResponses.Request_GET( request, response, serverRequestInternalOptions );
