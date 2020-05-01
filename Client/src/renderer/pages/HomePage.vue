@@ -113,6 +113,7 @@
 			{
 				const files = DomUtils.ProcessInputFiles(event);
 				this.inputFilePath = files[0]?.path;
+				console.log('inputFilePath', this.inputFilePath)
 			},
 
 	//		SetDownloadLocation(event: Event)
@@ -127,17 +128,23 @@
 			{
 				this.bSetRequestLaunched = true;
 				const result = await ICP_RendererComs.Invoke<Buffer | Error>(EComunications.REQ_PUT, 'keyy', this.setValue);
-				this.bSetRequestSucceded = Buffer.isBuffer( result );
+				if( !(this.bSetRequestSucceded = Buffer.isBuffer( result )))
+				{
+					console.error(result);
+				}
 			},
 
 			async GetValue()
 			{
 				this.bGetRequestLaunched = true;
 				const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_GET, 'keyy', EMessageContent.BUFFER );
-				this.bGetRequestSucceded = Buffer.isBuffer( result );
-				if( this.bGetRequestSucceded )
+				if( this.bGetRequestSucceded = Buffer.isBuffer( result ) )
 				{
 					this.getValue = result.toString();
+				}
+				else
+				{
+					console.error(result);
 				}
 			},
 
@@ -145,7 +152,10 @@
 			{
 				this.bUploadRequestLaunched = true;
 				const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.inputFilePath );
-				this.bUploadRequestSucceded = Buffer.isBuffer( result );
+				if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
+				{
+					console.error(result);
+				}
 			},
 
 	//		async DownloadFile()
