@@ -14,6 +14,7 @@ const MappedOps : {[key:string]: Function} =
 	[EMessageContent.ARRAY]: ( value: any ) => Array.from(value),
 	[EMessageContent.ERROR]: ( value: any ) => Object.assign(new Error(), value),
 	[EMessageContent.NULL]: ( value: any ) => value,
+	[EMessageContent.UNDEFINED]: ( value: any ) => value,
 }
 
 export class ICP_RendererComs
@@ -35,7 +36,7 @@ export class ICP_RendererComs
 		{
 			return ctor(result) as T;
 		}
-		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${arg0}, ${args})` );
+		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${arg0}, ${args}), type is ${type}` );
 		return null;
 	}
 

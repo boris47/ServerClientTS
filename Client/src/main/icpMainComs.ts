@@ -17,20 +17,28 @@ const GetElectronProperty = (funcPath: string[]): any | null =>
 
 export function SetupMainHandlers()
 {
-
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
 	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, keys: string[]): any | null =>
 	{
-		console.log( EComunications.ELECTRON_CALL, keys );
+		console.log( EComunications.ELECTRON_PROPERTY, keys );
 		return GetElectronProperty(keys);
 	});
 	
-	electron.ipcMain.handle(EComunications.USERAPPPATH, (event: Electron.IpcMainInvokeEvent): string | null =>
+	electron.ipcMain.handle(EComunications.ELECTRON_PATH, (event: Electron.IpcMainInvokeEvent, appToGet: string): string | Error =>
 	{
-		console.log( EComunications.USERAPPPATH );
-		return electron?.app?.getPath('appData') || null;
+		console.log( EComunications.ELECTRON_PATH );
+		let result = '';
+		try
+		{
+			result = electron.app.getPath(appToGet as any);
+		}
+		catch(ex)
+		{
+			result = ex;
+		}
+		return result;
 	});
 
 	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, keys: string[], args: any[]): any | null =>
@@ -39,7 +47,7 @@ export function SetupMainHandlers()
 		let result: any | null = null;
 		try
 		{
-			result = GetElectronProperty(keys)(...args);
+			result = GetElectronProperty(keys)(args);
 		}
 		catch (ex)
 		{

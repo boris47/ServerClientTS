@@ -9,8 +9,8 @@ export enum EComunications
 	ELECTRON_PROPERTY = 'ELECTRON_PROPERTY',
 	/** string[] -> string | number | object  */
 	ELECTRON_CALL = 'ELECTRON_CALL',
-	/** NONE -> string */
-	USERAPPPATH = 'USERAPPPATH',
+	/** 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin' -> string | Error */
+	ELECTRON_PATH = 'ELECTRON_PATH',
 
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
@@ -48,4 +48,5 @@ export enum EMessageContent
 	ARRAY = 'Array',
 	ERROR = 'Error',
 	NULL = 'Null',
+	UNDEFINED = 'Undefined',
 }

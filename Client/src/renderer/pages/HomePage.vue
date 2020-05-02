@@ -25,18 +25,22 @@
 				<h1 v-if="!bUploadRequestLaunched">WAITING</h1>
 			</div>
 
-			<!--div>
-				<input id="fileselector" type="file" @change="SetDownloadLocation($event)" webkitdirectory directory multiple="false" style="display:none" />
-				<button onclick="getElementById('fileselector').click()">Browse</button>
+			<div>
+
+				<!--input id="folderselector" ref="inputFile" type="file" v-show="true" value="./" :accept="accept" @change="SetDownloadLocation" :webkitdirectory="true" />
+				<button onclick="getElementById('folderselector').click()">Browse</button-->
+
+				<!--input id="fileselector" type="file" @change="SetDownloadLocation($event)" webkitdirectory directory multiple="false" style="display:none" />
 				
-				<input type="file"  @change="SetDownloadLocation($event)" webkitdirectory multiple>
+				<input type="file"  @change="SetDownloadLocation($event)" webkitdirectory multiple-->
 				
-				
+				<button type="button" @click.stop="SetDownloadLocation">Choose Folder</button>
+				<span v-if="donwloadFileLocation" ellipsis>{{donwloadFileLocation}}</span>
 				<button type="button" @click.stop="DownloadFile">Download File</button>
 				<h1 v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</h1>
 				<h1 v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</h1>
 				<h1 v-if="!bDownloadRequestLaunched">WAITING</h1>
-			</div-->
+			</div>
 		</div>
 	</global-layout>
 </template>
@@ -48,6 +52,7 @@
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunications, EMessageContent } from '../../icpComs';
 	import DomUtils from '../domUtils';
+	import * as electron from 'electron';
 
 
 	interface IData
@@ -64,9 +69,9 @@
 		bUploadRequestSucceded: boolean;
 		bUploadRequestLaunched: boolean;
 
-	//	donwloadFileLocation: string;
-	//	bDownloadRequestSucceded: boolean;
-	//	bDownloadRequestLaunched: boolean;
+		donwloadFileLocation: string;
+		bDownloadRequestSucceded: boolean;
+		bDownloadRequestLaunched: boolean;
 	}
 
 	const data: IData =
@@ -83,9 +88,9 @@
 		bUploadRequestSucceded: null,
 		bUploadRequestLaunched: false,
 
-	//	donwloadFileLocation: '',
-	//	bDownloadRequestSucceded: null,
-	//	bDownloadRequestLaunched: false,
+		donwloadFileLocation: '',
+		bDownloadRequestSucceded: null,
+		bDownloadRequestLaunched: false,
 	};
 
 	export default Vue.extend({
@@ -96,6 +101,10 @@
 		// A unique page we don't need of give data for each instance
 		// https://vuejs.org/v2/guide/components.html#data-Must-Be-a-Function
 		data: () => data,
+
+		props: {
+            accept: String,
+        },
 
 		created()
 		{
@@ -116,13 +125,18 @@
 				console.log('inputFilePath', this.inputFilePath)
 			},
 
-	//		SetDownloadLocation(event: Event)
-	//		{
-	//			event.preventDefault();
-	//			if( event.stopPropagation ) event.stopPropagation()
-	//			console.log("event", Object.prototype.toString.call(event))
-	//			console.log( DomUtils.ProcessInputFolder(event) );
-	//		},
+			async SetDownloadLocation(/*event: Event*/)
+			{
+				const exePath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'exe');
+				console.log(exePath)
+				const result = await ICP_RendererComs.Invoke<(string[]) | (undefined)>(
+					EComunications.ELECTRON_CALL,
+					['dialog', 'showOpenDialogSync'],
+					<electron.OpenDialogSyncOptions>{ properties: ["openDirectory"], defaultPath: exePath }
+				);
+				console.log(result);
+				this.donwloadFileLocation = result ? result[0] : undefined;
+			},
 
 			async SetValue()
 			{
@@ -158,12 +172,12 @@
 				}
 			},
 
-	//		async DownloadFile()
-	//		{
-	//			this.bDownloadRequestLaunched = true;
-	//			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, 'Server.js', this.donwloadFileLocation );
-	//			this.bDownloadRequestSucceded = Buffer.isBuffer( result );
-	//		}
+			async DownloadFile()
+			{
+				this.bDownloadRequestLaunched = true;
+				const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, 'Clear.bat', this.donwloadFileLocation );
+				this.bDownloadRequestSucceded = Buffer.isBuffer( result );
+			}
 		}
 	});
 

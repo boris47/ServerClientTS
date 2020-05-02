@@ -34,7 +34,7 @@ async function loggerSetup()
 	const appName = await ICP_RendererComs.Invoke<string>(EComunications.ELECTRON_PROPERTY, ['app', 'name']);
 	console.log("RENDERER:", appName);
 
-	const appPath = await ICP_RendererComs.Invoke<string | null>(EComunications.USERAPPPATH);
+	const appPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'appData');
 	console.log("renderer", appPath);
 
 	const erss = await ICP_RendererComs.Invoke<NodeJS.ErrnoException | null>(EComunications.WRITE_FILE, './test.txt', "Ciao Mamma");
