@@ -5,25 +5,9 @@ import { IServerConfigs } from '../Common/Interfaces';
 
 export class ServerConfigs implements IServerConfigs
 {	
-	public get PublicIP() : string
-	{
-		return this.serverPublicIP;
-	}
-
-	public get WebSocketPort() : number
-	{
-		return this.serverWebSocketPort;
-	}
-
-	public get RequestsListenerPort() : number
-	{
-		return this.serverRequestsListenerPort;
-	}
-	
-
-	private serverPublicIP : string | null = null;
-	private serverWebSocketPort = -1;
-	private serverRequestsListenerPort = -1;
+	public PublicIP : string | null;
+	public WebSocketPort : number;
+	public RequestsListenerPort : number;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -38,7 +22,7 @@ export class ServerConfigs implements IServerConfigs
 	{
 		if( ipRegex.v4({ exact: true }).test( PublicIP ) || ipRegex.v6({ exact: true }).test( PublicIP ) )
 		{
-			this.serverPublicIP = PublicIP;
+			this.PublicIP = PublicIP;
 			return true;
 		}
 		return false;
@@ -48,9 +32,9 @@ export class ServerConfigs implements IServerConfigs
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public SetWebSocketPort( Port : number ) : boolean
 	{
-		if ( Port !== this.serverRequestsListenerPort )
+		if ( Port !== this.RequestsListenerPort )
 		{
-			this.serverWebSocketPort = Port;
+			this.WebSocketPort = Port;
 			return true;
 		}
 		return false;
@@ -60,9 +44,9 @@ export class ServerConfigs implements IServerConfigs
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public SetHTTPServerPort( Port : number ) : boolean
 	{
-		if ( Port !== this.serverWebSocketPort )
+		if ( Port !== this.WebSocketPort )
 		{
-			this.serverRequestsListenerPort = Port;
+			this.RequestsListenerPort = Port;
 			return true;
 		}
 		return false;
