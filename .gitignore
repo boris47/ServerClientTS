@@ -14,3 +14,8 @@ bin/*
 node_modules
 !.gitkeep
 
+
+# Client
+!client/webpack.main.additions.js
+!client/webpack.renderer.additions.js
+
