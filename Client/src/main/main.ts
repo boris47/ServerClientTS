@@ -86,6 +86,7 @@ async function createMainWindow()
 				allowRunningInsecureContent: false,
 				enableRemoteModule: false,
 				contextIsolation : false, // Cannot be set to true cause the error 'module not found'
+				sandbox: false,
 			},
 			// Show window in the center of the screen.
 			center: true,
