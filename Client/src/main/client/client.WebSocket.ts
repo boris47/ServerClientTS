@@ -4,8 +4,12 @@ import { client as WebSocketClient, IClientConfig, connection as WebSocketConnec
 
 import * as https from 'https';
 
+import ServerConfigs from '../../../../Common/ServerConfigs';
+
+
 export function Client_SetupWebSocket() : Promise<null | Error>
 {
+	const serverConfigs = ServerConfigs.instance;
 	return new Promise<null | Error>( ( resolve : (value?: null | Error) => void ) =>
 	{
 		const config = <IClientConfig>
@@ -18,9 +22,9 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 		//	maxReceivedMessageSize: 8					// Default 8 ( Mib )
 			tlsOptions	: <https.RequestOptions>
 			{
-				auth : null, // ClientRequestArgs.auth?: string | null | undefined
-				cert : undefined, // string | Buffer | (string | Buffer)[] | undefined
-				headers : undefined, //{ [header: string]: number | string | string[] | undefined; } | undefined
+				auth : null,							// ClientRequestArgs.auth?: string | null | undefined
+				cert : undefined,						// string | Buffer | (string | Buffer)[] | undefined
+				headers : undefined, 					// { [header: string]: number | string | string[] | undefined; } | undefined
 			}
 		
 		//	webSocketVersion : 13						/// Default 13
@@ -69,8 +73,7 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 			connection.send( "Ciao, sono un client" );
 		});
 
-		webSocketClient.connect( 'ws://localhost:3001/websocket', 'echo-protocol' );
-
+		webSocketClient.connect( `ws://${serverConfigs.PublicIP}:${serverConfigs.WebSocketPort}/websocket`, 'echo-protocol' );
 		resolve( null );
 	});
 }

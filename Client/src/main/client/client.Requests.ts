@@ -3,8 +3,8 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import FSUtils from '../../../../Common/FSUtils';
-import * as ComUtils from '../../../../Common/ComUtils';
+import FSUtils from '../../../../Common/Utils/FSUtils';
+import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { IClientRequestResult } from '../../../../Common/Interfaces';
 import * as mime from 'mime-types';
 

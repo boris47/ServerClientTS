@@ -6,7 +6,7 @@ import 'typeface-roboto/index.css'
 */
 
 import Vue, { VueConstructor } from 'vue';
-import GenericUtils from '../../../Common/GenericUtils';
+import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 import { ICP_RendererComs } from './icpRendererComs';
 import { EComunications } from '../icpComs';

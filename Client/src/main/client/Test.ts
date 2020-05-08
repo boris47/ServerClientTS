@@ -1,20 +1,24 @@
-/*
-import { RequestServerPing,
-//	RequestFileUpload,
-//	RequestFileDownload,
-//	RequestGetData,
-//	RequestPutData
-} from "./client.RequestProcessor";
 
-import * as path from 'path';
-*/
+	import {
+		RequestServerPing,
+//		RequestFileUpload,
+	//	RequestFileDownload,
+	//	RequestGetData,
+	//	RequestPutData
+	} from "./client.RequestProcessor";
+
+	import { InstallRequestsProcessor } from "./client.RequestProcessor";
+
+//	import * as path from 'path';
+
 async function Main()
 {
+	await InstallRequestsProcessor();
 	{
-	/*	RequestServerPing()
-		.then( ( bCanContinue : boolean ) =>
+		RequestServerPing()
+	/*	.then( ( bCanContinue : boolean ) =>
 		{
-			return bCanContinue ? RequestFileUpload( path.join( process.cwd(), 'src/main/client/Test.js' ) ) : Promise.reject(false);
+			return bCanContinue ? RequestFileUpload( 'E:/temppp/SZ_Bug_SS_158.7z.002' ) : Promise.reject(false);
 		})
 	*/		
 	/*	.then( ( bCanContinue : boolean ) =>

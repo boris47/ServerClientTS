@@ -28,7 +28,7 @@ export interface IServerConfigs
 	readonly RequestsListenerPort : number;
 }
 
-export interface IIndexableObject
+export interface IIndexableObject<T=any>
 {
-	[key:string] : any
+	[key:string] : T
 }

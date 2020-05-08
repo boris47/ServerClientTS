@@ -6,8 +6,8 @@ import * as mime from 'mime-types';
 
 import { HTTPCodes } from './HTTP.Codes';
 
-import * as ComUtils from '../Common/ComUtils';
-import FSUtils from '../Common/FSUtils';
+import * as ComUtils from '../Common/Utils/ComUtils';
+import FSUtils from '../Common/Utils/FSUtils';
 import { IServerRequestInternalOptions } from './Server.ResponsesMap';
 
 

@@ -19,7 +19,7 @@
 			</div>
 			<div>
 				<input type="file" @change="SetInputFile($event)" :webkitdirectory="false">
-				<button type="button" @click.stop="UploadFile">Upload File</button>
+				<button v-if="inputFilePath" type="button" @click.stop="UploadFile">Upload File</button>
 				<h1 v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</h1>
 				<h1 v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</h1>
 				<h1 v-if="!bUploadRequestLaunched">WAITING</h1>
@@ -36,7 +36,7 @@
 				
 				<button type="button" @click.stop="SetDownloadLocation">Choose Folder</button>
 				<span v-if="donwloadFileLocation" ellipsis>{{donwloadFileLocation}}</span>
-				<button type="button" @click.stop="DownloadFile">Download File</button>
+				<button v-if="donwloadFileLocation" type="button" @click.stop="DownloadFile">Download File</button>
 				<h1 v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</h1>
 				<h1 v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</h1>
 				<h1 v-if="!bDownloadRequestLaunched">WAITING</h1>
@@ -127,15 +127,14 @@
 
 			async SetDownloadLocation(/*event: Event*/)
 			{
-				const exePath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'exe');
-				console.log(exePath)
+				const exePath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'appData');
 				const result = await ICP_RendererComs.Invoke<(string[]) | (undefined)>(
 					EComunications.ELECTRON_CALL,
 					['dialog', 'showOpenDialogSync'],
 					<electron.OpenDialogSyncOptions>{ properties: ["openDirectory"], defaultPath: exePath }
 				);
 				console.log(result);
-				this.donwloadFileLocation = result ? result[0] : undefined;
+				this.donwloadFileLocation = Array.isArray(result) ? result[0] : undefined;
 			},
 
 			async SetValue()
@@ -176,7 +175,10 @@
 			{
 				this.bDownloadRequestLaunched = true;
 				const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, 'Clear.bat', this.donwloadFileLocation );
-				this.bDownloadRequestSucceded = Buffer.isBuffer( result );
+				if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
+				{
+					console.error(result);
+				}
 			}
 		}
 	});

@@ -1,29 +1,26 @@
 {
-  "name": "server",
-  "version": "1.0.0",
-  "description": "",
-  "main": "Server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "@types/node": "=13.7.0",
-    "@types/mime-types": "=2.1.0",
-    "@types/websocket": "0.0.38",
-    "@types/aws-sdk": "=2.7.0",
-    "@types/ip-regex": "2.0.0",
-    "@types/mongodb": "3.1.31",
-    "@types/nodemailer": "4.6.0",
-    "http-status-codes": "=1.4.0",
-    "typescript": "=3.8.3",
-    "mime-types": "=2.1.26",
-    "websocket": "1.0.31",
-    "aws-sdk": "=2.621.0",
-    "ip-regex": "4.1.0",
-    "mongodb": "3.5.4",
-    "nodemailer": "6.4.5"
-  }
+	"name": "server",
+	"version": "1.0.0",
+	"description": "",
+	"main": "Server.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"devDependencies": {
+		"@types/node": "13.13.5",
+		"@types/mime-types": "2.1.0",
+		"@types/websocket": "1.0.0",
+		"@types/mongodb": "3.5.16",
+		"@types/nodemailer": "6.4.0",
+		"http-status-codes": "1.4.0",
+		"typescript": "3.8.3",
+		"mime-types": "2.1.27",
+		"websocket": "1.0.31",
+		"aws-sdk": "2.672.0",
+		"mongodb": "3.5.7",
+		"nodemailer": "6.4.6"
+	}
 }

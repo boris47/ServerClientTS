@@ -314,7 +314,7 @@ export namespace ProcessManager
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		export class SpawnedProcess
+		export class SpawnedAsyncProcess
 		{
 			private child : child_process.ChildProcess						= null;
 			private childName : string										= '';
@@ -358,9 +358,8 @@ export namespace ProcessManager
 			// 
 			private RegisterCallbacks()
 			{
-
-				new Promise<void>( ( resolve ) =>
-				{
+		//		new Promise<void>( ( resolve ) =>
+		//		{
 					this.child.on( 'error', ( err : Error ) =>
 					{
 						this.processResult.stdError = `${err.name}:${err.message}`;
@@ -373,7 +372,7 @@ export namespace ProcessManager
 						chunk.split('\n').filter( l => l.length > 0 ).forEach( l => 
 						{
 							this.processResult.stdOutput += `${l}\n`;
-							console.log( `ProcessManager::SpawnedProcess:"${this.childName}":STDOUT:${l}` ) 
+							console.log( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tSTDOUT:"${l}"` );
 						});
 					});
 			
@@ -382,7 +381,7 @@ export namespace ProcessManager
 						chunk.split('\n').filter( l => l.length > 0 ).forEach( l =>
 						{
 							this.processResult.stdError = ( this.processResult.stdError ? this.processResult.stdError : '' ) + `${l}\n`;
-							console.error( `ProcessManager::SpawnedProcess:"${this.childName}":STDERR:${l}` )
+							console.error( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tSTDERR:"${l}"` );
 						});
 					});
 					/*
@@ -399,10 +398,10 @@ export namespace ProcessManager
 					this.child.on( 'exit', ( code: number | null, signal: NodeJS.Signals | null ) =>
 					{
 						this.processResult.exitCode = code || 0;
-						console.log( `ProcessManager::SpawnedProcess: Process ${this.childName} exited with ` + (typeof code === 'number' ? `code : ${code}` : `signal ${signal}`) );
+						console.log( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tExited with ` + (typeof code === 'number' ? `code : ${code}` : `signal ${signal}`) );
 						this.internalFinishCallback();
 						this.onExitOrClose( this.processResult );
-						resolve();
+		//				resolve();
 						
 						if( this.restartRequested )
 						{
@@ -411,8 +410,7 @@ export namespace ProcessManager
 							this.RegisterCallbacks();
 						}
 					});
-
-				});
+		//		});
 			}
 
 
@@ -433,7 +431,7 @@ export namespace ProcessManager
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		export const SpawnProcess = ( processToExecute : string, stdin? : string|null, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : SpawnedProcess =>
+		export const SpawnAsyncProcess = ( processToExecute : string, stdin? : string|null, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : SpawnedAsyncProcess =>
 		{
 			const spawmProcess = () => child_process.spawn
 			(
@@ -449,7 +447,30 @@ export namespace ProcessManager
 
 			const child = spawmProcess();
 			child.stdin.end( stdin );
-			return new SpawnedProcess( child, path.join( absoluteCWD, processToExecute ), spawmProcess );
+			return new SpawnedAsyncProcess( child, processToExecute, spawmProcess );
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		export const SpawnSyncProcess = ( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : ISpawnProcessResult =>
+		{
+			const spawmProcess = () => child_process.spawnSync
+			(
+				processToExecute,
+				args || [],
+				{
+					shell: process.env.ComSpec,
+					cwd : absoluteCWD || process.cwd(),
+					env : Object.assign( {}, process.env, additionalEnvVars || {} ),
+					argv0 : (args || []).join( ' ' )
+				}
+			);
+
+			const result = spawmProcess();
+			return {
+				exitCode: result.stderr ? 1 : 0,
+				stdError: result.stderr?.toString() || null,
+				stdOutput: result.stdout?.toString() || null
+			};
 		}
 
 
@@ -568,7 +589,7 @@ export namespace ProcessManager
 
 				this.currentItemIndex ++;
 				const { processToExecute, args, additionalEnvVars, absoluteCWD, transferOutputToNextItem, bCriticalProcessResult } = nextProcess;
-				const process = ProcessManager.Spawn.SpawnProcess( processToExecute, stdin, args, additionalEnvVars, absoluteCWD );
+				const process = ProcessManager.Spawn.SpawnAsyncProcess( processToExecute, stdin, args, additionalEnvVars, absoluteCWD );
 				process.OnExitOrClose( ( processResult: Spawn.ISpawnProcessResult ) =>
 				{
 					if ( !bCriticalProcessResult || bCriticalProcessResult && processResult.exitCode === 0 )

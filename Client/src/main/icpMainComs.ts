@@ -3,7 +3,7 @@
 import * as electron from 'electron';
 import { EComunications } from '../icpComs';
 
-import FSUtils from '../../../Common/FSUtils';
+import FSUtils from '../../../Common/Utils/FSUtils';
 import * as RequestProcessor from './client/client.RequestProcessor';
 
 
@@ -97,7 +97,7 @@ export function SetupMainHandlers()
 
 	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, fileName: string, downloadLocation: string ): Promise<Buffer | Error> =>
 	{
-		console.log( EComunications.REQ_DOWNLOAD, fileName );
+		console.log( EComunications.REQ_DOWNLOAD, fileName, downloadLocation );
 		return RequestProcessor.RequestFileDownload(fileName, downloadLocation);
 	});
 }

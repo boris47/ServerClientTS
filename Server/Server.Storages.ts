@@ -2,8 +2,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import FSUtils from '../Common/FSUtils';
-import GenericUtils, { GenericConstructor } from '../Common/GenericUtils';
+import FSUtils from '../Common/Utils/FSUtils';
+import GenericUtils, { GenericConstructor } from '../Common/Utils/GenericUtils';
 import { AWSUtils } from './Utils/AWSUtils';
 import { IIndexableObject } from '../Common/Interfaces';
 

@@ -98,7 +98,7 @@ export class MongoDatabase
 		return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 		{
 			collection.insertOne( entry,
-				( error: MongoDB.MongoError, result: MongoDB.InsertOneWriteOpResult ) =>
+				( error: MongoDB.MongoError, result: MongoDB.InsertOneWriteOpResult<any> ) =>
 				{
 					if ( error )
 					{
@@ -117,7 +117,7 @@ export class MongoDatabase
 		return new Promise<boolean>( ( resolve : ( value: boolean ) => void ) =>
 		{
 			collection.insertMany( entries,
-				( error: MongoDB.MongoError, result : MongoDB.InsertWriteOpResult ) =>
+				( error: MongoDB.MongoError, result: MongoDB.InsertWriteOpResult<any> ) =>
 				{
 					if ( error )
 					{

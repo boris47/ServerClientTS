@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import FSutils from './FSUtils';
+import FSutils from './Utils/FSUtils';
 
 export class Logger
 {

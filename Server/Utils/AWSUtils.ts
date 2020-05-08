@@ -3,7 +3,7 @@
 import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
 
-import GenericUtils from '../../Common/GenericUtils';
+import GenericUtils from '../../Common/Utils/GenericUtils';
 import { IIndexableObject } from '../../Common/Interfaces';
 
 
