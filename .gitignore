@@ -18,4 +18,7 @@ node_modules
 # Client
 !client/webpack.main.additions.js
 !client/webpack.renderer.additions.js
+client/dist
+client/build
+client/cache
 
