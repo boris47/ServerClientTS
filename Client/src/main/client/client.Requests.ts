@@ -2,6 +2,7 @@
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as zlib from 'zlib';
 
 import FSUtils from '../../../../Common/Utils/FSUtils';
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
@@ -11,7 +12,8 @@ import * as mime from 'mime-types';
 
 export interface IClientRequestInternalOptions
 {
-	AbsoluteFilePath? : string;
+	Identifier? : string;
+	DownloadLocation?: string;
 	Storage?: string;
 	Key? : string;
 	Value? : any;
@@ -22,12 +24,14 @@ export interface IClientRequestInternalOptions
 
 export class ClientRequests {
 
-	public static async DownloadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async DownloadResource( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		const absoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
+		const { DownloadLocation, Identifier } = clientRequestInternalOptions;
 
 		const requestPath = new URLSearchParams();
-		requestPath.set('file', path.parse( absoluteFilePath ).base);
+		requestPath.set('identifier', Identifier);
 		options.path += '?' + requestPath.toString();
 		options.method = 'get';
 
@@ -39,36 +43,36 @@ export class ClientRequests {
 
 		const writeError : NodeJS.ErrnoException = await new Promise( ( resolve ) =>
 		{
-			const folderPath = path.parse( absoluteFilePath ).dir;
-			FSUtils.EnsureDirectoryExistence(folderPath);
-			fs.writeFile( absoluteFilePath, result.body, function( err : NodeJS.ErrnoException )
+			FSUtils.EnsureDirectoryExistence(DownloadLocation);
+			fs.writeFile( path.join( DownloadLocation, Identifier ), result.body, function( err : NodeJS.ErrnoException )
 			{
 				resolve( err );
 			});
 		});
 		if ( writeError )
 		{
-			if ( fs.existsSync( absoluteFilePath ) )
+			if ( FSUtils.ExistsSync( Identifier ) )
 			{
-				fs.unlinkSync( absoluteFilePath );
+				fs.unlinkSync( Identifier );
 			}
-			return ComUtils.ResolveWithError( `ClientRequests:DownloadFile`, `Upload request of ${absoluteFilePath} failed\n${writeError}` );
+			return ComUtils.ResolveWithError( `ClientRequests:DownloadResource`, `Download request of ${Identifier} failed\n${writeError}` );
 		}
 		return ComUtils.ResolveWithGoodResult<IClientRequestResult>( Buffer.from( "Done" ) );
 	}
 
 
-	public static async UploadFile( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async UploadResource( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
-		const AbsoluteFilePath = clientRequestInternalOptions.AbsoluteFilePath || '';
+		const identifier = clientRequestInternalOptions.Identifier || '';
 
 		// Check if file exists
-		if ( fs.existsSync( AbsoluteFilePath ) === false )
+		if ( fs.existsSync( identifier ) === false )
 		{
-			return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `File ${AbsoluteFilePath} doesn't exist` );
+			return ComUtils.ResolveWithError( "ClientRequests:UploadResource", `File ${identifier} doesn't exist` );
 		}
 
-		const filePathParsed = path.parse( AbsoluteFilePath );
+		const filePathParsed = path.parse( identifier );
 
 		// Headers
 		clientRequestInternalOptions.Headers = new Map();
@@ -79,33 +83,34 @@ export class ClientRequests {
 			clientRequestInternalOptions.Headers.set( 'content-type', contentType );
 			
 			// Check file Size
-			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( AbsoluteFilePath );
+			const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( identifier );
 			if ( sizeInBytes === null )
 			{
-				return ComUtils.ResolveWithError( "ClientRequests:UploadFile", `Cannot obtain size of file ${AbsoluteFilePath}` );
+				return ComUtils.ResolveWithError( "ClientRequests:UploadResource", `Cannot obtain size of file ${identifier}` );
 			}
 			clientRequestInternalOptions.Headers.set( 'content-length', sizeInBytes );
 		}
 
-		clientRequestInternalOptions.FileStream = fs.createReadStream( AbsoluteFilePath );
+		clientRequestInternalOptions.FileStream = fs.createReadStream( identifier );
 
 		const requestPath = new URLSearchParams();
-		requestPath.set('file', filePathParsed.base);
+		requestPath.set('identifier', filePathParsed.base);
 		options.path += '?' + requestPath.toString();
 
 		return ClientRequests.Request_PUT( options, clientRequestInternalOptions );
 	}
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Request_GET( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
-			if ( clientRequestInternalOptions.Storage && clientRequestInternalOptions.Key )
+			if ( clientRequestInternalOptions.Storage )
 			{
 				const path = new URLSearchParams();
 				path.set( 'stg', clientRequestInternalOptions.Storage );
-				path.set( 'key', clientRequestInternalOptions.Key );
+				!clientRequestInternalOptions.Key || path.set( 'key', clientRequestInternalOptions.Key );
 				options.path += '?' + path.toString();
 			}
 
@@ -119,21 +124,45 @@ export class ClientRequests {
 					return;
 				}
 
-				const body : any[] = [];
+				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 
-				response.on( 'error', ( err : Error ) =>
+				const zlibOptions = <zlib.ZlibOptions>
+				{
+					flush: zlib.constants.Z_SYNC_FLUSH,
+					finishFlush: zlib.constants.Z_SYNC_FLUSH
+				};
+
+				switch ( response.headers['content-encoding']?.trim().toLowerCase() )
+				{
+					case 'gzip': case 'compress':
+					{
+						stream = response.pipe( zlib.createGunzip( zlibOptions ) );
+						break;
+					}
+					case 'deflate':
+					{
+						stream = response.pipe( zlib.createInflate( zlibOptions ) );
+						break;
+					}
+				}
+
+				const buffers = new Array<Buffer>();
+				let contentLength = 0;
+
+				stream.on( 'error', ( err : Error ) =>
 				{
 					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
 
-				response.on( 'data', function( chunk : any )
+				stream.on( 'data', function( chunk : Buffer )
 				{
-					body.push( chunk );
+					contentLength += chunk.length;
+					buffers.push( chunk );
 				})
 
-				response.on( 'end', function()
+				stream.on( 'end', function()
 				{
-					const result : Buffer = Buffer.concat( body );
+					const result : Buffer = Buffer.concat( buffers, contentLength );
 					ComUtils.ResolveWithGoodResult( result, resolve );
 				});
 			})
@@ -147,6 +176,7 @@ export class ClientRequests {
 	}
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Request_PUT( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
@@ -183,7 +213,7 @@ export class ClientRequests {
 			// Set headers
 			if ( clientRequestInternalOptions.Headers )
 			{
-				for( let [key, value] of clientRequestInternalOptions.Headers )
+				for( const [key, value] of clientRequestInternalOptions.Headers )
 				{
 					request.setHeader( key, value );
 				}

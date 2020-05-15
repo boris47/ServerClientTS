@@ -32,6 +32,7 @@ export interface IServerStorage
 	ClearStorage() : Promise<boolean>;
 	AddResource( Key : string, Value : Buffer, bForced : boolean ) : Promise<boolean>;
 	HasResource( Key : string ) : Promise<boolean>;
+	ListResources() : Promise<string[]>;
 	GetResource( Key : string ) : Promise<Buffer | null>;
 	GetResources( Keys : string[] ) : Promise<(Buffer | null)[]>
 	RemoveResource( Key : string ) : Promise<boolean>;
@@ -147,6 +148,12 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		return this.m_Storage.has( Key );
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public async ListResources() : Promise<string[]>
+	{
+		return Array.from(this.m_Storage.keys());
+	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResource( Key : string ) : Promise<Buffer | null>
@@ -231,7 +238,8 @@ class ServerStorage_AWS implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async AddResource( Key : string, Value : Buffer, bForced : boolean ): Promise<boolean>
 	{
-		return AWSUtils.S3.UploadResource( this.s3Instance, this.bucketName, Key, Value );
+		const error : AWS.AWSError | null = await AWSUtils.S3.UploadResource( this.s3Instance, this.bucketName, Key, Value );
+		return !!error;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -241,27 +249,38 @@ class ServerStorage_AWS implements IServerStorage
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
+	public async ListResources() : Promise<string[]>
+	{
+		const results : AWS.AWSError | AWS.S3.Object[] = await AWSUtils.S3.ListObjects( this.s3Instance, this.bucketName );
+		return Array.isArray(results) ? results.map( r => r.Key ) : [];
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResource( Key : string ) : Promise<Buffer | null>
 	{
-		return AWSUtils.S3.DownloadResource( this.s3Instance, this.bucketName, Key );
+		const result : AWS.AWSError | Buffer = await AWSUtils.S3.DownloadResource( this.s3Instance, this.bucketName, Key );
+		return Buffer.isBuffer(result) ? result : null;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResources( Keys : string[] ) : Promise<( Buffer | null )[]>
 	{
-		return AWSUtils.S3.DownloadResources( this.s3Instance, this.bucketName, Keys );
+		const result : (Buffer | AWS.AWSError)[] = await AWSUtils.S3.DownloadResources( this.s3Instance, this.bucketName, Keys );
+		return result.map( v => Buffer.isBuffer(v) ? v : null );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async RemoveResource( Key : string ): Promise<boolean>
 	{
-		return AWSUtils.S3.RemoveResource( this.s3Instance, this.bucketName, Key );
+		const result : AWS.AWSError | null = await AWSUtils.S3.RemoveResource( this.s3Instance, this.bucketName, Key );
+		return !result;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async RemoveResources( Keys : string[] ) : Promise<string[]>
 	{
-		return AWSUtils.S3.RemoveResources( this.s3Instance, this.bucketName, Keys );
+		const results : (string | AWS.AWSError)[] = await AWSUtils.S3.RemoveResources( this.s3Instance, this.bucketName, Keys );
+		return results.map( v => typeof v === 'string' ? v : null ).filter( v => v );
 	}
 }
 

@@ -29,4 +29,11 @@ export default class ObjectUtils
 		}
 		return found;
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static EnumToArray<T = string>(enumObject: any): T[]
+	{
+		return Object.values(enumObject);
+	}
 }

@@ -24,11 +24,14 @@ export enum EComunications
 	/////////////////////////////////////////////////
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
-	/** string -> Buffer | Error */
+	/** string -> Buffer | null | Error */
 	REQ_GET = 'REQ_GET',
 
-	/** string, any -> Buffer | Error */
+	/** string, string | Buffer -> Buffer | Error */
 	REQ_PUT = 'REQ_PUT',
+
+	/** none -> Buffer | Error */
+	REQ_LIST = 'REQ_LIST',
 
 	/** string -> Buffer | Error */
 	REQ_UPLOAD = 'REQ_UPLOAD',

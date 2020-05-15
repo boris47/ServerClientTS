@@ -18,10 +18,6 @@ export default class FSUtils
 		return process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
 	}
 
-	public static IsError( result : any ): result is NodeJS.ErrnoException
-	{
-		return result instanceof Error;
-	}
 
 	/**  */
 	public static async Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
@@ -45,6 +41,7 @@ export default class FSUtils
 		return results;
 	}
 
+
 	/**  */
 	public LogIfError( result? : NodeJS.ErrnoException )
 	{
@@ -56,18 +53,30 @@ export default class FSUtils
 		return result;
 	}
 
+	
+	/**  */
+	public static ExistsSync( pathToAccess : string ) : boolean
+	{
+		try
+		{
+			fs.accessSync(pathToAccess);
+			return true;
+		} catch (e) {}
+		return false
+	}
 
-	/** @returns Boolean */
-	public static FileExistsAsync( filePath : string ) : Promise<boolean>
+
+	/**  */
+	public static FileExistsAsync( pathToAccess : string ) : Promise<boolean>
 	{
 		return new Promise<boolean>( ( resolve ) =>
 		{
-			fs.exists( filePath, ( exists : boolean ) => resolve( exists ));
+			fs.access( pathToAccess, ( err: NodeJS.ErrnoException | null ) => resolve( !err ));
 		});
 	}
 
-	
-	/** @returns NodeJS.ErrnoException | null */
+
+	/**  */
 	public static WriteFileAsync( filePath : string, data: string | Buffer ) : Promise<NodeJS.ErrnoException | null>
 	{
 		return new Promise( ( resolve ) =>
@@ -94,8 +103,8 @@ export default class FSUtils
 		try{ result = fs.lstatSync( directoryPath ).isDirectory(); } catch ( e ) {}
 		return result;
 	}
-
 	
+
 	/** Ensure that a folder exist, creating all directory tree if needed */
 	public static EnsureDirectoryExistence( filePath: string ): void
 	{

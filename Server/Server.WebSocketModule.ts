@@ -20,25 +20,32 @@ export default class WebSocketModule
 	private static instance: WebSocketModule = null;
 	private connection: WebSocketConnection;
 	private webSocketServer: WebSocketServer = null;
-
 	private ruleName: string = null;
 
-	//
+
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Initialize(): Promise<boolean>
 	{
-		const serverOptions = <http.ServerOptions>
+		if( !WebSocketModule.instance )
 		{
-
-		};
-
-		const listenOptions = <net.ListenOptions>
-		{
-			port: ServerInfo.WEBSOCKET_SERVER_PORT,
-			host: '0.0.0.0'//'::'
-		};
-
-		WebSocketModule.instance = new WebSocketModule()
-		return WebSocketModule.instance.Initialize( serverOptions, listenOptions );
+			const serverOptions = <http.ServerOptions>
+			{
+	
+			};
+	
+			const listenOptions = <net.ListenOptions>
+			{
+				port: ServerInfo.WEBSOCKET_SERVER_PORT,
+				host: '0.0.0.0'//'::'
+			};
+	
+			const webSocketModule = new WebSocketModule();
+			if( await webSocketModule.Initialize( serverOptions, listenOptions ) )
+			{
+				WebSocketModule.instance = webSocketModule;
+			}
+		}
+		return !!WebSocketModule.instance;
 	}
 
 
@@ -58,7 +65,7 @@ export default class WebSocketModule
 		{
 			httpServer.listen(listenOptions, () =>
 			{
-				const  { address, family, port } = httpServer.address() as net.AddressInfo;
+				const  { address, family, port } = httpServer.address() as net.AddressInfo || {};
 				console.log(`WebSocket Server created at ${address}, port:${port}\n`);
 				ServerInfo.WEBSOCKET_SERVER_PORT = port;
 				ServerInfo.WEBSOCKET_SERVER_ADDRESS = address;
@@ -77,8 +84,8 @@ export default class WebSocketModule
 		webSocketServer.on('close', (connection: WebSocketConnection, reason: number, desc: string) => this.OnClose(connection, reason, desc));
 		this.webSocketServer = webSocketServer;
 
-		const result0 = await ServerCommunications.AddPortForwarding( ServerInfo.WEBSOCKET_SERVER_ADDRESS, ServerInfo.WEBSOCKET_SERVER_PORT, ServerInfo.MACHINE_PUBLIC_IP, ServerInfo.WEBSOCKET_SERVER_PORT );
-		this.ruleName = await ServerCommunications.AddFirewallRule( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
+	//	const result0 = await ServerCommunications.AddPortForwarding( ServerInfo.WEBSOCKET_SERVER_ADDRESS, ServerInfo.WEBSOCKET_SERVER_PORT, ServerInfo.MACHINE_PUBLIC_IP, ServerInfo.WEBSOCKET_SERVER_PORT );
+	//	this.ruleName = await ServerCommunications.AddFirewallRule( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
 		return true;
 	}
 	
@@ -86,8 +93,8 @@ export default class WebSocketModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async Finalize(): Promise<void>
 	{
-		const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
-		const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.WEBSOCKET_SERVER_ADDRESS, ServerInfo.WEBSOCKET_SERVER_PORT );
+	//	const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
+	//	const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.WEBSOCKET_SERVER_ADDRESS, ServerInfo.WEBSOCKET_SERVER_PORT );
 	}
 
 	

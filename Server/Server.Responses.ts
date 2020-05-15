@@ -17,10 +17,10 @@ export class ServerResponses {
 	private static readonly DOWNLOAD_LOCATION : string = '.\\Downloaded\\';
 
 
-	public static EndResponseWithGoodResult( response : http.ServerResponse ) : void
+	public static EndResponseWithGoodResult( response : http.ServerResponse, chunk?: string | Buffer ) : void
 	{
 		response.statusCode = 200;
-		response.end();
+		response.end(chunk);
 	}
 
 
@@ -50,7 +50,7 @@ export class ServerResponses {
 			return result;
 		}
 		
-		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
+		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.Identifier );
 		const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
 		{
 			FSUtils.EnsureDirectoryExistence( ServerResponses.DOWNLOAD_LOCATION );
@@ -61,7 +61,7 @@ export class ServerResponses {
 		});
 		if ( !bHasWriteGoodResult )
 		{
-			return ComUtils.ResolveWithError( `File Upload Failed`, `Upload request of ${serverRequestInternalOptions.FileName} failed` );
+			return ComUtils.ResolveWithError( `File Upload Failed`, `Upload request of ${serverRequestInternalOptions.Identifier} failed` );
 		}
 		ServerResponses.EndResponseWithGoodResult( response );
 		return ComUtils.ResolveWithGoodResult( result.body );
@@ -70,12 +70,12 @@ export class ServerResponses {
 	/** Server -> Client */
 	public static async UploadFile( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
-		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.FileName );
+		const filePath = path.join( ServerResponses.DOWNLOAD_LOCATION, serverRequestInternalOptions.Identifier );
 
 		// Check if file exists
 		if ( !(await FSUtils.FileExistsAsync( filePath ) ))
 		{
-			const err = `File ${serverRequestInternalOptions.FileName} doesn't exist`;
+			const err = `File ${serverRequestInternalOptions.Identifier} doesn't exist`;
 			ServerResponses.EndResponseWithError( response, err, 404 );
 			return ComUtils.ResolveWithError( "ServerResponses:UploadFile", err );
 		}
@@ -108,6 +108,12 @@ export class ServerResponses {
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
+			request.on('error', function( err : Error )
+			{
+				ServerResponses.EndResponseWithError( response, err, 400 );
+				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
+			});
+
 			response.on( 'error', ( err : Error ) =>
 			{
 				ServerResponses.EndResponseWithError( response, err, 400 );
@@ -142,7 +148,7 @@ export class ServerResponses {
 	}
 
 	
-	/** Receive data storing them into buffer inside returne value body */
+	/** Receive data storing them into buffer into returne value body */
 	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>

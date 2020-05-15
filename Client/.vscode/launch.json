@@ -11,19 +11,6 @@
 			]
 		},
 		{
-            "type": "node",
-            "request": "launch",
-            "name": "Electron: Main2",
-            "protocol": "inspector",
-            "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-webpack",
-            "runtimeArgs": [
-                "dev",
-            ],
-            "windows": {
-                "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron-webpack.cmd"
-            }
-        },
-		{
 			"type": "node",
 			"request": "launch",
 			"name": "Launch Program",
@@ -38,36 +25,5 @@
 			"outputCapture": "std",
 			"protocol": "inspector",
 		},
-		{
-			"type": "node",
-			"request": "launch",
-			"name": "Electron: Main",
-			"protocol": "inspector",
-			"cwd": "${workspaceRoot}",
-			"runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron",
-			"windows": {
-				"runtimeExecutable": "${workspaceRoot}/node_modules/.bin/electron.cmd"
-			},
-			"program": "${workspaceRoot}/src/main/main.js",
-			"outputCapture": "std"
-		},
-		{
-			"name": "Electron: Renderer",
-			"type": "chrome",
-			"request": "attach",
-			"port": 9080,
-			"webRoot": "${workspaceFolder}",
-			"timeout": 5000
-		}
-	],
-	"compounds": [
-		{
-			"name": "Electron: All",
-			"configurations": [
-				"Electron: Main",
-				"Electron: Renderer"
-			],
-			"preLaunchTask": "Compile Typescript"
-		}
 	]
 }

@@ -9,6 +9,7 @@ import { ServerResponses } from "./Server.Responses";
 import * as ComUtils from '../Common/Utils/ComUtils';
 import { IServerStorage, StorageManager } from "./Server.Storages";
 
+
 export const NotImplementedResponse = new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
@@ -44,7 +45,7 @@ export interface IResponseMethods
 
 export interface IServerRequestInternalOptions
 {
-	FileName? : string;
+	Identifier? : string;
 	Key? : string;
 	Value? : Buffer | null;
 	Headers? : http.OutgoingHttpHeaders;
@@ -71,27 +72,48 @@ const pingResponse = () => new AsyncHttpResponse( async ( request : http.Incomin
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+/** Client -> Server */
 const uploadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
-	const fileName = request.url.split('=')[1];
+	const searchParams = new URLSearchParams( request.url.split('?')[1] );
+	const identifier = searchParams.get( 'identifier' );
 	const options = <IServerRequestInternalOptions>
 	{
-		FileName : fileName
+		Identifier : identifier
 	};
-	return await ServerResponses.DownloadFile( request, response, options );
+	return ServerResponses.DownloadFile( request, response, options );
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
+/** Server -> Client */
 const downloadResponse = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
-	const fileName = request.url.split('=')[1];
+	const searchParams = new URLSearchParams( request.url.split('?')[1] );
+	const identifier = searchParams.get( 'identifier' );
 	const options = <IServerRequestInternalOptions>
 	{
-		FileName : fileName
+		Identifier : identifier
 	};
-	return await ServerResponses.UploadFile( request, response, options );
+	return ServerResponses.UploadFile( request, response, options );
+});
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const storage_list = () => new AsyncHttpResponse( async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+{
+	const searchParams = new URLSearchParams( request.url.split('?')[1] );
+	const storageID = searchParams.get( 'stg' );
+	const storage : IServerStorage = StorageManager.GetStorage( storageID );
+	if( !storage )
+	{
+		const err = `Storage "${storageID}" Not Found`;
+		ServerResponses.EndResponseWithError( response, err, 404 );
+		return ComUtils.ResolveWithError( "/localstorage:get", err );
+	}
+	const list : string[] = await storage.ListResources();
+	ServerResponses.EndResponseWithGoodResult( response, JSON.stringify(list) );
+	return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ) );
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -108,12 +130,19 @@ const storage_Get = () => new AsyncHttpResponse( async ( request : http.Incoming
 		return ComUtils.ResolveWithError( "/localstorage:get", err );
 	}
 
+	if( !key )
+	{
+		const err = `Storage Get: Invalid Key`;
+		ServerResponses.EndResponseWithError( response, err, 404 );
+		return ComUtils.ResolveWithError( "/localstorage:get", err );
+	}
+
 	const options = <IServerRequestInternalOptions>
 	{
 		Key : key,
 		Value : await storage.GetResource( key )
 	};
-	return await ServerResponses.Request_GET( request, response, options );
+	return ServerResponses.Request_GET( request, response, options );
 });
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -182,35 +211,39 @@ const storage_Delete = () => new AsyncHttpResponse( async ( request : http.Incom
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-export const ResponsesMap : ServerResponseMap = {
-
-	'/ping' : <IResponseMethods>
+export const ResponsesMap : ServerResponseMap =
+{
+	'/ping' 		: <IResponseMethods>
 	{
-		post 	: pingResponse,
-		get 	: pingResponse,
-		put 	: pingResponse,
-		patch 	: pingResponse,
-		delete 	: pingResponse,
+		post 		: pingResponse,
+		get 		: pingResponse,
+		put 		: pingResponse,
+		patch 		: pingResponse,
+		delete 		: pingResponse,
 	},
 
 
-	'/upload' : <IResponseMethods>
+	'/upload' 		: <IResponseMethods>
 	{
-		put 	: uploadResponse
+		put 		: uploadResponse,
 	},
 
-	'/download' : <IResponseMethods>
+	'/download' 	: <IResponseMethods>
 	{
-		get 	: downloadResponse
+		get 		: downloadResponse,
 	},
 
-	'/storage' : <IResponseMethods>
+	'/storage' 		: <IResponseMethods>
 	{
-		get		: storage_Get,
-		put 	: storage_Put,
-		delete	: storage_Delete,
+		get			: storage_Get,
+		put 		: storage_Put,
+		delete		: storage_Delete,
 	},
 
+	'/storage_list'	: <IResponseMethods>
+	{
+		get 		: storage_list,
+	}
 };
 
 

@@ -1,5 +1,6 @@
 
 import * as http from 'http';
+import * as path from 'path';
 
 import * as fs from 'fs';
 
@@ -15,6 +16,7 @@ import { Logger } from '../Common/Logger';
 import { ServerInfo } from './Server.Globals';
 import HttpModule from './Server.HttpModule';
 import WebSocketModule from './Server.WebSocketModule';
+import FSUtils from '../Common/Utils/FSUtils';
 
 /*
 // Very simple answer
@@ -41,8 +43,9 @@ async function UploadConfigurationFile() : Promise<boolean>
 	serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
 	serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
 	
-	const fileName = "./ServerCfg.json";
-	fs.writeFileSync( fileName, JSON.stringify( serverConfigs, null, '\t' ) );
+	const filePath = "../Temp/ServerCfg.json";
+	FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
+	fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
 
 	return serverConfigs.AreValidData();
 }
@@ -172,17 +175,16 @@ async function Main()
 
 }
 
-
+/*
 process.on( 'uncaughtException', ( error: Error ) =>
 {
 	console.error( `Uncaught Exception:\n${error.name}\n${error.message}\n${error.stack}` );
 	process.exit(1);
 });
 
-
 process.on( 'unhandledRejection', ( reason: {} | null | undefined, promise: Promise<any> ) =>
 {
-	console.error( 'Unhandled Rejection' );
+	console.error( 'Unhandled Rejection', reason, promise );
 	process.exit(1);
 });
 
@@ -190,7 +192,7 @@ process.on( 'multipleResolves', ( type: NodeJS.MultipleResolveType, promise: Pro
 {
 	console.error( 'multipleResolves', type, promise, value );
 });
-
+*/
 
 // catching signals and do something before exit
 ['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT','SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'].forEach(function (sig:string)

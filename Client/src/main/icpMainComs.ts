@@ -1,5 +1,4 @@
 
-
 import * as electron from 'electron';
 import { EComunications } from '../icpComs';
 
@@ -28,15 +27,15 @@ export function SetupMainHandlers()
 	
 	electron.ipcMain.handle(EComunications.ELECTRON_PATH, (event: Electron.IpcMainInvokeEvent, appToGet: string): string | Error =>
 	{
-		console.log( EComunications.ELECTRON_PATH );
+		console.log( EComunications.ELECTRON_PATH, appToGet );
 		let result = '';
 		try
 		{
 			result = electron.app.getPath(appToGet as any);
 		}
-		catch(ex)
+		catch(err)
 		{
-			result = ex;
+			result = err;
 		}
 		return result;
 	});
@@ -47,7 +46,7 @@ export function SetupMainHandlers()
 		let result: any | null = null;
 		try
 		{
-			result = GetElectronProperty(keys)(args);
+			result = GetElectronProperty(keys)(...args);
 		}
 		catch (ex)
 		{
@@ -83,21 +82,27 @@ export function SetupMainHandlers()
 		return RequestProcessor.RequestGetData(key);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, key: string, value: any ): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, key: string, [value]: (string | Buffer)[] ): Promise<Buffer | Error> =>
 	{
 		console.log( EComunications.REQ_PUT, key, value );
 		return RequestProcessor.RequestPutData( key, value );
 	});
 
+	electron.ipcMain.handle(EComunications.REQ_LIST, async (event: Electron.IpcMainInvokeEvent ): Promise<Buffer | Error> =>
+	{
+		console.log( EComunications.REQ_LIST );
+		return RequestProcessor.RequestStorageList();
+	});
+
 	electron.ipcMain.handle(EComunications.REQ_UPLOAD, async (event: Electron.IpcMainInvokeEvent, absoluteFilePath: string ): Promise<Buffer | Error> =>
 	{
 		console.log( EComunications.REQ_UPLOAD, absoluteFilePath );
-		return RequestProcessor.RequestFileUpload(absoluteFilePath);
+		return RequestProcessor.RequestResourceUpload(absoluteFilePath);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, fileName: string, downloadLocation: string ): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, identifier: string, [downloadLocation]: string[] ): Promise<Buffer | Error> =>
 	{
-		console.log( EComunications.REQ_DOWNLOAD, fileName, downloadLocation );
-		return RequestProcessor.RequestFileDownload(fileName, downloadLocation);
+		console.log( EComunications.REQ_DOWNLOAD, identifier, downloadLocation );
+		return RequestProcessor.RequestResourceDownload(identifier, downloadLocation);
 	});
 }

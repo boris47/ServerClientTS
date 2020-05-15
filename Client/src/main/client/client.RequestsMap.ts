@@ -28,7 +28,7 @@ export const RequestsMap : ServerResponseMap = {
 	{
 		put: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 		{
-			return ClientRequests.UploadFile( options, clientRequestInternalOptions );
+			return ClientRequests.UploadResource( options, clientRequestInternalOptions );
 		}
 	},
 
@@ -36,7 +36,15 @@ export const RequestsMap : ServerResponseMap = {
 	{
 		get : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 		{
-			return ClientRequests.DownloadFile( options, clientRequestInternalOptions );
+			return ClientRequests.DownloadResource( options, clientRequestInternalOptions );
+		}
+	},
+
+	'/storage_list': <IRequestsMethods>
+	{
+		get: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+		{
+			return ClientRequests.Request_GET( options, clientRequestInternalOptions );
 		}
 	},
 

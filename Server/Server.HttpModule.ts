@@ -13,22 +13,30 @@ export default class HttpModule
 	private static instance: HttpModule = null;
 	private server : http.Server = null;
 
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Initialize() : Promise<boolean>
 	{
-		const serverOptions = <http.ServerOptions>
+		if ( !HttpModule.instance )
 		{
-			
-		};
+			const serverOptions = <http.ServerOptions>
+			{
+				
+			};
+		
+			const listenOptions = <net.ListenOptions>
+			{
+				port : ServerInfo.HTTP_SERVER_PORT,
+				host : '0.0.0.0',
+			}
 	
-		const listenOptions = <net.ListenOptions>
-		{
-			port : ServerInfo.HTTP_SERVER_PORT,
-			host : '0.0.0.0',
+			const httpModule = new HttpModule();
+			if( await httpModule.Initialize( serverOptions, listenOptions ) )
+			{
+				HttpModule.instance = httpModule;
+			}
 		}
-
-		HttpModule.instance = new HttpModule();
-		return HttpModule.instance.Initialize( serverOptions, listenOptions );
+		return !!HttpModule.instance;
 	}
 
 
@@ -53,15 +61,15 @@ export default class HttpModule
 		{
 			server.listen( listenOptions, () =>
 			{
-				const  { address, family, port } = server.address() as net.AddressInfo;
+				const  { address, family, port } = server.address() as net.AddressInfo || {};
 				console.log( `Node server created at ${address}, port:${port}` );
 				ServerInfo.HTTP_SERVER_PORT = port;
 				ServerInfo.HTTP_SERVER_ADDRESS = address;
 				resolve();
 			});
 		});
-		const result00 = await ServerCommunications.AddPortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT, ServerInfo.MACHINE_PUBLIC_IP, ServerInfo.HTTP_SERVER_PORT );
-		this.ruleName = await ServerCommunications.AddFirewallRule( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
+//		const result00 = await ServerCommunications.AddPortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT, ServerInfo.MACHINE_PUBLIC_IP, ServerInfo.HTTP_SERVER_PORT );
+//		this.ruleName = await ServerCommunications.AddFirewallRule( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
 	//	const result10 = await ServerCommunications.RemovePortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
 		return true;
 	}
@@ -83,8 +91,8 @@ export default class HttpModule
 			console.log("Server Closed");
 		}
 		
-		const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
-		const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
+//		const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
+//		const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

@@ -16,9 +16,19 @@ module.exports = function(config)
 			warningsFilter: [/critical dependency:/i],
 		}
 	*/
-	config.devtool = isDevelopmentEnvironment ? config.devtool : false;
+	config.devtool = isDevelopmentEnvironment ? "inline-source-map" : false;
 //	const isDev = (process.env.NODE_ENV === 'development');
-//	fs.writeFileSync( `rendererCFG_${process.env.NODE_ENV}.json`, JSON.stringify(config, null, 4) );
+
+//	config.resolve.alias['vue$'] = 'vue/dist/vue.runtime.js';
+
+	/** @param {string} key @param {any} value */
+	const replacer = ( key, value ) =>
+	{
+		if ( key === 'typescript' && typeof value === 'object' ) return undefined;
+		return value
+	};
+
+	fs.writeFileSync( `rendererCFG_${process.env.NODE_ENV}.json`, JSON.stringify(config, replacer, 4) );
 	config.target = "web";
 	return config;
 }

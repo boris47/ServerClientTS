@@ -1,8 +1,9 @@
 
 	import {
 		RequestServerPing,
-//		RequestFileUpload,
-	//	RequestFileDownload,
+	//	RequestStorageList,
+	//	RequestResourceUpload,
+	//	RequestResourceDownload,
 	//	RequestGetData,
 	//	RequestPutData
 	} from "./client.RequestProcessor";
@@ -16,24 +17,29 @@ async function Main()
 	await InstallRequestsProcessor();
 	{
 		RequestServerPing()
-	/*	.then( ( bCanContinue : boolean ) =>
+	/*	.then( ( result : Buffer | Error ) =>
 		{
-			return bCanContinue ? RequestFileUpload( 'E:/temppp/SZ_Bug_SS_158.7z.002' ) : Promise.reject(false);
-		})
-	*/		
-	/*	.then( ( bCanContinue : boolean ) =>
-		{
-			return bCanContinue ? RequestFileDownload( './Server.js' ) : Promise.reject(false);
+			return Buffer.isBuffer(result) ? RequestStorageList() : Promise.reject(result);
 		})
 	*/
-	/*	.then( ( bCanContinue : boolean ) =>
+	/*	.then( ( result : Buffer | Error ) =>
 		{
-			return bCanContinue ? RequestPutData( 'MyDataName', '123' ) : Promise.reject(false);
+			return Buffer.isBuffer(result) ? RequestResourceUpload( './exampleFile' ) : Promise.reject(result);
 		})
 	*/
-	/*	.then( ( bCanContinue : boolean ) =>
+	/*	.then( ( result : Buffer | Error ) =>
 		{
-			return bCanContinue ? RequestGetData<string>( 'MyDataName' ) : Promise.reject(null);
+			return Buffer.isBuffer(result) ? RequestResourceDownload( 'exampleFile', 'E:/SourceTree/ServerClientTS/Client/Downloads' ) : Promise.reject(result);
+		})
+	*/
+	/*	.then( ( result : Buffer | Error ) =>
+		{
+			return Buffer.isBuffer(result) ? RequestPutData( 'MyDataName', '123' ) : Promise.reject(result);
+		})
+	*/
+	/*	.then( ( result : Buffer | Error ) =>
+		{
+			return Buffer.isBuffer(result) ? RequestGetData( 'kedyy' ) : Promise.reject(result);
 		})
 	*/
 	/*	.then( ( value: string | null ) =>

@@ -31,6 +31,7 @@ export default class ServerConfigs
 			ServerConfigs.instance.SetWebSocketPort( fileJson.WebSocketPort );
 			return ServerConfigs.instance.AreValidData()
 		}
+		console.log( `ServerConfig: Cannot locate file "${filePath}"` );
 		return null;
 	}
 

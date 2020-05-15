@@ -8,12 +8,12 @@ import { InstallRequestsProcessor } from './client/client.RequestProcessor';
 
 //const packageText = fs.readFileSync( '' )
 
-const { productName, description } = require('../../package.json');
+const { productName, description, version } = require('../../package.json');
 
 const bIsDev = process.env.NODE_ENV === 'development';
 
 electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
-electron.app.name = `${productName} - ${description}`
+electron.app.name = `${productName} - ${description} v.${version}`
 
 //Here is where we change the default path of the cookies in order to keep them if we make automatic updates//
 {
@@ -49,7 +49,6 @@ function SetupSession()
 	electron.session.fromPartition( 'dafault' ).setPermissionRequestHandler( ( webContents: electron.WebContents, permission: string, callback: (permissionGranted: boolean ) => void) =>
 	{
 		const allowedPermissions = new Array<string>(); // Full list here: https://developer.chrome.com/extensions/declare_permissions#manifest
-	
 		if (allowedPermissions.includes(permission))
 		{
 			callback(true); // Approve permission request
@@ -135,7 +134,21 @@ async function main()
 	// Some APIs can only be used after this event occurs.
 	await new Promise(resolve => electron.app.once('ready', resolve));
 
-	await InstallRequestsProcessor();
+	// Second instance is not allowed
+	const isSecondInstance = electron.app.requestSingleInstanceLock();
+	electron.app.on('second-instance', (event: electron.Event, argv: string[], cwd: string) =>
+	{
+		if (isSecondInstance)
+		{
+            electron.app.quit()
+        }
+	});
+	
+	electron.app.on("browser-window-created", (event: electron.Event, window: electron.BrowserWindow) =>
+	{
+		InstallRequestsProcessor();
+	});
+
 
 	SetupSession();
 
