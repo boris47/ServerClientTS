@@ -3,7 +3,7 @@ import * as electron from 'electron';
 import { EComunications } from '../icpComs';
 
 import FSUtils from '../../../Common/Utils/FSUtils';
-import * as RequestProcessor from './client/client.RequestProcessor';
+import * as RequestProcessor from './client/client';
 
 
 const GetElectronProperty = (funcPath: string[]): any | null =>

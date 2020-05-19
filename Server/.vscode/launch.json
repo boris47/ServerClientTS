@@ -14,7 +14,7 @@
 			"type": "node",                                 
 			"request": "launch",                            
 			"name": "Launch Server",                       
-			"program": "${workspaceFolder}\\Server.js",     
+			"program": "${workspaceFolder}\\src\\Server.js",     
 			"outFiles": [                                   
 				"${workspaceFolder}/*.js"     	            
 			]												
@@ -24,7 +24,7 @@
 			"type": "node",                                 
 			"request": "launch",                            
 			"name": "Launch Container",                       
-			"program": "${workspaceFolder}\\ServerMonitor.js",     
+			"program": "${workspaceFolder}\\src\\ServerMonitor.js",     
 			"outFiles": [                                   
 				"${workspaceFolder}/*.js"     	            
 			]												

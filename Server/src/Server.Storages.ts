@@ -2,10 +2,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import FSUtils from '../Common/Utils/FSUtils';
-import GenericUtils, { GenericConstructor } from '../Common/Utils/GenericUtils';
-import { AWSUtils } from './Utils/AWSUtils';
-import { IIndexableObject } from '../Common/Interfaces';
+import FSUtils from '../../Common/Utils/FSUtils';
+import GenericUtils, { GenericConstructor } from '../../Common/Utils/GenericUtils';
+import { AWSUtils } from '../Utils/AWSUtils';
+import { IIndexableObject } from '../../Common/Interfaces';
 
 export async function StorageFactory<T extends IServerStorage>( Class : GenericConstructor<T>, ...Args: any[] ) : Promise<T>
 {

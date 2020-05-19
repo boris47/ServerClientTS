@@ -1,14 +1,14 @@
 
 	import {
 		RequestServerPing,
-	//	RequestStorageList,
+		RequestStorageList,
 	//	RequestResourceUpload,
 	//	RequestResourceDownload,
 	//	RequestGetData,
 	//	RequestPutData
-	} from "./client.RequestProcessor";
+	} from "./client";
 
-	import { InstallRequestsProcessor } from "./client.RequestProcessor";
+	import { InstallRequestsProcessor } from "./client";
 
 //	import * as path from 'path';
 
@@ -17,11 +17,11 @@ async function Main()
 	await InstallRequestsProcessor();
 	{
 		RequestServerPing()
-	/*	.then( ( result : Buffer | Error ) =>
+		.then( ( result : Buffer | Error ) =>
 		{
 			return Buffer.isBuffer(result) ? RequestStorageList() : Promise.reject(result);
 		})
-	*/
+	
 	/*	.then( ( result : Buffer | Error ) =>
 		{
 			return Buffer.isBuffer(result) ? RequestResourceUpload( './exampleFile' ) : Promise.reject(result);

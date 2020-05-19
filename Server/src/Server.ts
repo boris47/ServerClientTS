@@ -1,22 +1,19 @@
 
-import * as http from 'http';
 import * as path from 'path';
-
 import * as fs from 'fs';
 
-import GenericUtils from '../Common/Utils/GenericUtils';
-import * as ComUtils from '../Common/Utils/ComUtils';
-import ServerConfigs from '../Common/ServerConfigs'
+import ServerConfigs from '../../Common/ServerConfigs'
+import GenericUtils from '../../Common/Utils/GenericUtils';
+import FSUtils from '../../Common/Utils/FSUtils';
+import { Logger } from '../../Common/Logger';
+import * as ComUtils from '../../Common/Utils/ComUtils';
 
-import { StorageManager, EStorageType } from './Server.Storages';
+import { MongoDatabase } from '../Utils/MongoDatabase';
 
-import { MongoDatabase } from './Utils/MongoDatabase';
-
-import { Logger } from '../Common/Logger';
+import HttpModule from './Server.Modules.Http';
+import WebSocketModule from './Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
-import HttpModule from './Server.HttpModule';
-import WebSocketModule from './Server.WebSocketModule';
-import FSUtils from '../Common/Utils/FSUtils';
+import { StorageManager, EStorageType } from './Server.Storages';
 
 /*
 // Very simple answer
@@ -39,7 +36,8 @@ process.on( 'message', ( message : any ) =>
 async function UploadConfigurationFile() : Promise<boolean>
 {
 	const serverConfigs = new ServerConfigs();
-	serverConfigs.SetCurrentPublicIP( ServerInfo.MACHINE_PUBLIC_IP );
+	serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
+	serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
 	serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
 	serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
 	
@@ -55,20 +53,20 @@ async function UploadConfigurationFile() : Promise<boolean>
 async function SaveMachinePublicIP(): Promise<boolean>
 {
 	let bResult = true;
-///	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
+	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
 	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-///	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
+	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
 	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
 	
-///	if ( publicIPv6 )
+	if ( publicIPv6 )
 	{
-///		console.log( "Server", 'publicIPv6', publicIPv6 );
-///		ServerInfo.HTTP_SERVER_ADDRESS = publicIPv6;
+		console.log( "Server", 'publicIPv6', publicIPv6 );
+		ServerInfo.MACHINE_PUBLIC_IPv6 = publicIPv6;
 	}
-	/*else*/ if ( publicIPv4 )
+	if ( publicIPv4 )
 	{
 		console.log( "Server", 'publicIPv4', publicIPv4 );
-		ServerInfo.MACHINE_PUBLIC_IP = publicIPv4;
+		ServerInfo.MACHINE_PUBLIC_IPv4 = publicIPv4;
 	}
 	else
 	{

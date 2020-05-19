@@ -2,8 +2,7 @@
 
 
 
-export interface IWebSocketCommonMessage {
-
-
+export interface IWebSocketCommonMessage
+{
 
 }

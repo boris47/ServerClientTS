@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import * as electron from 'electron';
 import { SetupMainHandlers } from './icpMainComs';
-import { InstallRequestsProcessor } from './client/client.RequestProcessor';
+import { InstallRequestsProcessor } from './client/client';
 
 //const packageText = fs.readFileSync( '' )
 

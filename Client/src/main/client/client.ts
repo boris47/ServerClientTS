@@ -3,9 +3,8 @@ import * as http from 'http';
 
 import { IClientRequestResult } from '../../../../Common/Interfaces'
 import ServerConfigs from '../../../../Common/ServerConfigs'
-import { IClientRequestInternalOptions } from './Client.Requests';
-import * as ClientWebSocket from './Client.WebSocket';
-import { IRequestsMethods, RequestsMap } from './Client.RequestsMap';
+import * as ClientWebSocket from './client.Modules.WebSocket';
+import { IRequestsMethods, RequestsMap, IClientRequestInternalOptions } from './client.Requests.Mapping';
 
 const CommonOptions : http.RequestOptions = {
 	host: '0.0.0.0',
@@ -107,7 +106,7 @@ export async function InstallRequestsProcessor()
 	bResult = bResult && ServerConfigs.Load( serverConfigFilePath );
 	if ( bResult )
 	{
-		CommonOptions.host = ServerConfigs.instance.PublicIP;
+		CommonOptions.host = ServerConfigs.instance.PublicIPv4;
 		CommonOptions.port = ServerConfigs.instance.RequestsListenerPort;
 		const error = await ClientWebSocket.Client_SetupWebSocket();
 		!error || console.error( error.name, error.message );

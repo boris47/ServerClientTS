@@ -5,7 +5,8 @@ import { IServerConfigs } from '../Common/Interfaces';
 
 export default class ServerConfigs
 {
-	public readonly PublicIP : string | null = '0.0.0.0';
+	public readonly PublicIPv4 : string = '127.0.0.1';
+	public readonly PublicIPv6 : string = '0:0:0:0:0:0:0:1';
 	public readonly RequestsListenerPort : number = 0;
 	public readonly WebSocketPort : number = 0;
 
@@ -38,14 +39,23 @@ export default class ServerConfigs
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public AreValidData() : boolean
 	{
-		return this.PublicIP !== null && this.PublicIP.length > 0 && this.RequestsListenerPort > 0 && this.WebSocketPort > 0;
+		return (
+			this.PublicIPv4 !== null && this.PublicIPv4.length > 0 || this.PublicIPv6 !== null && this.PublicIPv6.length > 0
+			&& this.RequestsListenerPort > 0 && this.WebSocketPort > 0
+		);
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public SetCurrentPublicIP( PublicIP : string ) : void
+	public SetCurrentPublicIPv4( PublicIPv4 : string ) : void
 	{
-		(this.PublicIP as string) = PublicIP;
+		(this.PublicIPv4 as string) = PublicIPv4;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public SetCurrentPublicIPv6( PublicIPv6 : string ) : void
+	{
+		(this.PublicIPv6 as string) = PublicIPv6;
 	}
 
 

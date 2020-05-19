@@ -73,7 +73,7 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 			connection.send( "Ciao, sono un client" );
 		});
 
-		webSocketClient.connect( `ws://${serverConfigs.PublicIP}:${serverConfigs.WebSocketPort}/websocket`, 'echo-protocol' );
+		webSocketClient.connect( `ws://${serverConfigs.PublicIPv4}:${serverConfigs.WebSocketPort}/websocket`, 'echo-protocol' );
 		resolve( null );
 	});
 }

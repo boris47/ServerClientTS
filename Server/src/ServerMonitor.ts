@@ -1,6 +1,6 @@
 
 import * as fs from 'fs';
-import { ProcessManager } from '../Common/ProcessManager';
+import { ProcessManager } from '../../Common/ProcessManager';
 
 
 if ( fs.existsSync( 'Server.js' ) )

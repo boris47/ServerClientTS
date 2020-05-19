@@ -1,4 +1,4 @@
-import { ProcessManager } from "../Common/ProcessManager";
+import { ProcessManager } from "../../Common/ProcessManager";
 
 
 export default class ServerCommunications

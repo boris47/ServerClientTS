@@ -2,10 +2,9 @@
 import * as http from 'http';
 import * as net from 'net';
 
-import * as ComUtils from '../Common/Utils/ComUtils';
-import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.ResponsesMap';
+import * as ComUtils from '../../Common/Utils/ComUtils';
+import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.Responses.Mapping';
 import { ServerInfo } from './Server.Globals';
-import ServerCommunications from './Server.Comunications';
 
 
 export default class HttpModule
@@ -52,7 +51,7 @@ export default class HttpModule
 	private async Initialize( serverOptions : http.ServerOptions, listenOptions : net.ListenOptions ) : Promise<boolean>
 	{
 		const server : http.Server = http.createServer( serverOptions );
-		server.on( 'error', console.error);
+		server.on('error', console.error);
 		server.on('request', this.HandleRequest);
 
 		this.server = server;
@@ -100,7 +99,7 @@ export default class HttpModule
 	{
 		console.log(
 			[
-				`\t`, `Request: ${request.url}`,
+				`\n`, `Request: ${request.url}`,
 				`Result: ${value.bHasGoodResult}`,
 				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 				`Time: ${(Date.now()- startTime).toString()}ms\n`,
@@ -117,12 +116,12 @@ export default class HttpModule
 		const availableMethods : IResponseMethods = ResponsesMap[identifier];
 		if ( availableMethods )
 		{
-			const method = availableMethods[request.method.toLowerCase()] || ( () => MethodNotAllowed );
-			method().applyToResponse( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
+			const method = availableMethods[request.method.toLowerCase()] || ( MethodNotAllowed );
+			method( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
 		}
 		else
 		{
-			NotImplementedResponse.applyToResponse( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
+			NotImplementedResponse( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
 		}
 	};
 

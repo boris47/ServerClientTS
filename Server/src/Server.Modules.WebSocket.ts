@@ -12,7 +12,6 @@ import
 	connection as WebSocketConnection,
 	request as WebSocketRequest, IMessage
 } from 'websocket';
-import ServerCommunications from './Server.Comunications';
 
 
 export default class WebSocketModule
@@ -76,7 +75,7 @@ export default class WebSocketModule
 		{
 			httpServer: httpServer,
 
-			//	autoAcceptConnections : false
+			autoAcceptConnections : false
 		};
 		const webSocketServer = new WebSocketServer(serverConfig);
 		webSocketServer.on('request', (request: WebSocketRequest) => this.OnRequest(request));
@@ -122,7 +121,7 @@ export default class WebSocketModule
 			case 'utf8':
 				{
 					buffered = Buffer.from(data.utf8Data);
-					console.log("Received: '" + data.utf8Data + "'");
+					console.log("WebSocketModule:Received: '" + data.utf8Data + "'");
 					this.connection.close(); // TODO
 					break;
 				}
