@@ -13,7 +13,7 @@ const isDevelopmentEnvironment = process.env.NODE_ENV == "development";
 module.exports = function(config)
 {
 	config.devtool = isDevelopmentEnvironment ? "inline-source-map" : false;
-//	const isDev = (process.env.NODE_ENV === 'development');
+//	config.entry['preload'] = path.join(__dirname, 'src', 'main', 'preload.js');
 
 	/** @param {string} key @param {any} value */
 	const replacer = ( key, value ) =>
@@ -21,11 +21,7 @@ module.exports = function(config)
 		if ( key === 'typescript' && typeof value === 'object' ) return undefined;
 		return value
 	};
-	
-
-	fs.writeFileSync( `mainCFG_${process.env.NODE_ENV}.json`, JSON.stringify(config, /*replacer*/null, 4) );
-	// \dist\main\Preload.js
-	config.entry['preload'] = path.join(__dirname, 'src', 'main', 'preload.js');
+//	fs.writeFileSync( `mainCFG_${process.env.NODE_ENV}.json`, JSON.stringify(config, /*replacer*/null, 4) );
 
 	return config;
 };

@@ -9,7 +9,6 @@ import Vue, { VueConstructor } from 'vue';
 import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 import { ICP_RendererComs } from './icpRendererComs';
-import { EComunications } from '../icpComs';
 
 import AppRouter from './appRouter';
 
@@ -35,22 +34,6 @@ const components =
 }; 
 
 
-
-async function loggerSetup()
-{
-	const appName = await ICP_RendererComs.Invoke<string>(EComunications.ELECTRON_PROPERTY, ['app', 'name']);
-	console.log("appName:", appName);
-
-	const appPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'appData');
-	console.log("appPath:", appPath);
-
-//	const erss = await ICP_RendererComs.Invoke<NodeJS.ErrnoException | null>(EComunications.WRITE_FILE, './test.txt', "Ciao Mamma");
-//	console.log("erss", erss);
-
-//	const content = await ICP_RendererComs.Invoke<Buffer>(EComunications.READ_FILE, './test.txt');
-//	console.log(content.toString('utf-8'));
-}
-
 async function Initialize()
 {
 	if (process.env.NODE_ENV === 'development')
@@ -65,7 +48,6 @@ async function Initialize()
 		document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', resolve) : resolve();
 	});
 
-	await loggerSetup();
 
 	const electronAsPlugin = {
 		install: (Vue: VueConstructor<Vue>) => Vue.prototype.$electron = require('electron')

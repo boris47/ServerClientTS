@@ -27,33 +27,16 @@ export default class AppRouter
 			const routerOptions = <RouterOptions>
 			{
 				routes: [
-					{
-						path: '/testPage',
-						name: 'testPage',
-						component: TestPage
-					},
-					{
-						path: '/loginPage',
-						name: 'loginPage',
-						component: LoginPage
-					},
-					{
-						path: '/mainPage',
-						component: MainPage,
-						meta: { requiresAuth: true },
+					{	path: '/testPage',		name: 'testPage',		component: TestPage		},
+					{	path: '/loginPage',		name: 'loginPage',		component: LoginPage	},
+					{	path: '/mainPage',		name: 'mainPage',		component: MainPage,	meta: { requiresAuth: true },
 						children: [
 							{
-								path: 'entrancePage',
-								name: 'entrancePage',
-								component: EntrancePage
+								path: 'entrancePage',	name: 'entrancePage',	component: EntrancePage
 							}
 						]
 					},
-					{
-						path: '/aboutPage',
-						name: 'aboutPage',
-						component: AboutPage
-					},
+					{	path: '/aboutPage',		name: 'aboutPage',		component: AboutPage	},
 
 					// Fallback to avoid 404 error
 					{ path: '*', redirect: { path: '/testPage' } }
@@ -69,16 +52,15 @@ export default class AppRouter
 			vueRouterInstance.beforeResolve( ( to: Route, from: Route, next: ( to?: RawLocation | false | ( ( vm: Vue ) => any ) | void ) => void ) =>
 			{
 				let result: false | undefined = undefined; // green light
-
 				if ( to )
 				{
 					if ( to.fullPath == from.fullPath )  // same path, red light
 					{
 						result = false;
+						console.warn( `AppRouter:beforeResolve: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }` );
 					}
 				}
 
-				console.log( `AppRouter:beforeResolve: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }` );
 				/**
 				 * result : undefined -> green light
 				 * result : false -> red light
@@ -92,14 +74,13 @@ export default class AppRouter
 			vueRouterInstance.beforeEach( ( to: Route, from: Route, next: ( to?: RawLocation | false | ( ( vm: Vue ) => any ) | void ) => void ) =>
 			{
 				let result: RawLocation | undefined = undefined;  // green light
-
 				const authenticationRequired: boolean = to.matched.some( route => route.meta && route.meta.requiresAuth );
 				if ( authenticationRequired && !LoginManager.IsLogged ) // Login required, red light
 				{
 					result = <RawLocation> { path: '/loginPage', query: { redirect: to.fullPath } };
+					console.log( `AppRouter:beforeEach: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }` );
 				}
 
-				console.log( `AppRouter:beforeEach: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }` );
 				/**
 				 * result : undefined -> green light
 				 * result : false -> red light

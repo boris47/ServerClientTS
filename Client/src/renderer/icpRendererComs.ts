@@ -29,7 +29,7 @@ export class ICP_RendererComs
 		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, arg0, args));
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.lastIndexOf(']'));		
-		console.log( channel, arg0, args, typeString, type, result )
+	//	console.log( channel, arg0, args, typeString, type, result )
 		
 		const ctor = MappedOps[type];
 		if ( ctor )
