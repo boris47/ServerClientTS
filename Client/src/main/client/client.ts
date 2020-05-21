@@ -4,7 +4,8 @@ import * as http from 'http';
 import { IClientRequestResult } from '../../../../Common/Interfaces'
 import ServerConfigs from '../../../../Common/ServerConfigs'
 import * as ClientWebSocket from './client.Modules.WebSocket';
-import { IRequestsMethods, RequestsMap, IClientRequestInternalOptions } from './client.Requests.Mapping';
+import { IRequestsMethods, RequestsMap } from './client.Requests.Mapping';
+import { IClientRequestInternalOptions } from './client.Requests.Processing';
 
 const CommonOptions : http.RequestOptions = {
 	host: '0.0.0.0',
