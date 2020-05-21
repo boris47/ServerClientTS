@@ -1,10 +1,23 @@
 
 import * as http from 'http';
+import * as fs from 'fs';
 import * as zlib from 'zlib';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { IClientRequestResult } from '../../../../Common/Interfaces';
-import { IClientRequestInternalOptions } from './client.Requests.Mapping';
+
+
+
+export interface IClientRequestInternalOptions
+{
+	Identifier? : string;
+	DownloadLocation?: string;
+	Storage?: string;
+	Key? : string;
+	Value? : any;
+	Headers? : Map<string, string | number | string[]>;
+	FileStream? : fs.ReadStream;
+}
 
 
 export class ClientRequestsProcessing

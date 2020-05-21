@@ -4,11 +4,20 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as mime from 'mime-types';
 
-import { HTTPCodes } from './HTTP.Codes';
+import { HTTPCodes } from '../HTTP.Codes';
 
-import * as ComUtils from '../../Common/Utils/ComUtils';
-import FSUtils from '../../Common/Utils/FSUtils';
-import { IServerRequestInternalOptions } from './Server.Responses.Mapping';
+import * as ComUtils from '../../../Common/Utils/ComUtils';
+import FSUtils from '../../../Common/Utils/FSUtils';
+
+
+export interface IServerRequestInternalOptions
+{
+	Identifier? : string;
+	Key? : string;
+	Value? : Buffer | null;
+	Headers? : http.OutgoingHttpHeaders;
+	FileStream? : fs.ReadStream;
+}
 
 
 

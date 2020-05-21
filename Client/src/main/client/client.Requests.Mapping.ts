@@ -8,7 +8,7 @@ import * as mime from 'mime-types';
 import FSUtils from '../../../../Common/Utils/FSUtils';
 import { IClientRequestResult } from '../../../../Common/Interfaces';
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
-import { ClientRequestsProcessing } from './client.Requests.Processing';
+import { ClientRequestsProcessing, IClientRequestInternalOptions } from './client.Requests.Processing';
 
 
 export interface IRequestsMethods
@@ -21,17 +21,6 @@ export interface IRequestsMethods
 	delete? 	: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
 }
 
-
-export interface IClientRequestInternalOptions
-{
-	Identifier? : string;
-	DownloadLocation?: string;
-	Storage?: string;
-	Key? : string;
-	Value? : any;
-	Headers? : Map<string, string | number | string[]>;
-	FileStream? : fs.ReadStream;
-}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const PingRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>

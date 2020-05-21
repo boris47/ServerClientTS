@@ -2,9 +2,9 @@
 import * as http from 'http';
 import * as net from 'net';
 
-import * as ComUtils from '../../Common/Utils/ComUtils';
-import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from './Server.Responses.Mapping';
-import { ServerInfo } from './Server.Globals';
+import * as ComUtils from '../../../Common/Utils/ComUtils';
+import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from '../Responses/Server.Responses.Mapping';
+import { ServerInfo } from '../Server.Globals';
 
 
 export default class HttpModule

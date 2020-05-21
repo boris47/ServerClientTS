@@ -10,8 +10,8 @@ import * as ComUtils from '../../Common/Utils/ComUtils';
 
 import { MongoDatabase } from '../Utils/MongoDatabase';
 
-import HttpModule from './Server.Modules.Http';
-import WebSocketModule from './Server.Modules.WebSocket';
+import HttpModule from './Modules/Server.Modules.Http';
+import WebSocketModule from './Modules/Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
 import { StorageManager, EStorageType } from './Server.Storages';
 

@@ -3,15 +3,15 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path'
 
-import * as ComUtils from '../../Common/Utils/ComUtils';
+import * as ComUtils from '../../../Common/Utils/ComUtils';
 import * as mime from 'mime-types';
 
-import FSUtils from '../../Common/Utils/FSUtils';
+import FSUtils from '../../../Common/Utils/FSUtils';
 
-import ServerResponsesProcessing from "./Server.Responses.Processing";
-import { IServerStorage, StorageManager } from "./Server.Storages";
-import { DOWNLOAD_LOCATION } from './Server.Globals';
-import { HTTPCodes } from "./HTTP.Codes";
+import ServerResponsesProcessing, { IServerRequestInternalOptions } from "./Server.Responses.Processing";
+import { IServerStorage, StorageManager } from "../Server.Storages";
+import { DOWNLOAD_LOCATION } from '../Server.Globals';
+import { HTTPCodes } from "../HTTP.Codes";
 
 
 export const NotImplementedResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
@@ -45,15 +45,6 @@ export interface IResponseMethods
 	put? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
 	patch? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
 	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-}
-
-export interface IServerRequestInternalOptions
-{
-	Identifier? : string;
-	Key? : string;
-	Value? : Buffer | null;
-	Headers? : http.OutgoingHttpHeaders;
-	FileStream? : fs.ReadStream;
 }
 
 

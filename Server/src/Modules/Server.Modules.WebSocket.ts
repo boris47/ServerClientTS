@@ -2,8 +2,8 @@
 import * as http from 'http';
 import * as net from 'net';
 
-import { ServerInfo, ConnectedClients } from "./Server.Globals";
-import { HTTPCodes } from "./HTTP.Codes";
+import { ServerInfo, ConnectedClients } from "../Server.Globals";
+import { HTTPCodes } from "../HTTP.Codes";
 
 import
 {
