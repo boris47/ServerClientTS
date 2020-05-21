@@ -119,7 +119,7 @@ const Storage_Get = async ( options: http.RequestOptions, clientRequestInternalO
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Put = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.Request_PUT( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
