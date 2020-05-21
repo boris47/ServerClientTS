@@ -85,7 +85,7 @@ export default class TestPage extends Vue
 		}
 		else
 		{
-			console.error( `"${result.name}:${result.message}"` );
+			console.error( result, /*`"${result.name}:${result.message}"`*/ );
 		}
 	}
 

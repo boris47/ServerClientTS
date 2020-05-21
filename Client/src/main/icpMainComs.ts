@@ -19,6 +19,13 @@ export function SetupMainHandlers()
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
+	electron.ipcMain.handle(EComunications.ELECTRON_MODAL_OPEN, async ( event: Electron.IpcMainInvokeEvent, keys: string[], [options]: any[] ) : Promise<electron.OpenDialogReturnValue> =>
+	{
+	//	console.log( EComunications.ELECTRON_MODAL_OPEN, options );
+		const window : electron.BrowserWindow | null = electron.BrowserWindow.fromWebContents( event.sender );
+		return await electron.dialog.showOpenDialog( window, options )
+	});
+
 	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, keys: string[]): any | null =>
 	{
 		//console.log( EComunications.ELECTRON_PROPERTY, keys );
@@ -43,15 +50,8 @@ export function SetupMainHandlers()
 	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, keys: string[], args: any[]): any | null =>
 	{
 		//console.log( EComunications.ELECTRON_CALL, keys, args );
-		let result: any | null = null;
-		try
-		{
-			result = GetElectronProperty(keys)(...args);
-		}
-		catch (ex)
-		{
-			console.error(ex);
-		}
+		let func : (...args:any[]) => any | null;
+		const result = ( typeof( func = GetElectronProperty(keys)) === 'function' ? func(...args) : null );
 		return result;
 	});
 

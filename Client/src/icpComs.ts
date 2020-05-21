@@ -11,6 +11,8 @@ export enum EComunications
 	ELECTRON_CALL = 'ELECTRON_CALL',
 	/** 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin' -> string | Error */
 	ELECTRON_PATH = 'ELECTRON_PATH',
+	/** electron.OpenDialogOptions -> electron.OpenDialogReturnValue */
+	ELECTRON_MODAL_OPEN = 'ELECTRON_MODAL_OPEN',
 
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////

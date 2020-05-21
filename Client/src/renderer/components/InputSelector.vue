@@ -90,16 +90,17 @@
 		{
 			const property = this.type === ESelectorType.FILE ? 'openFile' : 'openDirectory';
 			const multiple = this.multiple ? 'multiSelections' : undefined;
-			const desktopPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'exe');
-			const selected = await ICP_RendererComs.Invoke<string[] | undefined>
-			(
-				EComunications.ELECTRON_CALL,
-				['dialog', 'showOpenDialogSync'],
-				<electron.OpenDialogSyncOptions> { properties: [property, multiple], defaultPath: desktopPath }
+			const defaultPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'exe');
+		
+			const result = await ICP_RendererComs.Invoke<electron.OpenDialogReturnValue>(
+				EComunications.ELECTRON_MODAL_OPEN,
+				undefined,
+				<electron.OpenDialogSyncOptions> { properties: [property, multiple], defaultPath: defaultPath }
 			);
-			if (selected?.length)
+			
+			if ( !result.canceled && result.filePaths.length)
 			{
-				this.$emit("on-selector", this.SelectedAbsolutePaths = selected);
+				this.$emit("on-selector", this.SelectedAbsolutePaths = result.filePaths);
 			}
 		}
 	}
