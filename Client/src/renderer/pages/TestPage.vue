@@ -25,14 +25,27 @@
 			</div>
 			<div>
 				<input-selector type='folder' @on-selector="onDownloadFolderSelected"></input-selector>
-				<ul>
-
-				</ul>
 				<button v-if="downloadFileLocation" type="button" @click.stop="DownloadFile">Download File</button>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
 				<p v-if="!bDownloadRequestLaunched">WAITING</p>
 			</div>
+			<div>
+				<label>"My Progress Bar"</label>
+				<progress-bar :value='75'/>
+			</div>
+			<div>
+				<custom-table :headers='headers' :content='tableContent'>
+					<template slot-scope="{tablerow}">
+						{{tablerow}}
+					</template>
+				</custom-table>
+			</div>
+			<!--table>
+				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
+				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
+				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
+			</table-->
 		</div>
 	</global-layout>
 </template>
@@ -43,6 +56,8 @@ import { Component, Vue } from 'vue-property-decorator';
 import { ICP_RendererComs } from '../icpRendererComs';
 import { EComunications } from '../../icpComs';
 import GenericUtils from '../../../../Common/Utils/GenericUtils';
+
+import { ITableHeader, ITableRowContent } from '../components/Table/CustomTable.vue';
 
 @Component
 export default class TestPage extends Vue
@@ -64,9 +79,20 @@ export default class TestPage extends Vue
 	protected bDownloadRequestSucceded = false;
 	protected bDownloadRequestLaunched = false;
 
+	protected headers = Array<ITableHeader>();
+	protected tableContent = Array<ITableRowContent>();
+
 	protected created()
 	{
 		console.log('Test Page');
+		const header1 : ITableHeader = { id: 'Ciao1', field : null, text: 'Header 1', width: 10 };
+		const header2 : ITableHeader = { id: 'Ciao2', field : null, text: 'Header 2', width: 10 };
+		const header3 : ITableHeader = { id: 'Ciao3', field : null, text: 'Header 3', width: 10 };
+		this.headers.push(header1, header2, header3);
+
+		this.tableContent.push(<ITableRowContent>{ id: '1st Row', content: ['prova col 1x1', 'prova col 2x1', 'prova col 3x1', 'ops']});
+		this.tableContent.push(<ITableRowContent>{ id: '2nd Row', content: ['prova col 1x2', 'prova col 2x2', 'prova col 3x2']});
+		this.tableContent.push(<ITableRowContent>{ id: '3rd Row', content: ['prova col 1x3', 'prova col 2x3', 'prova col 3x3']});
 	}
 
 	protected onInputFilePathsSelected( selected: string[] )
@@ -162,3 +188,13 @@ export default class TestPage extends Vue
 }
 
 </script>
+
+<style scoped>
+
+td {
+	border: 1px solid black;
+	border-radius: 5px;
+	border-collapse: collapse;
+}
+
+</style>

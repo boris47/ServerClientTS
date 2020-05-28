@@ -14,6 +14,9 @@ import AppRouter from './appRouter';
 
 import GlobalLayout from './Components/Layouts/GlobalLayout.vue';
 import InputSelector from './Components/InputSelector.vue';
+import ProgressBar from './components/Progress/ProgressBar.vue';
+import ProgressSpinner from './components/Progress/ProgressSpinner.vue';
+import CustomTable from './components/Table/CustomTable.vue';
 
 
 
@@ -23,15 +26,18 @@ const components =
 	{
 		[
 			GlobalLayout,
-			InputSelector
+			InputSelector,
+			ProgressBar,
+			ProgressSpinner,
+			CustomTable
 		]
 		.forEach((component) =>
 		{
 			Vue.component(component.name, component)
-			console.log("Registered", component.name);
+			console.log(`Registered "${component.name}"`);
 		});
 	}
-}; 
+};
 
 
 async function Initialize()

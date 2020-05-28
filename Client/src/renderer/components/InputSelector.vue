@@ -16,10 +16,10 @@
 <script lang="ts">
 
 	import { Component, Prop, Vue } from 'vue-property-decorator';
+	import { PropOptions } from 'vue';
 	import electron from 'electron';
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunications } from '../../icpComs';
-	import { PropOptions } from 'vue';
 	import ObjectUtils from '../../../../Common/Utils/ObjectUtils';
 
 	enum ESelectorType
