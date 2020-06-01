@@ -17,6 +17,8 @@ import InputSelector from './Components/InputSelector.vue';
 import ProgressBar from './components/Progress/ProgressBar.vue';
 import ProgressSpinner from './components/Progress/ProgressSpinner.vue';
 import CustomTable from './components/Table/CustomTable.vue';
+import CustomTableTd from './components/Table/CustomTableTd.vue';
+import CustomButton from './components/CustomButton.vue';
 
 
 
@@ -29,7 +31,9 @@ const components =
 			InputSelector,
 			ProgressBar,
 			ProgressSpinner,
-			CustomTable
+			CustomTableTd,
+			CustomTable,
+			CustomButton,
 		]
 		.forEach((component) =>
 		{

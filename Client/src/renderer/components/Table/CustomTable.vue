@@ -2,18 +2,19 @@
 	<div>
 		<table>
 			<thead>
-				<tr><th colspan="1" v-for="(child, index) in headers" :style="`width: ${child.width}px`" :key="index">{{child.text}}</th></tr>
+				<tr>
+					<th v-for="(child, index) in headers" v-bind:key="index" v-bind:style="`width: ${child.width}`">{{child.text}}</th>
+				</tr>
 			</thead>
-			<tbody ref="body">
-				<tr v-for="(item, index) in ComputedContent" :key="index">
-					<td v-for="(tablerow, index) in item.content" :key="index">
-						<slot :tablerow="tablerow"></slot>
-					</td>
+			<tbody>
+				<tr v-for="(tableRow/*ITableRow*/, index) in ComputedContent" v-bind:key="index">
+					<custom-table-td v-for="(tableRowContent/*ITableRowContent*/, index) in tableRow.content" v-bind:key="index" :value="tableRowContent.value"/>
 				</tr>
 			</tbody>
 		</table>
 	</div>
 </template>
+
 
 <script lang="ts">
 
@@ -23,52 +24,56 @@ import { PropOptions } from 'vue';
 export interface ITableHeader
 {
 	id: string;
-	field: string | null;
 	text: string;
 	width: number;
+}
+
+export interface ITableRow
+{
+	content: ITableRowContent[];
 }
 
 export interface ITableRowContent
 {
 	id: string;
-	content: (string | number | boolean | HTMLElement)[];
+	value: (null | undefined | string | number | boolean | Vue | HTMLElement);
 }
 
 @Component
 export default class CustomTable extends Vue
 {
 	/** Table headers */
-	@Prop(<PropOptions<Array<string>>>
+	@Prop(<PropOptions<Array<ITableHeader>>>
 	{
-		required: true,		type: Array,
+		required: false,		type: Array,
 		default: () => new Array,
-		validator: (value: string[]) => true,
+		validator: (value: ITableHeader[]) => true,
 	})
-	protected readonly headers: string[];
+	protected readonly headers: ITableHeader[];
 
 	/** Table rows */
-	@Prop(<PropOptions<Array<ITableRowContent>>>
+	@Prop(<PropOptions<Array<ITableRow>>>
 	{
 		required: true,		type: Array,
 		default: () => new Array,
-		validator: (value: ITableRowContent[]) => true,
+		validator: (value: ITableRow[]) => true,
 	})
-	protected readonly content: ITableRowContent[];
-
+	protected readonly tableRows: ITableRow[];
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	get ComputedContent() : ITableRowContent[]
+	get ComputedContent() : ITableRow[]
 	{
-		const computed = this.content.slice();
-		const headersCount = this.headers.length;
-		for( const { id, content } of computed )
+		const headersIds = this.headers.map( h => h.id );
+		const computed = new Array<ITableRow>();
+		for( const tableRow of this.tableRows )
 		{
-			let count : number;
-			if( ( count = content.splice( headersCount ).length ) > 0 )
+			const newRow = <ITableRow>{ content: new Array<ITableRowContent>() };
+			for( const headerId of headersIds )
 			{
-				console.warn( `CustomTable:ComputedContent: Removed ${count} elements from content with id '${id}'` );
+				newRow.content.push( tableRow.content.find( rc => rc.id === headerId ) || { id: headerId, value: 'None' } );
 			}
+			computed.push(newRow);
 		}
 		return computed;
 	}
@@ -76,6 +81,7 @@ export default class CustomTable extends Vue
 }
 
 </script>
+
 
 <style scoped>
 

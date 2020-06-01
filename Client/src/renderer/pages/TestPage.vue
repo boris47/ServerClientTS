@@ -2,7 +2,7 @@
 	<global-layout>
 		<div slot="header">
 			<p>Test Page!</p>
-			<div>
+			<!--div>
 				<input type="text" v-model="valueToSet"/>
 				<button type="button" @click.stop="SetValue">Set value</button>
 				<p v-if="bSetRequestLaunched && bSetRequestSucceded===true">SUCCESS</p>
@@ -25,7 +25,7 @@
 			</div>
 			<div>
 				<input-selector type='folder' @on-selector="onDownloadFolderSelected"></input-selector>
-				<button v-if="downloadFileLocation" type="button" @click.stop="DownloadFile">Download File</button>
+				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile" textContent='Ciao mamma'>Download File</custom-button>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
 				<p v-if="!bDownloadRequestLaunched">WAITING</p>
@@ -33,19 +33,11 @@
 			<div>
 				<label>"My Progress Bar"</label>
 				<progress-bar :value='75'/>
-			</div>
+				<progress-bar/>
+			</div-->
 			<div>
-				<custom-table :headers='headers' :content='tableContent'>
-					<template slot-scope="{tablerow}">
-						{{tablerow}}
-					</template>
-				</custom-table>
+				<custom-table :headers="headers" :tableRows="tableRows"></custom-table>
 			</div>
-			<!--table>
-				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
-				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
-				<tr><th><progress-spinner/></th><th><progress-spinner/></th><th><progress-spinner/></th></tr>
-			</table-->
 		</div>
 	</global-layout>
 </template>
@@ -57,7 +49,9 @@ import { ICP_RendererComs } from '../icpRendererComs';
 import { EComunications } from '../../icpComs';
 import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
-import { ITableHeader, ITableRowContent } from '../components/Table/CustomTable.vue';
+import { ITableHeader, ITableRow } from '../components/Table/CustomTable.vue';
+import CustomButton from '../components/CustomButton.vue';
+
 
 @Component
 export default class TestPage extends Vue
@@ -80,19 +74,39 @@ export default class TestPage extends Vue
 	protected bDownloadRequestLaunched = false;
 
 	protected headers = Array<ITableHeader>();
-	protected tableContent = Array<ITableRowContent>();
+	protected tableRows = Array<ITableRow>();
+
 
 	protected created()
 	{
 		console.log('Test Page');
-		const header1 : ITableHeader = { id: 'Ciao1', field : null, text: 'Header 1', width: 10 };
-		const header2 : ITableHeader = { id: 'Ciao2', field : null, text: 'Header 2', width: 10 };
-		const header3 : ITableHeader = { id: 'Ciao3', field : null, text: 'Header 3', width: 10 };
+		const header1 : ITableHeader = { id: '1', text: 'Header 1', width: 25 };
+		const header2 : ITableHeader = { id: '2', text: 'Header 2', width: 10 };
+		const header3 : ITableHeader = { id: '3', text: 'Header 3', width: 10 };
 		this.headers.push(header1, header2, header3);
 
-		this.tableContent.push(<ITableRowContent>{ id: '1st Row', content: ['prova col 1x1', 'prova col 2x1', 'prova col 3x1', 'ops']});
-		this.tableContent.push(<ITableRowContent>{ id: '2nd Row', content: ['prova col 1x2', 'prova col 2x2', 'prova col 3x2']});
-		this.tableContent.push(<ITableRowContent>{ id: '3rd Row', content: ['prova col 1x3', 'prova col 2x3', 'prova col 3x3']});
+		const htmlButton = document.createElement('button');
+		// button.style
+		htmlButton.onclick = () => (this.tableRows[1].content[2].value as number)++
+		htmlButton.textContent = 'Dom Button!!';
+
+		const customButtonEnabled = new CustomButton({ propsData: { textContent: 'Enabled Button' } });
+		const customButtonDisabled = new CustomButton({ propsData: { textContent: 'Disable Button', bIsDisabled: true } });
+
+		this.tableRows.push(
+			<ITableRow>
+			{
+				content: [ { id: '1', value: 'prova col 1x1' }, { id: '2', value: 'prova col 1x2' }, { id: '3', value: 'prova col 1x3' }, ]
+			},
+			<ITableRow>
+			{
+				content: [ { id: '1', value: true }, { id: '2', value: null }, { id: '3', value: 5 }, ]
+			},
+			<ITableRow>
+			{
+				content: [ { id: '1', value: customButtonEnabled }, { id: '2', value: htmlButton }, { id: '3', value: customButtonDisabled }, ]
+			}
+		);
 	}
 
 	protected onInputFilePathsSelected( selected: string[] )
