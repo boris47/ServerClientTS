@@ -5,7 +5,7 @@
 
 <script lang="ts">
 
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Prop, Vue, Watch } from 'vue-property-decorator';
 import { PropOptions } from 'vue';
 
 @Component
@@ -28,10 +28,10 @@ export default class CustomTableTd extends Vue
 		span.textContent = text.toString();
 		elm.appendChild(span);
 	}
-	
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	protected mounted() 
+	private UpdateTd()
 	{
 		const elm = this.$refs.customTableData as Element;
 		while (elm.firstChild) elm.removeChild(elm.lastChild);
@@ -51,7 +51,7 @@ export default class CustomTableTd extends Vue
 		// HTML ELEMENT
 		else if ( this.value instanceof HTMLElement )
 		{
-			typeof this.value === 'undefined' ? 'undefined' : 'NULL'
+			elm.appendChild( this.value );
 		}
 
 		// VUE COMPONENT
@@ -59,6 +59,21 @@ export default class CustomTableTd extends Vue
 		{
 			elm.appendChild( document.createElement('slot').appendChild( this.value.$mount().$el ) );
 		}
+	}
+	
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	protected mounted() 
+	{
+		this.UpdateTd();
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	@Watch('value')
+	protected OnValueChanged( newValue: null | undefined | string | number | boolean | Vue | HTMLElement )
+	{
+		this.value = newValue;
+		this.UpdateTd();
 	}
 }
 
