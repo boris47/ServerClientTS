@@ -18,7 +18,7 @@ export default class CustomButton extends Vue
 		default: () => false,
 		validator: (value: boolean) => typeof value === 'boolean',
 	})
-	protected readonly bIsDisabled: boolean[];
+	protected readonly bIsDisabled: boolean;
 
 	/** Button Text Content */
 	@Prop(<PropOptions<String>>
