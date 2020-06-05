@@ -29,14 +29,20 @@
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
 				<p v-if="!bDownloadRequestLaunched">WAITING</p>
-			</div>
+			</div-->
 			<div>
 				<label>"My Progress Bar"</label>
 				<progress-bar :value='75'/>
 				<progress-bar/>
-			</div-->
+				<label>"My Progress Spinner"</label>
+				<progress-spinner/>
+			</div>
 			<div>
+				<label>"My Table"</label>
 				<custom-table :headers="headers" :tableRows="tableRows"></custom-table>
+			</div>
+			<div>
+				<custom-select :values="['New York', 'Los Angeles']"/>
 			</div>
 		</div>
 	</global-layout>
@@ -94,17 +100,18 @@ export default class TestPage extends Vue
 		const customButtonDisabled = new CustomButton({ propsData: { textContent: 'Disable Button', bIsDisabled: true } });
 
 		this.tableRows.push(
-			<ITableRow>
 			{
 				content: [ { id: '1', value: 'prova col 1x1' }, { id: '2', value: 'prova col 1x2' }, { id: '3', value: 'prova col 1x3' }, ]
 			},
-			<ITableRow>
 			{
 				content: [ { id: '1', value: true }, { id: '2', value: null }, { id: '3', value: 5 }, ]
 			},
-			<ITableRow>
+
 			{
 				content: [ { id: '1', value: customButtonEnabled }, { id: '2', value: htmlButton }, { id: '3', value: customButtonDisabled }, ]
+			},
+			{
+				content: [ { id: '5', value: '' }, { id: '2', value: undefined }, { id: '3', value: 'Melissa Ti Amo' }, ]
 			}
 		);
 	}
