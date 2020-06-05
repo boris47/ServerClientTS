@@ -19,6 +19,7 @@ import ProgressSpinner from './components/Progress/ProgressSpinner.vue';
 import CustomTable from './components/Table/CustomTable.vue';
 import CustomTableTd from './components/Table/CustomTableTd.vue';
 import CustomButton from './components/CustomButton.vue';
+import CustomSelect from './components/CustomSelect.vue';
 
 
 
@@ -34,6 +35,7 @@ const components =
 			CustomTableTd,
 			CustomTable,
 			CustomButton,
+			CustomSelect,
 		]
 		.forEach((component) =>
 		{
