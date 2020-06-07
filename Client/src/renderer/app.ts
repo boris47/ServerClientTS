@@ -20,6 +20,7 @@ import CustomTable from './components/Table/CustomTable.vue';
 import CustomTableTd from './components/Table/CustomTableTd.vue';
 import CustomButton from './components/CustomButton.vue';
 import CustomSelect from './components/CustomSelect.vue';
+import CustomDatalist from './components/CustomDatalist.vue';
 
 
 
@@ -36,6 +37,7 @@ const components =
 			CustomTable,
 			CustomButton,
 			CustomSelect,
+			CustomDatalist,
 		]
 		.forEach((component) =>
 		{

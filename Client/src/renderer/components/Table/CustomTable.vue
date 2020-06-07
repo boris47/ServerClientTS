@@ -65,17 +65,12 @@ export default class CustomTable extends Vue
 	get ComputedContent() : ITableRow[]
 	{
 		const headersIds = this.headers.map( h => h.id );
-		const computed = new Array<ITableRow>();
-		for( const tableRow of this.tableRows )
+		return this.tableRows.map( ( tableRow: ITableRow ) =>
 		{
-			const newRow = <ITableRow>{ content: new Array<ITableRowContent>() };
-			for( const headerId of headersIds )
-			{
-				newRow.content.push( tableRow.content.find( rc => rc.id === headerId ) || { id: headerId, value: 'None' } );
-			}
-			computed.push(newRow);
-		}
-		return computed;
+			return {
+				content : headersIds.map( ( headerId ) : ITableRowContent => tableRow.content.find( rc => rc.id === headerId ) || { id: headerId, value: undefined } )
+			};
+		});
 	}
 
 }

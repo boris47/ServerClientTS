@@ -1,5 +1,8 @@
 <template>
-	<button type="button" :disabled="bIsDisabled" @click.stop="onClick" v-text="textContent"/>
+	<button type="button" :disabled="bIsDisabled" @click.stop="onClick">
+		<span>{{textContent}}</span>
+		<progress-spinner :side=15 />
+	</button>
 </template>
 
 <script lang="ts">
@@ -20,7 +23,7 @@ export default class CustomButton extends Vue
 	})
 	protected readonly bIsDisabled: boolean;
 
-	/** Button Text Content */
+	/** Button text content */
 	@Prop(<PropOptions<String>>
 	{
 		required: true,		type: String,
@@ -30,6 +33,7 @@ export default class CustomButton extends Vue
 	protected readonly textContent: string;
 
 
+	/////////////////////////////////////////////////////////////////////////////////////////
 	protected onClick( event: InputEvent )
 	{
 		this.$emit( 'click', event );
@@ -56,10 +60,8 @@ export default class CustomButton extends Vue
         cursor: pointer;
     }
 
-	/* DISABLED */
-
 	button[disabled] {
-		border: none;
+		/* border: none; */
 		background-color: #AAB1B5;
 		color: #646C73;
 	}

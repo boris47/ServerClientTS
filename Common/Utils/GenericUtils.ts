@@ -25,6 +25,12 @@ export class UniqueID
 }
 
 
+export interface ITemplatedObject<T=any>
+{
+	[key:string]: T;
+}
+
+
 export type GenericConstructor<T> = { new( ...Args:any[] ) : T };
 export default class GenericUtils
 {

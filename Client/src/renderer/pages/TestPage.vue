@@ -42,7 +42,8 @@
 				<custom-table :headers="headers" :tableRows="tableRows"></custom-table>
 			</div>
 			<div>
-				<custom-select :values="['New York', 'Los Angeles']"/>
+				<custom-select :values="['New York', 'Los Angeles']" @select="onSelected_Select"/>
+				<custom-datalist :values="['Roberto', 'Melissa', 'Davide', 'Mariateresa']" @select="onSelected_Datalist"/>
 			</div>
 		</div>
 	</global-layout>
@@ -62,6 +63,10 @@ import CustomButton from '../components/CustomButton.vue';
 @Component
 export default class TestPage extends Vue
 {
+
+	protected onSelected_Select = (selected: string) => console.log(selected);
+	protected onSelected_Datalist = ( index: number, value: string ) => console.log(index, value);
+
 	protected valueToSet = '';
 	protected bSetRequestSucceded = false;
 	protected bSetRequestLaunched = false;
