@@ -55,7 +55,6 @@ export default class CustomDatalist extends Vue
 
 </script>
 
-
 <style scoped>
 
 	/* WIDTH */

@@ -108,7 +108,7 @@
 </script>
 
 <style>
-.inputSelectorListItem {
-	color: red;
-}
+	.inputSelectorListItem {
+		color: red;
+	}
 </style>

@@ -15,34 +15,35 @@
 				<p v-if="bGetRequestLaunched && bGetRequestSucceded===false">FAIL</p>
 				<p v-if="!bGetRequestLaunched">WAITING</p>
 				<p v-if="bGetRequestLaunched && bGetRequestSucceded===true">{{getValue}}</p>
-			</div>
-			<div>
-				<input-selector type='file' itemListTag='li' @on-selector="onInputFilePathsSelected" multiple></input-selector>
-				<button type="button" @click.stop="UploadFiles">Upload File</button>
+			</div-->
+			<div><label>"My File selector"</label>
+				<input-selector type='file' itemListTag='li' @on-selector="onInputFilePathsSelected" multiple />
+				<custom-button @click="UploadFiles" :isLoading=true :value="97" >Download File</custom-button>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</p>
 				<p v-if="!bUploadRequestLaunched">WAITING</p>
 			</div>
-			<div>
+			<!--div><label>"My Folder selector"</label>
 				<input-selector type='folder' @on-selector="onDownloadFolderSelected"></input-selector>
-				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile" textContent='Ciao mamma'>Download File</custom-button>
+				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile">Download File</custom-button>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
 				<p v-if="!bDownloadRequestLaunched">WAITING</p>
 			</div-->
-			<div>
-				<label>"My Progress Bar"</label>
-				<progress-bar :value='75'/>
-				<progress-bar/>
+			<div><label>"My Progress Bar"</label>
+					<progress-bar :value='75'/>
+					<progress-bar/>
 				<label>"My Progress Spinner"</label>
-				<progress-spinner/>
+					<progress-spinner :value="66.5"/>
+					<progress-spinner/>
 			</div>
-			<div>
-				<label>"My Table"</label>
+			<div><label>"My Table"</label>
 				<custom-table :headers="headers" :tableRows="tableRows"></custom-table>
 			</div>
-			<div>
-				<custom-select :values="['New York', 'Los Angeles']" @select="onSelected_Select"/>
+			<div><label>"My Select"</label>
+				<custom-select :values="selectVoices" @select="onSelected_Select"/>
+			</div>
+			<div><label>"My datalist"</label>
 				<custom-datalist :values="['Roberto', 'Melissa', 'Davide', 'Mariateresa']" @select="onSelected_Datalist"/>
 			</div>
 		</div>
@@ -64,7 +65,9 @@ import CustomButton from '../components/CustomButton.vue';
 export default class TestPage extends Vue
 {
 
-	protected onSelected_Select = (selected: string) => console.log(selected);
+	protected selectVoices = ['New York', 'Los Angeles', 'Paris', 'Washington', 'Seattle', 'San Francisco', 'Los Angeles'];
+
+	protected onSelected_Select = (selected: string, index: number) => console.log(index, selected);
 	protected onSelected_Datalist = ( index: number, value: string ) => console.log(index, value);
 
 	protected valueToSet = '';
@@ -97,12 +100,11 @@ export default class TestPage extends Vue
 		this.headers.push(header1, header2, header3);
 
 		const htmlButton = document.createElement('button');
-		// button.style
-		htmlButton.onclick = () => (this.tableRows[1].content[2].value as number)++
+		htmlButton.onclick = () => (this.tableRows[1].content[2].value as number)++;
 		htmlButton.textContent = 'Dom Button!!';
 
 		const customButtonEnabled = new CustomButton({ propsData: { textContent: 'Enabled Button' } });
-		const customButtonDisabled = new CustomButton({ propsData: { textContent: 'Disable Button', bIsDisabled: true } });
+		const customButtonDisabled = new CustomButton({ propsData: { textContent: 'Disable Button', isDisabled: true } });
 
 		this.tableRows.push(
 			{
