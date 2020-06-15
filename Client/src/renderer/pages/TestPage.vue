@@ -17,14 +17,15 @@
 				<p v-if="bGetRequestLaunched && bGetRequestSucceded===true">{{getValue}}</p>
 			</div-->
 			<div><label>"My File selector"</label>
-				<input-selector type='file' itemListTag='li' @on-selector="onInputFilePathsSelected" multiple />
-				<custom-button @click="UploadFiles" :isLoading=true :value="97" >Download File</custom-button>
+				<input-selector type='file' itemListTag='li' @select="onInputFilePathsSelected" multiple />
+				<custom-button @click="UploadFiles" >Upload File</custom-button>
+				<progress-bar :value="uploadProgress.value * 100" />
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</p>
 				<p v-if="!bUploadRequestLaunched">WAITING</p>
 			</div>
 			<!--div><label>"My Folder selector"</label>
-				<input-selector type='folder' @on-selector="onDownloadFolderSelected"></input-selector>
+				<input-selector type='folder' @select="onDownloadFolderSelected"></input-selector>
 				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile">Download File</custom-button>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
@@ -59,6 +60,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 import { ITableHeader, ITableRow } from '../components/Table/CustomTable.vue';
 import CustomButton from '../components/CustomButton.vue';
+import { IComProgress } from '../../../../Common/Utils/ComUtils';
 
 
 @Component
@@ -81,6 +83,7 @@ export default class TestPage extends Vue
 	protected inputFilePaths = Array<string>();
 	protected bUploadRequestSucceded = false;
 	protected bUploadRequestLaunched = false;
+	protected uploadProgress  = <IComProgress>{ value: 0 }
 
 	protected downloadFileLocation = '';
 	protected listToDownload = Array<string>();
@@ -153,7 +156,7 @@ export default class TestPage extends Vue
 			test.push( `Test Array ${index}` );
 		}
 
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>(EComunications.REQ_PUT, 'keyy', JSON.stringify(test));
+		const result = await ICP_RendererComs.Invoke<Buffer | Error>(EComunications.REQ_PUT, null, 'keyy', JSON.stringify(test));
 		if( !(this.bSetRequestSucceded = Buffer.isBuffer( result )))
 		{
 			console.error( `"${result.name}:${result.message}"` );
@@ -167,7 +170,7 @@ export default class TestPage extends Vue
 	protected async GetValue()
 	{
 		this.bGetRequestLaunched = true;
-		const result = await ICP_RendererComs.Invoke<Buffer | null | Error>( EComunications.REQ_GET, 'keyy' );
+		const result = await ICP_RendererComs.Invoke<Buffer | null | Error>( EComunications.REQ_GET, null, 'keyy' );
 		if( this.bGetRequestSucceded = Buffer.isBuffer( result ) )
 		{
 			this.getValue = result.toString();
@@ -187,7 +190,7 @@ export default class TestPage extends Vue
 		this.bUploadRequestLaunched = true;
 		for(const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, filePath );
+			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.uploadProgress, filePath );
 			if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
 			{
 				console.error( `"${result.name}:${result.message}"` );
@@ -203,14 +206,14 @@ export default class TestPage extends Vue
 	protected async DownloadFile()
 	{
 		this.bDownloadRequestLaunched = true;
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, 'Clear.bat', this.downloadFileLocation );
+		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, null, 'Clear.bat', this.downloadFileLocation );
 		if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}
 		else
 		{
-			console.log(`TestPage:UploadFiles: Download completed, ${result.toString()}` );
+			console.log(`TestPage:DownloadFile: Download completed, ${result.toString()}` );
 		}
 	}
 }

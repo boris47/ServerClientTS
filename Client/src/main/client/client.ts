@@ -6,6 +6,7 @@ import ServerConfigs from '../../../../Common/ServerConfigs'
 import * as ClientWebSocket from './client.Modules.WebSocket';
 import { IRequestsMethods, RequestsMap } from './client.Requests.Mapping';
 import { IClientRequestInternalOptions } from './client.Requests.Processing';
+import { ComProgress } from '../../../../Common/Utils/ComUtils';
 
 const CommonOptions : http.RequestOptions = {
 	host: '0.0.0.0',
@@ -61,42 +62,36 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 
 export async function RequestServerPing() : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{};
-	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: args } );
+	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: { Progress: undefined } } );
 }
 
 
 // Easy PUT and GET
-export async function RequestGetData( Key : string ) : Promise<Buffer|Error>
+export async function RequestGetData( Key : string, progress?: ComProgress ) : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{ Storage:'local', Key : Key };
-	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: args, } );
+	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, Progress: progress } } );
 }
 
-export async function RequestPutData( Key : string, Value: any ) : Promise<Buffer|Error>
+export async function RequestPutData( Key : string, Value: any, progress?: ComProgress ) : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{ Storage:'local', Key : Key, Value: Value };
-	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: args } );
+	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key : Key, Value: Value, Progress: progress } } );
 }
 
 
 // STORAGE
-export async function RequestStorageList() : Promise<Buffer|Error>
+export async function RequestStorageList( progress?: ComProgress ) : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{ Storage:'local' };
-	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: args } );
+	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage:'local', Progress: progress } } );
 }
 
-export async function RequestResourceDownload( Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
+export async function RequestResourceDownload( Identifier : string, DownloadLocation : string, progress?: ComProgress ) : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{ Identifier: Identifier, DownloadLocation : DownloadLocation };
-	return ProcessRequest( { path: '/download', method: 'get', reqArgs: args } );
+	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier: Identifier, DownloadLocation : DownloadLocation, Progress: progress } } );
 }
 
-export async function RequestResourceUpload( AbsoluteFilePath : string ) : Promise<Buffer|Error>
+export async function RequestResourceUpload( AbsoluteFilePath : string, progress?: ComProgress ) : Promise<Buffer|Error>
 {
-	const args = <IClientRequestInternalOptions>{ Identifier: AbsoluteFilePath };
-	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: args } );
+	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, Progress: progress } } );
 }
 
 

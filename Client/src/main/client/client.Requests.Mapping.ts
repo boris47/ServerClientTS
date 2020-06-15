@@ -44,12 +44,13 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	const filePathParsed = path.parse( identifier );
 
 	// Headers
-	clientRequestInternalOptions.Headers = new Map();
+//	clientRequestInternalOptions.Headers = new Map();
+	clientRequestInternalOptions.Headers = {};
 	{
 		// Check if content type can be found
 		// Considering https://stackoverflow.com/a/1176031 && https://stackoverflow.com/a/12560996 but appling https://stackoverflow.com/a/28652339
 		const contentType : string = mime.lookup( filePathParsed.ext ) || 'application/octet-stream';
-		clientRequestInternalOptions.Headers.set( 'content-type', contentType );
+		clientRequestInternalOptions.Headers['content-type'] = contentType;
 		
 		// Check file Size
 		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( identifier );
@@ -57,10 +58,10 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 		{
 			return ComUtils.ResolveWithError( "ClientRequests:UploadResource", `Cannot obtain size of file ${identifier}` );
 		}
-		clientRequestInternalOptions.Headers.set( 'content-length', sizeInBytes );
+		clientRequestInternalOptions.Headers['content-length'] = sizeInBytes.toString();
 	}
 
-	clientRequestInternalOptions.FileStream = fs.createReadStream( identifier );
+	clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier );
 
 	const requestPath = new URLSearchParams();
 	requestPath.set('identifier', filePathParsed.base);
@@ -80,28 +81,15 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 	options.path += '?' + requestPath.toString();
 	options.method = 'get';
 
-	const result : IClientRequestResult = await ClientRequestsProcessing.Request_GET( options, <IClientRequestInternalOptions>{} );
+	FSUtils.EnsureDirectoryExistence(DownloadLocation);
+	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
+
+	const result : IClientRequestResult = await ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
 	if ( !result.bHasGoodResult )
 	{
 		return result;
 	}
 
-	const writeError : NodeJS.ErrnoException = await new Promise( ( resolve ) =>
-	{
-		FSUtils.EnsureDirectoryExistence(DownloadLocation);
-		fs.writeFile( path.join( DownloadLocation, Identifier ), result.body, function( err : NodeJS.ErrnoException )
-		{
-			resolve( err );
-		});
-	});
-	if ( writeError )
-	{
-		if ( FSUtils.ExistsSync( Identifier ) )
-		{
-			fs.unlinkSync( Identifier );
-		}
-		return ComUtils.ResolveWithError( `ClientRequests:DownloadResource`, `Download request of ${Identifier} failed\n${writeError}` );
-	}
 	return ComUtils.ResolveWithGoodResult<IClientRequestResult>( Buffer.from( "Done" ) );
 };
 

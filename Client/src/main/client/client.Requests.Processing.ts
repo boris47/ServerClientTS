@@ -15,15 +15,18 @@ export interface IClientRequestInternalOptions
 	Storage?: string;
 	Key? : string;
 	Value? : any;
-	Headers? : Map<string, string | number | string[]>;
-	FileStream? : fs.ReadStream;
+	Headers? : http.IncomingHttpHeaders;
+	ReadStream? : fs.ReadStream;
+	WriteStream? : fs.WriteStream;
+	Progress: ComUtils.ComProgress | undefined;
 }
 
 
 export class ClientRequestsProcessing
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Request_GET( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
+	/** Server -> Client */
+	public static async Request_GET( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
@@ -45,14 +48,18 @@ export class ClientRequestsProcessing
 					return;
 				}
 
-				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
+				response.on( 'error', ( err : Error ) =>
+				{
+					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+				});
 
 				const zlibOptions = <zlib.ZlibOptions>
 				{
 					flush: zlib.constants.Z_SYNC_FLUSH,
 					finishFlush: zlib.constants.Z_SYNC_FLUSH
 				};
-
+				
+				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 				switch ( response.headers['content-encoding']?.trim().toLowerCase() )
 				{
 					case 'gzip': case 'compress':
@@ -67,26 +74,58 @@ export class ClientRequestsProcessing
 					}
 				}
 
-				const buffers = new Array<Buffer>();
-				let contentLength = 0;
-
 				stream.on( 'error', ( err : Error ) =>
 				{
 					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
 
-				stream.on( 'data', function( chunk : Buffer )
+				
+				if ( clientRequestInternalOptions.WriteStream )
 				{
-					contentLength += chunk.length;
-					buffers.push( chunk );
-				})
+					const totalLength : number = Number( response.headers['content-length'] );
+					stream.pipe( clientRequestInternalOptions.WriteStream );
 
-				stream.on( 'end', function()
+					let currentLength : number = 0;
+					clientRequestInternalOptions.WriteStream.on( 'error', ( err: Error ) =>
+					{
+						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+					});
+
+					stream.on( 'data', ( chunk: Buffer ) =>
+					{
+						currentLength += chunk.length;
+						const progress = currentLength / totalLength;
+						clientRequestInternalOptions.Progress.SetProgress( progress );
+					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
+					});
+					
+					clientRequestInternalOptions.WriteStream.on( 'finish', () =>
+					{
+						const result = Buffer.from( 'ClientRequests:Request_GET: Data received correcly' );
+						ComUtils.ResolveWithGoodResult( result, resolve );
+					})
+				}
+				else
 				{
-					const result : Buffer = Buffer.concat( buffers, contentLength );
-					ComUtils.ResolveWithGoodResult( result, resolve );
-				});
-			})
+					const buffers = new Array<Buffer>();
+					let contentLength = 0;
+					stream.on( 'error', ( err : Error ) =>
+					{
+						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+					});
+					stream.on( 'data', function( chunk : Buffer )
+					{
+						contentLength += chunk.length;
+						buffers.push( chunk );
+	
+					})
+					stream.on( 'end', function()
+					{
+						const result : Buffer = Buffer.concat( buffers, contentLength );
+						ComUtils.ResolveWithGoodResult( result, resolve );
+					});
+				}
+			});
 
 			request.on('error', function( err : Error )
 			{
@@ -98,7 +137,8 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Request_PUT( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions = {} ) : Promise<IClientRequestResult>
+	/** Client -> Server */
+	public static async Request_PUT( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
@@ -110,7 +150,6 @@ export class ClientRequestsProcessing
 				options.path += '?' + requestPath.toString();
 			}
 			
-
 			const request : http.ClientRequest = http.request( options );
 			request.on( 'response', ( response: http.IncomingMessage ) : void =>
 			{
@@ -134,16 +173,27 @@ export class ClientRequestsProcessing
 			// Set headers
 			if ( clientRequestInternalOptions.Headers )
 			{
-				for( const [key, value] of clientRequestInternalOptions.Headers )
+				for( const [key, value] of Object.entries(clientRequestInternalOptions.Headers) )
 				{
 					request.setHeader( key, value );
 				}
 			}
 
+			
 			// If upload of file is requested
-			if ( clientRequestInternalOptions.FileStream )
+			if ( clientRequestInternalOptions.ReadStream )
 			{
-				clientRequestInternalOptions.FileStream.pipe( request );
+				// TODO check for current length 
+				const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
+				let currentLength : number = 0;
+				clientRequestInternalOptions.ReadStream.pipe( request );
+				clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
+				{
+					currentLength += chunk.length;
+					const progress = currentLength / totalLength;
+					clientRequestInternalOptions.Progress.SetProgress( progress );
+				//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, progress );
+				});
 			}
 			else // direct value sent
 			{

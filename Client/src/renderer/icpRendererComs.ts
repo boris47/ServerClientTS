@@ -2,6 +2,8 @@
 
 import { ipcRenderer } from 'electron';
 import { EComunications, EMessageContent } from '../icpComs';
+import { IComProgress } from '../../../Common/Utils/ComUtils';
+import { UniqueID } from '../../../Common/Utils/GenericUtils';
 
 
 const MappedOps : {[key:string]: Function} =
@@ -15,18 +17,27 @@ const MappedOps : {[key:string]: Function} =
 	[EMessageContent.ERROR]			: ( value: Error )			=> value instanceof Error 			? value								: null,
 	[EMessageContent.NULL]			: ( value: null )			=> value,
 	[EMessageContent.UNDEFINED]		: ( value: undefined )		=> value,
-}
+};
 
 export class ICP_RendererComs
 {
 	/** Allow async comunication to main process
 	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH
+	 * @param progress The progress object to update 
 	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
 	 * @param args Arguments to pass to the caller 
 	 */
-	public static async Invoke<T = any>(channel: EComunications, key?: string | string[], ...args: any | any[]): Promise<T | null>
+	public static async Invoke<T = any>(channel: EComunications, progress?: IComProgress, key?: string | string[], ...args: any | any[]): Promise<T | null>
 	{
-		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, key, args));
+		if ( progress )
+		{
+			ipcRenderer.on(progress.id = UniqueID.Generate(), (event: Electron.IpcRendererEvent, currentProgress: number) =>
+			{
+				progress.value = currentProgress;
+				console.log( `Invoke:Progress:[${progress.id}]:${currentProgress}` );
+			});
+		}
+		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, progress, key, args));
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.lastIndexOf(']'));		
 	//	console.log( channel, arg0, args, typeString, type, result )

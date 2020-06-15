@@ -127,14 +127,16 @@ export default class ServerResponsesProcessing
 			else
 			{
 				const body : Buffer[] = [];
-				request.on( 'data', function( chunk : any )
+				let contentLength = 0;
+				request.on( 'data', function( chunk : Buffer )
 				{
-					body.push( Buffer.from( chunk ) );
+					body.push( chunk );
+					contentLength += chunk.length;
 				});
 				
 				request.on( 'end', function()
 				{
-					const result : Buffer = Buffer.concat( body );
+					const result : Buffer = Buffer.concat( body, contentLength );
 					ServerResponsesProcessing.EndResponseWithGoodResult( response );
 					ComUtils.ResolveWithGoodResult( result, resolve );
 				});

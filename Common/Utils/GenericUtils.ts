@@ -41,7 +41,7 @@ export default class GenericUtils
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static IsTypeOf<T = any>(value: T, type: string | { new(...args: any[]): T; }): value is T
+	public static IsTypeOf<T = any>(value: any, type: string | { new(...args: any[]): T; }): value is T
 	{
 		return (typeof type === 'string' ? (e: any) => typeof e === type : (e: any) => e instanceof type)(value);
 	}

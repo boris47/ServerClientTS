@@ -21,6 +21,7 @@
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunications } from '../../icpComs';
 	import ObjectUtils from '../../../../Common/Utils/ObjectUtils';
+import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 	enum ESelectorType
 	{
@@ -90,17 +91,22 @@
 		{
 			const property = this.type === ESelectorType.FILE ? 'openFile' : 'openDirectory';
 			const multiple = this.multiple ? 'multiSelections' : undefined;
-			const defaultPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, 'exe');
-		
-			const result = await ICP_RendererComs.Invoke<electron.OpenDialogReturnValue>(
-				EComunications.ELECTRON_MODAL_OPEN,
-				undefined,
-				<electron.OpenDialogSyncOptions> { properties: [property, multiple], defaultPath: defaultPath }
-			);
+			const defaultPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, null, 'exe');
+			if ( !GenericUtils.IsTypeOf<string>( defaultPath, 'string' ) )
+			{
+				console.error( `InputSelector.SelectFile: Cannot retrieve defaultPath\nError${defaultPath}` );
+				return;
+			}
 			
+			const modalOptions : electron.OpenDialogSyncOptions =
+			{
+				defaultPath: defaultPath,
+				properties: [property, multiple],
+			};
+			const result = await ICP_RendererComs.Invoke<electron.OpenDialogReturnValue>( EComunications.ELECTRON_MODAL_OPEN, null, undefined, modalOptions );
 			if ( !result.canceled && result.filePaths.length)
 			{
-				this.$emit("on-selector", this.SelectedAbsolutePaths = result.filePaths);
+				this.$emit("select", this.SelectedAbsolutePaths = result.filePaths);
 			}
 		}
 	}

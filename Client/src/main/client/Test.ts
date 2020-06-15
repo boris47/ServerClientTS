@@ -9,6 +9,8 @@
 	} from "./client";
 
 	import { InstallRequestsProcessor } from "./client";
+import { ComProgress, IComProgress } from "../../../../Common/Utils/ComUtils";
+import { UniqueID } from "../../../../Common/Utils/GenericUtils";
 
 //	import * as path from 'path';
 
@@ -24,12 +26,24 @@ async function Main()
 	
 		.then( ( result : Buffer | Error ) =>
 		{
-			return Buffer.isBuffer(result) ? RequestResourceUpload( './Tests/RequestResourceUpload/GPU-Z.2.25.0.exe' ) : Promise.reject(result);
+			const progressInterface : IComProgress = 
+			{
+				id : UniqueID.Generate(),
+				value : 0
+			}
+			const comProgress = new ComProgress( progressInterface, ( value: number ) => {  } );
+			return Buffer.isBuffer(result) ? RequestResourceUpload( './Tests/RequestResourceUpload/GPU-Z.2.25.0.exe', comProgress ) : Promise.reject(result);
 		})
 	
 		.then( ( result : Buffer | Error ) =>
 		{
-			return Buffer.isBuffer(result) ? RequestResourceDownload( 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/Tests/RequestResourceDownload' ) : Promise.reject(result);
+			const progressInterface : IComProgress = 
+			{
+				id : UniqueID.Generate(),
+				value : 0
+			}
+			const comProgress = new ComProgress( progressInterface, ( value: number ) => {} );
+			return Buffer.isBuffer(result) ? RequestResourceDownload( 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/Tests/RequestResourceDownload', comProgress ) : Promise.reject(result);
 		})
 	
 		.then( ( result : Buffer | Error ) =>

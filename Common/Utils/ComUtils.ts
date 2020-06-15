@@ -5,6 +5,50 @@ import * as zlib from 'zlib';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
+export interface IComProgress
+{
+	/** Normalized progress between 0 and 1 */
+	value : number;
+
+	/** Unique id this progress is bind to */
+	id : string;
+}
+
+
+export class ComProgress
+{
+	private value: number = 0.0;
+
+	private readonly id: string = '';
+
+	private readonly cb : (value:number) => void = (value:number) => {};
+
+	constructor( progress: IComProgress, cb: (value:number) => void )
+	{
+		this.id = progress.id;
+		this.cb = cb;
+	}
+
+	get Id(): string
+	{
+		return this.id;
+	}
+
+	get Value(): number
+	{
+		return this.value;
+	}
+
+	public SetProgress( value: number )
+	{
+		this.value = value;
+		this.cb( value );
+	}
+
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export interface ICommonResult
 {
 	bHasGoodResult : boolean;
