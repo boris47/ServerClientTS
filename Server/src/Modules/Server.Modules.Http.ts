@@ -99,7 +99,7 @@ export default class HttpModule
 	{
 		console.log(
 			[
-				`\n`, `Request: ${request.url}`,
+				`Request: ${request.url}`,
 				`Result: ${value.bHasGoodResult}`,
 				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 				`Time: ${(Date.now()- startTime).toString()}ms\n`,

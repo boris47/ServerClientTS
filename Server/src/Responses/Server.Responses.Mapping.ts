@@ -12,6 +12,7 @@ import ServerResponsesProcessing, { IServerRequestInternalOptions } from "./Serv
 import { IServerStorage, StorageManager } from "../Server.Storages";
 import { DOWNLOAD_LOCATION } from '../Server.Globals';
 import { HTTPCodes } from "../HTTP.Codes";
+import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 
 export const NotImplementedResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
@@ -25,7 +26,6 @@ export const NotImplementedResponse = async ( request : http.IncomingMessage, re
 	return result;
 };
 
-
 export const MethodNotAllowed = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	const options = <IServerRequestInternalOptions>
@@ -36,6 +36,7 @@ export const MethodNotAllowed = async ( request : http.IncomingMessage, response
 	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
 	return result;
 };
+
 
 export interface IResponseMethods
 {
@@ -66,32 +67,16 @@ const UploadResource = async ( request : http.IncomingMessage, response : http.S
 	// Execute file upload to client
 	const searchParams = new URLSearchParams( request.url.split('?')[1] );
 	const identifier = searchParams.get( 'identifier' );
+
+	const filePath = path.join( DOWNLOAD_LOCATION, identifier );
+	FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
+
 	const options = <IServerRequestInternalOptions>
 	{
-		
+		WriteStream: fs.createWriteStream( filePath )
 	};
 
-	const result : ComUtils.IServerResponseResult = await ServerResponsesProcessing.Request_PUT( request, response, options );
-	if ( !result.bHasGoodResult )
-	{
-		return result;
-	}
-	
-	const filePath = path.join( DOWNLOAD_LOCATION, identifier );
-	const bHasWriteGoodResult : boolean = await new Promise( ( resolve ) =>
-	{
-		FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
-		fs.writeFile( filePath, result.body, function( err: NodeJS.ErrnoException | null )
-		{
-			resolve( !err );
-		});
-	});
-	if ( !bHasWriteGoodResult )
-	{
-		return ComUtils.ResolveWithError( `File Upload Failed`, `Upload request of ${identifier} failed` );
-	}
-	ServerResponsesProcessing.EndResponseWithGoodResult( response );
-	return ComUtils.ResolveWithGoodResult( result.body );
+	return ServerResponsesProcessing.Request_PUT( request, response, options );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -133,7 +118,7 @@ const DownloadResource = async ( request : http.IncomingMessage, response : http
 		serverRequestInternalOptions.Headers['content-length'] = sizeInBytes;
 	}
 
-	serverRequestInternalOptions.FileStream = fs.createReadStream( filePath );
+	serverRequestInternalOptions.ReadStream = fs.createReadStream( filePath );
 
 	return ServerResponsesProcessing.Request_GET( request, response, serverRequestInternalOptions );
 };

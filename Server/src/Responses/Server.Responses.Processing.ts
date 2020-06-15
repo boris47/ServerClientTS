@@ -16,7 +16,8 @@ export interface IServerRequestInternalOptions
 	Key? : string;
 	Value? : Buffer | null;
 	Headers? : http.OutgoingHttpHeaders;
-	FileStream? : fs.ReadStream;
+	ReadStream? : fs.ReadStream;
+	WriteStream? : fs.WriteStream;
 }
 
 
@@ -48,7 +49,7 @@ export default class ServerResponsesProcessing
 	}
 
 
-	/** End the response with value passed with 'serverRequestInternalOptions' */
+	/** Resource: Server -> Client' */
 	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
@@ -80,10 +81,10 @@ export default class ServerResponsesProcessing
 				}
 			}
 
-			// If upload of file is requested
-			if ( serverRequestInternalOptions.FileStream )
+			// If upload of resource is requested
+			if ( serverRequestInternalOptions.ReadStream )
 			{
-				serverRequestInternalOptions.FileStream.pipe( response );
+				serverRequestInternalOptions.ReadStream.pipe( response );
 			}
 			else // direct value sent
 			{
@@ -93,30 +94,51 @@ export default class ServerResponsesProcessing
 	}
 
 	
-	/** Receive data storing them into buffer into returne value body */
+	/** Resource: Client -> Server */
 	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
-			const body : Buffer[] = [];
-
 			request.on('error', function( err : Error )
 			{
-				ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
+				ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
+				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
 			});
 
-			request.on( 'data', function( chunk : any )
+			// If for this request a writestream is provived, then the content will be written on this stream
+			if ( serverRequestInternalOptions.WriteStream )
 			{
-				body.push( Buffer.from( chunk ) );
-			});
-			
-			request.on( 'end', function()
+				request.pipe( serverRequestInternalOptions.WriteStream );
+				
+				serverRequestInternalOptions.WriteStream.on( 'error', ( err: Error ) =>
+				{
+					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
+					ComUtils.ResolveWithError( "ServerResponses:Request_PUT[WriteStream]", err, resolve );
+				});
+				
+				serverRequestInternalOptions.WriteStream.on( 'finish', () =>
+				{
+					const result = Buffer.from( 'ServerResponsesProcessing:Request_PUT: Data received correcly' );
+					ServerResponsesProcessing.EndResponseWithGoodResult( response );
+					ComUtils.ResolveWithGoodResult( result, resolve );
+				})
+			}
+			// Otherwise the content will be stored into a buffer
+			else
 			{
-				const result : Buffer = Buffer.concat( body );
-				ServerResponsesProcessing.EndResponseWithGoodResult( response );
-				ComUtils.ResolveWithGoodResult( result, resolve );
-			});
+				const body : Buffer[] = [];
+				request.on( 'data', function( chunk : any )
+				{
+					body.push( Buffer.from( chunk ) );
+				});
+				
+				request.on( 'end', function()
+				{
+					const result : Buffer = Buffer.concat( body );
+					ServerResponsesProcessing.EndResponseWithGoodResult( response );
+					ComUtils.ResolveWithGoodResult( result, resolve );
+				});
+			}
 		});
 	}
 
