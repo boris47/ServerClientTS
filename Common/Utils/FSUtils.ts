@@ -91,7 +91,17 @@ export default class FSUtils
 	{
 		return new Promise( ( resolve ) =>
 		{
-			fs.readFile( filePath, null, ( err: Error, data: Buffer ) => resolve( err ? err : data ) );
+			fs.readFile( filePath, null, ( err: NodeJS.ErrnoException, data: Buffer ) => resolve( err ? err : data ) );
+		});
+	}
+
+
+	/**  */
+	public static ReadFileStat( filePath : string ) : Promise<NodeJS.ErrnoException | fs.Stats>
+	{
+		return new Promise( ( resolve ) =>
+		{
+			fs.stat( filePath, ( err: NodeJS.ErrnoException, stats: fs.Stats ) => resolve( err ? err : stats ) );
 		});
 	}
 

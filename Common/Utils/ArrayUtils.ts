@@ -59,4 +59,22 @@ export default class ArrayUtils {
 		}
 		return results;
 	}
+
+	
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static ExtractFromArray<T=any>( array: T[], predicate: (item: T) => boolean ) : T[]
+	{
+		const results = new Array<T>();
+		if ( Array.isArray( array ) )
+		{
+			for (let index = array.length-1; index > -1; index--)
+			{
+				if ( predicate( array[index] ) )
+				{
+					results.push( ...array.splice(index, 1) );
+				}
+			}
+		}
+		return results;
+	}
 }
