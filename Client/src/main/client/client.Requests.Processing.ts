@@ -82,20 +82,19 @@ export class ClientRequestsProcessing
 				
 				if ( clientRequestInternalOptions.WriteStream )
 				{
-					const totalLength : number = Number( response.headers['content-length'] );
 					stream.pipe( clientRequestInternalOptions.WriteStream );
-
-					let currentLength : number = 0;
+					
 					clientRequestInternalOptions.WriteStream.on( 'error', ( err: Error ) =>
 					{
 						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 					});
-
+					
+					let currentLength : number = 0;
+					const totalLength : number = Number( response.headers['content-length'] );
 					stream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						const progress = currentLength / totalLength;
-						clientRequestInternalOptions.Progress.SetProgress( progress );
+						clientRequestInternalOptions.Progress.SetProgress( currentLength / totalLength );
 					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
 					});
 					
@@ -183,15 +182,13 @@ export class ClientRequestsProcessing
 			// If upload of file is requested
 			if ( clientRequestInternalOptions.ReadStream )
 			{
-				// TODO check for current length 
-				const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
 				let currentLength : number = 0;
+				const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
 				clientRequestInternalOptions.ReadStream.pipe( request );
 				clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
 				{
 					currentLength += chunk.length;
-					const progress = currentLength / totalLength;
-					clientRequestInternalOptions.Progress.SetProgress( progress );
+					clientRequestInternalOptions.Progress.SetProgress( currentLength / totalLength );
 				//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, progress );
 				});
 			}
