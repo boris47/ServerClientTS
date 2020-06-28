@@ -19,7 +19,10 @@
 			<div><label>"My File selector"</label>
 				<input-selector type='file' itemListTag='li' @select="onInputFilePathsSelected" multiple />
 				<custom-button @click="UploadFiles" >Upload File</custom-button>
-				<progress-bar :value="uploadProgress.value * 100" />
+				<progress-bar :value="comFlowManager.Progress.value" />
+				<div v-if="bUploadRequestLaunched">
+					<span>{{UploadStatus}}</span>
+				</div>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</p>
 				<p v-if="!bUploadRequestLaunched">WAITING</p>
@@ -60,7 +63,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 import { ITableHeader, ITableRow } from '../components/Table/CustomTable.vue';
 import CustomButton from '../components/CustomButton.vue';
-import { IComProgress } from '../../../../Common/Utils/ComUtils';
+import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 
 
 @Component
@@ -83,7 +86,7 @@ export default class TestPage extends Vue
 	protected inputFilePaths = Array<string>();
 	protected bUploadRequestSucceded = false;
 	protected bUploadRequestLaunched = false;
-	protected uploadProgress  = <IComProgress>{ value: 0 }
+	protected comFlowManager  = new ComFlowManager;
 
 	protected downloadFileLocation = '';
 	protected listToDownload = Array<string>();
@@ -116,7 +119,6 @@ export default class TestPage extends Vue
 			{
 				content: [ { id: '1', value: true }, { id: '2', value: null }, { id: '3', value: 5 }, ]
 			},
-
 			{
 				content: [ { id: '1', value: customButtonEnabled }, { id: '2', value: htmlButton }, { id: '3', value: customButtonDisabled }, ]
 			},
@@ -185,12 +187,17 @@ export default class TestPage extends Vue
 		}
 	}
 
+	protected get UploadStatus() : string
+	{
+		return `${this.comFlowManager.Progress.CurrentValue}/${this.comFlowManager.Progress.MaxValue}`;
+	}
+
 	protected async UploadFiles()
 	{
 		this.bUploadRequestLaunched = true;
 		for(const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.uploadProgress, filePath );
+			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.comFlowManager, filePath );
 			if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
 			{
 				console.error( `"${result.name}:${result.message}"` );

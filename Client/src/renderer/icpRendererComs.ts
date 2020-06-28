@@ -2,8 +2,7 @@
 
 import { ipcRenderer } from 'electron';
 import { EComunications, EMessageContent } from '../icpComs';
-import { IComProgress } from '../../../Common/Utils/ComUtils';
-import { UniqueID } from '../../../Common/Utils/GenericUtils';
+import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 
 const MappedOps : {[key:string]: Function} =
@@ -21,23 +20,33 @@ const MappedOps : {[key:string]: Function} =
 
 export class ICP_RendererComs
 {
+	/** Register all the callbacks for each flow of this manager
+	 * @param comFlowManager 
+	 */
+	private static RegisterComFlowManagerCallbacks( comFlowManager?: ComFlowManager )
+	{
+		if ( !comFlowManager )
+		{
+			return;
+		}
+		ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, parsedValue: number) =>
+		{
+			comFlowManager.Progress.SetProgress( maxValue, currentValue, parsedValue );
+		//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}:${parsedValue}` );
+		});
+	}
+
+
 	/** Allow async comunication to main process
 	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH
 	 * @param progress The progress object to update 
 	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
 	 * @param args Arguments to pass to the caller 
 	 */
-	public static async Invoke<T = any>(channel: EComunications, progress?: IComProgress, key?: string | string[], ...args: any | any[]): Promise<T | null>
+	public static async Invoke<T = any>(channel: EComunications, comFlowManager?: ComFlowManager, key?: string | string[], ...args: any | any[]): Promise<T | null>
 	{
-		if ( progress )
-		{
-			ipcRenderer.on(progress.id = UniqueID.Generate(), (event: Electron.IpcRendererEvent, currentProgress: number) =>
-			{
-				progress.value = currentProgress;
-				console.log( `Invoke:Progress:[${progress.id}]:${currentProgress}` );
-			});
-		}
-		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, progress, key, args));
+		ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
+		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager?.Id, key, args));
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.lastIndexOf(']'));		
 	//	console.log( channel, arg0, args, typeString, type, result )

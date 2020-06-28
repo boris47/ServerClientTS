@@ -4,7 +4,7 @@ import { EComunications } from '../icpComs';
 
 import FSUtils from '../../../Common/Utils/FSUtils';
 import * as RequestProcessor from './client/client';
-import { IComProgress, ComProgress } from '../../../Common/Utils/ComUtils';
+import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 
 
@@ -20,42 +20,51 @@ const GetElectronProperty = (funcPath: string[]): any | null =>
 
 export function SetupMainHandlers()
 {
-	const RegisterProgressHandler = ( sender: electron.WebContents, progress: IComProgress ) : ComProgress =>
+	// 
+	const RegisterComFlowManager = ( sender: electron.WebContents, id: string ) : ComFlowManager =>
 	{
-		let previousFloorValue = 0;
-		return new ComProgress( progress, (value: number) =>
+		const flowManager =  new ComFlowManager()
+		
+		// Progress
 		{
-			const newFloorValue = Math.floor( value * 100 );
-			if ( previousFloorValue !== newFloorValue )
+			const progressId = ComFlowManager.ToProgressId(id)
+			let previousFloorValue = 0;
+			flowManager.Progress.SetCallback( (maxValue: number, currentValue: number, normalized: number) =>
 			{
-				previousFloorValue = newFloorValue;
-				sender.send( progress.id, value )
-			}
-		});
+				const newFloorValue = Math.floor( normalized * 100 );
+				if ( previousFloorValue !== newFloorValue )
+				{
+					previousFloorValue = newFloorValue;
+					sender.send( progressId, maxValue, currentValue, newFloorValue );
+				}
+			});
+		}
+
+		return flowManager;
 	};
 
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
-	electron.ipcMain.handle(EComunications.ELECTRON_MODAL_OPEN, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, keys: string[], [options]: any[]): Promise<electron.OpenDialogReturnValue> =>
+	electron.ipcMain.handle(EComunications.ELECTRON_MODAL_OPEN, async (event: Electron.IpcMainInvokeEvent, flowId: string, keys: string[], [options]: any[]): Promise<electron.OpenDialogReturnValue> =>
 	{
 	//	console.log( EComunications.ELECTRON_MODAL_OPEN, options );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		const window: electron.BrowserWindow | null = electron.BrowserWindow.fromWebContents(event.sender);
 		return electron.dialog.showOpenDialog(window, options);
 	});
 
-	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, keys: string[]): any | null =>
+	electron.ipcMain.handle(EComunications.ELECTRON_PROPERTY, (event: Electron.IpcMainInvokeEvent, flowId: string, keys: string[]): any | null =>
 	{
 	//	console.log( EComunications.ELECTRON_PROPERTY, keys );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		return GetElectronProperty(keys);
 	});
 
-	electron.ipcMain.handle(EComunications.ELECTRON_PATH, (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, appToGet: string): string | Error =>
+	electron.ipcMain.handle(EComunications.ELECTRON_PATH, (event: Electron.IpcMainInvokeEvent, flowId: string, appToGet: string): string | Error =>
 	{
 	//	console.log( EComunications.ELECTRON_PATH, appToGet );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		let result = '';
 		try
 		{
@@ -69,10 +78,10 @@ export function SetupMainHandlers()
 		return result;
 	});
 
-	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, keys: string[], args: any[]): any | null =>
+	electron.ipcMain.handle(EComunications.ELECTRON_CALL, (event: Electron.IpcMainInvokeEvent, flowId: string, keys: string[], args: any[]): any | null =>
 	{
 	//	console.log( EComunications.ELECTRON_CALL, keys, args );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		let func: (...args: any[]) => any | null;
 		const result = (typeof (func = GetElectronProperty(keys)) === 'function' ? func(...args) : null);
 		return result;
@@ -82,17 +91,17 @@ export function SetupMainHandlers()
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
-	electron.ipcMain.handle(EComunications.READ_FILE, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
+	electron.ipcMain.handle(EComunications.READ_FILE, async (event: Electron.IpcMainInvokeEvent, flowId: string, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
 	{
 	//	console.log( EComunications.READ_FILE, filePath );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		return FSUtils.ReadFileAsync(filePath);
 	});
 
-	electron.ipcMain.handle(EComunications.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>
+	electron.ipcMain.handle(EComunications.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, flowId: string, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>
 	{
 	//	console.log( EComunications.WRITE_FILE, filePath, data );
-	//	const progress = RegisterProgressHandler(event.sender, progressInterface);
+	//	const flowManager = RegisterComFlowManager(event.sender, flowId);
 		return FSUtils.WriteFileAsync(filePath, data);
 	});
 
@@ -101,38 +110,38 @@ export function SetupMainHandlers()
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
 
-	electron.ipcMain.handle(EComunications.REQ_GET, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, key: string): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_GET, async (event: Electron.IpcMainInvokeEvent, flowId: string, key: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunications.REQ_GET, key );
-		const progress = RegisterProgressHandler(event.sender, progressInterface);
-		return RequestProcessor.RequestGetData(key, progress);
+		const flowManager = RegisterComFlowManager(event.sender, flowId);
+		return RequestProcessor.RequestGetData(flowManager, key);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, key: string, [value]: (string | Buffer)[]): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, flowId: string, key: string, [value]: (string | Buffer)[]): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunications.REQ_PUT, key, value );
-		const progress = RegisterProgressHandler(event.sender, progressInterface);
-		return RequestProcessor.RequestPutData(key, value, progress);
+		const flowManager = RegisterComFlowManager(event.sender, flowId);
+		return RequestProcessor.RequestPutData(flowManager, key, value);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_LIST, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_LIST, async (event: Electron.IpcMainInvokeEvent, flowId: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunications.REQ_LIST );
-		const progress = RegisterProgressHandler(event.sender, progressInterface);
-		return RequestProcessor.RequestStorageList(progress);
+		const flowManager = RegisterComFlowManager(event.sender, flowId);
+		return RequestProcessor.RequestStorageList(flowManager);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_UPLOAD, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, absoluteFilePath: string): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_UPLOAD, async (event: Electron.IpcMainInvokeEvent, flowId: string, absoluteFilePath: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunications.REQ_UPLOAD, absoluteFilePath );
-		const progress = RegisterProgressHandler(event.sender, progressInterface);
-		return RequestProcessor.RequestResourceUpload(absoluteFilePath, progress);
+		const flowManager = RegisterComFlowManager(event.sender, flowId);
+		return RequestProcessor.RequestResourceUpload(flowManager, absoluteFilePath);
 	});
 
-	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, progressInterface: IComProgress, identifier: string, [downloadLocation]: string[]): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunications.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, flowId: string, identifier: string, [downloadLocation]: string[]): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunications.REQ_DOWNLOAD, identifier, downloadLocation );
-		const progress = RegisterProgressHandler(event.sender, progressInterface);
-		return RequestProcessor.RequestResourceDownload(identifier, downloadLocation, progress);
+		const flowManager = RegisterComFlowManager(event.sender, flowId);
+		return RequestProcessor.RequestResourceDownload(flowManager, identifier, downloadLocation);
 	});
 }

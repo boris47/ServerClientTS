@@ -2,47 +2,62 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
+import { UniqueID } from './GenericUtils';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export interface IComProgress
+enum EComFlowTags
 {
-	/** Normalized progress between 0 and 1 */
-	value : number;
-
-	/** Unique id this progress is bind to */
-	id : string;
+	PROGRESS = 'PROGRESS',
 }
 
-
-export class ComProgress
+//
+export class ComFlowManager
 {
-	private value: number = 0.0;
+	/** Add tag for channel used for progress data transmission */
+	public static readonly ToProgressId = ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS}`;
 
-	private readonly id: string = '';
+	//
+	private readonly id: string = UniqueID.Generate();
 
-	private readonly cb : (value:number) => void = (value:number) => {};
+	private progress : ComProgress = new ComProgress();
 
-	constructor( progress: IComProgress, cb: (value:number) => void )
-	{
-		this.id = progress.id;
-		this.cb = cb;
-	}
-
+	//
 	get Id(): string
 	{
 		return this.id;
 	}
 
-	get Value(): number
+	get Progress() : ComProgress
 	{
-		return this.value;
+		return this.progress;
+	}
+}
+
+//
+export class ComProgress
+{
+	private maxValue: number = 0.0;
+	private currentValue: number = 0.0;
+	private value: number = 0.0;
+
+	private callback : (maxValue: number, currentValue: number, parsedValue: number) => void = (value:number) => {};
+
+	public SetCallback( callback: (maxValue: number, currentValue: number, parsedValue: number) => void )
+	{
+		this.callback = callback;
 	}
 
-	public SetProgress( value: number )
+	get MaxValue(): number { return this.maxValue; }
+	get CurrentValue(): number { return this.currentValue; }
+	get Value(): number { return this.value; }
+
+	public SetProgress( maxValue: number, currentValue: number, parsedValue: number )
 	{
-		this.value = value;
-		this.cb( value );
+		this.maxValue = maxValue;
+		this.currentValue = currentValue;
+		this.value = parsedValue;
+		this.callback( maxValue, currentValue, parsedValue );
 	}
 
 }
@@ -73,7 +88,7 @@ export interface IServerResponseResult extends ICommonResult
 /////////////////////////////////////////////////////////////////////////////////////////
 export async function HTTP_Get( URL : string, requestOptions?: https.RequestOptions ) : Promise<Buffer | null>
 {
-	return await new Promise<Buffer | null>( ( resolve ) =>
+	return new Promise<Buffer | null>( ( resolve ) =>
 	{
 	//	const parsed = url.parse( URL );
 	//	const requestOptions = <https.RequestOptions>

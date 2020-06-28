@@ -5,6 +5,7 @@ import * as zlib from 'zlib';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { IClientRequestResult } from '../../../../Common/Interfaces';
+import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 
 
 
@@ -18,7 +19,7 @@ export interface IClientRequestInternalOptions
 	Headers? : http.IncomingHttpHeaders;
 	ReadStream? : fs.ReadStream;
 	WriteStream? : fs.WriteStream;
-	Progress: ComUtils.ComProgress | undefined;
+	ComFlowManager?: ComFlowManager | undefined;
 }
 
 
@@ -94,7 +95,7 @@ export class ClientRequestsProcessing
 					stream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						clientRequestInternalOptions.Progress.SetProgress( currentLength / totalLength );
+						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength, currentLength / totalLength );
 					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
 					});
 					
@@ -182,15 +183,19 @@ export class ClientRequestsProcessing
 			// If upload of file is requested
 			if ( clientRequestInternalOptions.ReadStream )
 			{
-				let currentLength : number = 0;
-				const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
 				clientRequestInternalOptions.ReadStream.pipe( request );
-				clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
+
+				if ( clientRequestInternalOptions.Headers['content-length'] )
 				{
-					currentLength += chunk.length;
-					clientRequestInternalOptions.Progress.SetProgress( currentLength / totalLength );
-				//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, progress );
-				});
+					let currentLength : number = 0;
+					const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
+					clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
+					{
+						currentLength += chunk.length;
+						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength, currentLength / totalLength );
+					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, progress );
+					});
+				}
 			}
 			else // direct value sent
 			{

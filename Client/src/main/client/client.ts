@@ -6,7 +6,7 @@ import ServerConfigs from '../../../../Common/ServerConfigs'
 import * as ClientWebSocket from './client.Modules.WebSocket';
 import { IRequestsMethods, RequestsMap } from './client.Requests.Mapping';
 import { IClientRequestInternalOptions } from './client.Requests.Processing';
-import { ComProgress } from '../../../../Common/Utils/ComUtils';
+import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 
 const CommonOptions : http.RequestOptions = {
 	host: '0.0.0.0',
@@ -62,36 +62,36 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 
 export async function RequestServerPing() : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: { Progress: undefined } } );
+	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: { ComFlowManager: undefined } } );
 }
 
 
 // Easy PUT and GET
-export async function RequestGetData( Key : string, progress?: ComProgress ) : Promise<Buffer|Error>
+export async function RequestGetData( ComFlowManager: ComFlowManager, Key : string ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, Progress: progress } } );
+	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, ComFlowManager: ComFlowManager } } );
 }
 
-export async function RequestPutData( Key : string, Value: any, progress?: ComProgress ) : Promise<Buffer|Error>
+export async function RequestPutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key : Key, Value: Value, Progress: progress } } );
+	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key : Key, Value: Value, ComFlowManager: ComFlowManager } } );
 }
 
 
 // STORAGE
-export async function RequestStorageList( progress?: ComProgress ) : Promise<Buffer|Error>
+export async function RequestStorageList( ComFlowManager: ComFlowManager ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage:'local', Progress: progress } } );
+	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage:'local', ComFlowManager: ComFlowManager } } );
 }
 
-export async function RequestResourceDownload( Identifier : string, DownloadLocation : string, progress?: ComProgress ) : Promise<Buffer|Error>
+export async function RequestResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier: Identifier, DownloadLocation : DownloadLocation, Progress: progress } } );
+	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier: Identifier, DownloadLocation : DownloadLocation, ComFlowManager: ComFlowManager } } );
 }
 
-export async function RequestResourceUpload( AbsoluteFilePath : string, progress?: ComProgress ) : Promise<Buffer|Error>
+export async function RequestResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, Progress: progress } } );
+	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, ComFlowManager: ComFlowManager } } );
 }
 
 
