@@ -83,20 +83,19 @@ class ServerStorage_FileSystem implements IServerStorage
 			}
 			catch( e )
 			{
-				// TODO Handle this case
 				console.error( "Server Storage", `Cannot load resources from file ${this.m_StorageName}` );
+				return false;
 			}
 
-			if ( parsed )
+			for( const Key/*string*/in parsed )
 			{
-				for( const Key in parsed )
-				{
-					const buffer = parsed[Key];
-					this.m_Storage.set( Key, Buffer.from( buffer ) );
-				}
+				const buffer = parsed[Key];
+				this.m_Storage.set( Key, Buffer.from( buffer ) );
 			}
 			return true;
 		}
+
+		console.error( "Server Storage", 'Error reading local storage', readReasult );
 		return false;
 	}
 
