@@ -57,13 +57,13 @@ export default class ServerResponsesProcessing
 			request.on('error', function( err : Error )
 			{
 				ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
+				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
 			});
 
 			response.on( 'error', ( err : Error ) =>
 			{
 				ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
+				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
 			})
 			response.on( 'finish', () =>
 			{

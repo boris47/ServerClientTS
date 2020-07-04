@@ -1,8 +1,10 @@
 <template>
 	<div>
 		<div class="progress-bar-viewport">
-			<div v-if="!value" class="progress-bar-novalue"></div>
-			<div v-else class="progress-bar-value" :style="`width: ${normalizedValue}%;`"></div>
+			<span v-if="ClampedValue >= 0" class="progress-percentage">{{ClampedValue}}</span>
+			<div v-if="value === undefined" class="progress-bar-novalue"/>
+			<div v-else-if="value === -1" class="progress-bar-error"/>
+			<div v-else class="progress-bar-value" :style="`width: ${ProgressBarWidth}%;`"/>
 		</div>
 	</div>
 </template>
@@ -20,14 +22,28 @@ export default class ProgressBar extends Vue
 	{
 		required: false,		type: Number,
 		default: () => undefined,
-		validator: (value: number) => value === undefined || value >= 0 && value < 101,
+		validator: (value: number) => value >= -1 && value < 101,
 	})
 	protected value: number;
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	get normalizedValue()
+	/** Show Percentage */
+	@Prop(<PropOptions<Boolean>>
 	{
-		return Math.min(Math.max(0, this.value), 100);
+		required: false,		type: Boolean,
+		default: () => false,
+		validator: (value: boolean) => typeof value === 'boolean',
+	})
+	protected bShowPercentage: boolean;
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	get ClampedValue(): number
+	{
+		return (Math.min(Math.max(0, this.value), 1) * 100) << 0;
+	}
+
+	get ProgressBarWidth(): number
+	{
+		return Math.min(Math.max(0, this.value), 100) * 100;
 	}
 }
 
@@ -46,10 +62,25 @@ export default class ProgressBar extends Vue
 	display: inline-flex;
 }
 
+.progress-percentage
+{
+	width: 0px; height: 0px;
+	position: relative;
+	left: 50%;
+	font-size: 10px;
+	font-family: Arial, Helvetica, sans-serif;	
+}
+
 .progress-bar-value
 {
 	background-color: green;
 	height: 100%;
+}
+
+.progress-bar-error
+{
+	background-color: red;
+	width: 100%; height: 100%;
 }
 
 .progress-bar-novalue {

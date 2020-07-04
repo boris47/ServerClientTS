@@ -28,14 +28,14 @@ export function SetupMainHandlers()
 		// Progress
 		{
 			const progressId = ComFlowManager.ToProgressId(id)
-			let previousFloorValue = 0;
-			flowManager.Progress.SetCallback( (maxValue: number, currentValue: number, normalized: number) =>
+			let previousTruncValue = 0;
+			flowManager.Progress.SetCallback( (maxValue: number, currentValue: number) =>
 			{
-				const newFloorValue = Math.floor( normalized * 100 );
-				if ( previousFloorValue !== newFloorValue )
+				const newTruncValue = ( ( currentValue / maxValue ) * 100 ) << 0;
+				if ( previousTruncValue !== newTruncValue )
 				{
-					previousFloorValue = newFloorValue;
-					sender.send( progressId, maxValue, currentValue, newFloorValue );
+					previousTruncValue = newTruncValue;
+					sender.send( progressId, maxValue, currentValue );
 				}
 			});
 		}

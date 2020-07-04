@@ -29,10 +29,10 @@ export class ICP_RendererComs
 		{
 			return;
 		}
-		ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, parsedValue: number) =>
+		ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number ) =>
 		{
-			comFlowManager.Progress.SetProgress( maxValue, currentValue, parsedValue );
-		//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}:${parsedValue}` );
+			comFlowManager.Progress.SetProgress( maxValue, currentValue );
+		//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}` );
 		});
 	}
 

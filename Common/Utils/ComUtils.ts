@@ -37,27 +37,38 @@ export class ComFlowManager
 //
 export class ComProgress
 {
+	private static bumpCallback = () => {};
+	private callback : (maxValue: number, currentValue: number) => void = ComProgress.bumpCallback;
+
+	// Default NormalizedValue = ndefined
 	private maxValue: number = 0.0;
 	private currentValue: number = 0.0;
-	private value: number = 0.0;
 
-	private callback : (maxValue: number, currentValue: number, parsedValue: number) => void = (value:number) => {};
+	get MaxValue(): number { return this.maxValue; }
+	get CurrentValue(): number { return this.currentValue; }
+	get NormalizedValue(): number | undefined
+	{
+		const result = this.currentValue / this.maxValue;
+		return isNaN(result) ? undefined : result;
+	}
 
-	public SetCallback( callback: (maxValue: number, currentValue: number, parsedValue: number) => void )
+	public SetCallback( callback: (maxValue: number, currentValue: number) => void )
 	{
 		this.callback = callback;
 	}
 
-	get MaxValue(): number { return this.maxValue; }
-	get CurrentValue(): number { return this.currentValue; }
-	get Value(): number { return this.value; }
+	public Reset()
+	{
+		this.currentValue = 0.0;
+		this.maxValue = 0.0;
+		this.callback = ComProgress.bumpCallback;
+	}
 
-	public SetProgress( maxValue: number, currentValue: number, parsedValue: number )
+	public SetProgress( maxValue: number, currentValue: number )
 	{
 		this.maxValue = maxValue;
 		this.currentValue = currentValue;
-		this.value = parsedValue;
-		this.callback( maxValue, currentValue, parsedValue );
+		this.callback( maxValue, currentValue );
 	}
 
 }

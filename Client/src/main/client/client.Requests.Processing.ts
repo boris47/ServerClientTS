@@ -95,7 +95,7 @@ export class ClientRequestsProcessing
 					stream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength, currentLength / totalLength );
+						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength );
 					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
 					});
 					
@@ -111,6 +111,7 @@ export class ClientRequestsProcessing
 					let contentLength = 0;
 					stream.on( 'error', ( err : Error ) =>
 					{
+						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
 						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 					});
 					stream.on( 'data', function( chunk : Buffer )
@@ -157,6 +158,7 @@ export class ClientRequestsProcessing
 				if ( statusCode !== 200 )
 				{
 					ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[StatusCode]", `${response.statusCode}:${response.statusMessage}`, resolve );
+					return;
 				}
 			});
 
@@ -167,6 +169,9 @@ export class ClientRequestsProcessing
 			
 			request.on('error', function( err : Error )
 			{
+				clientRequestInternalOptions.ReadStream?.unpipe();
+				clientRequestInternalOptions.ReadStream?.close();
+				clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
 				ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[RequestError]", `${err.name}:${err.message}`, resolve );
 			});
 
@@ -178,13 +183,11 @@ export class ClientRequestsProcessing
 					request.setHeader( key, value );
 				}
 			}
-
 			
 			// If upload of file is requested
 			if ( clientRequestInternalOptions.ReadStream )
 			{
 				clientRequestInternalOptions.ReadStream.pipe( request );
-
 				if ( clientRequestInternalOptions.Headers['content-length'] )
 				{
 					let currentLength : number = 0;
@@ -192,8 +195,8 @@ export class ClientRequestsProcessing
 					clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength, currentLength / totalLength );
-					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, progress );
+						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength );
+					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, currentLength / totalLength );
 					});
 				}
 			}

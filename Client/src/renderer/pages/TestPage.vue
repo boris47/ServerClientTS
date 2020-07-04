@@ -19,7 +19,7 @@
 			<div><label>"My File selector"</label>
 				<input-selector type='file' itemListTag='li' @select="onInputFilePathsSelected" multiple />
 				<custom-button @click="UploadFiles" >Upload File</custom-button>
-				<progress-bar :value="comFlowManager.Progress.value" />
+				<progress-bar :value="comFlowManager.Progress.NormalizedValue" />
 				<div v-if="bUploadRequestLaunched">
 					<span>{{UploadStatus}}</span>
 				</div>
@@ -189,7 +189,7 @@ export default class TestPage extends Vue
 
 	protected get UploadStatus() : string
 	{
-		return `${this.comFlowManager.Progress.CurrentValue}/${this.comFlowManager.Progress.MaxValue}`;
+		return ''; // `${this.comFlowManager.Progress.CurrentValue}/${this.comFlowManager.Progress.MaxValue}`;
 	}
 
 	protected async UploadFiles()
