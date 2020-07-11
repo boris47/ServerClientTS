@@ -1,5 +1,5 @@
 {
-	"name": "Updater",
+	"name": "updater",
 	"version": "0.0.0",
 	"description": "",
 	"main": "Server.js",
@@ -10,7 +10,7 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-	"@types/node": "=13.7.0",
-	"typescript": "=3.7.5"
+		"@types/node": "=13.7.0",
+		"typescript": "=3.7.5"
 	}
 }
