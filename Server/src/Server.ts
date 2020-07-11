@@ -42,7 +42,7 @@ async function UploadConfigurationFile() : Promise<boolean>
 	serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
 	
 	const filePath = "../Temp/ServerCfg.json";
-	FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
+	await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
 	fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
 
 	return serverConfigs.AreValidData();

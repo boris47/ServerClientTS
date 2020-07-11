@@ -28,7 +28,7 @@ export default class FSUtils
 		{
 			const relativeFilePath = absoluteSourceFilePath.replace( path.join( absoluteSourceFolder, subfolder || ''), '' ).replace( '\\\\', '' );
 			const absoluteDestinationFilePath = path.join( absoluteDestinationFolder, relativeFilePath );
-			FSUtils.EnsureDirectoryExistence( path.parse( absoluteDestinationFilePath ).dir );
+			await FSUtils.EnsureDirectoryExistence( path.parse( absoluteDestinationFilePath ).dir );
 			await new Promise<void>( ( resolve ) =>
 			{
 				fs.copyFile( absoluteSourceFilePath, absoluteDestinationFilePath, ( err: NodeJS.ErrnoException ) =>
@@ -86,6 +86,15 @@ export default class FSUtils
 	}
 
 
+	public static MakeDirectoryAsync( dirPath: string ) : Promise<boolean>
+	{
+		return new Promise( ( resolve ) =>
+		{
+			fs.mkdir( dirPath, ( err: NodeJS.ErrnoException ) => resolve(!err) );
+		});
+	}
+
+
 	/**  */
 	public static ReadFileAsync( filePath : string ) : Promise<NodeJS.ErrnoException | Buffer>
 	{
@@ -116,17 +125,27 @@ export default class FSUtils
 	
 
 	/** Ensure that a folder exist, creating all directory tree if needed */
-	public static EnsureDirectoryExistence( filePath: string ): void
+	public static async EnsureDirectoryExistence( filePath: string ): Promise<void>
 	{
-		const filePathNormalized: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
-		for (let index = 0; index < filePathNormalized.length; index++)
+		const dirNames: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
+		for (let index = 0; index < dirNames.length; index++)
 		{
-			const pathInQuestion = filePathNormalized.slice(0, index + 1).join(path.sep);
-			if ( ( !FSUtils.IsDirectorySafe( pathInQuestion ) ) )
+			const dirPath = dirNames.slice(0, index + 1).join(path.sep);
+			if ( ( !FSUtils.IsDirectorySafe( dirPath ) ) )
 			{
-				fs.mkdirSync(pathInQuestion);
+				await FSUtils.MakeDirectoryAsync( dirPath );
 			}
 		};
+	}
+
+	
+	/** Check if a file can be written at given path */
+	public static EnsureWritableFile( filePath: string ): Promise<boolean>
+	{
+		return new Promise( ( resolve ) =>
+		{
+			fs.writeFile( filePath, '', ( err: NodeJS.ErrnoException ) => resolve(!err) );
+		});
 	}
 
 

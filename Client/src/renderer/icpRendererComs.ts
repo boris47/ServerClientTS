@@ -20,20 +20,30 @@ const MappedOps : {[key:string]: Function} =
 
 export class ICP_RendererComs
 {
-	/** Register all the callbacks for each flow of this manager
+	/** Add all the listeners for each flow of this manager
 	 * @param comFlowManager 
 	 */
 	private static RegisterComFlowManagerCallbacks( comFlowManager?: ComFlowManager )
 	{
-		if ( !comFlowManager )
+		if ( comFlowManager )
 		{
-			return;
+			ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number ) =>
+			{
+				comFlowManager.Progress.SetProgress( maxValue, currentValue );
+			//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}` );
+			});
 		}
-		ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number ) =>
+	}
+
+	/** Remove the listeners added for each flow of this manager
+	 * @param comFlowManager 
+	 */
+	private static UnregisterComFlowManagerCallbacks( comFlowManager?: ComFlowManager )
+	{
+		if ( comFlowManager )
 		{
-			comFlowManager.Progress.SetProgress( maxValue, currentValue );
-		//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}` );
-		});
+			ipcRenderer.removeAllListeners( ComFlowManager.ToProgressId(comFlowManager.Id) );
+		}
 	}
 
 
@@ -47,9 +57,11 @@ export class ICP_RendererComs
 	{
 		ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
 		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager?.Id, key, args));
+		ICP_RendererComs.UnregisterComFlowManagerCallbacks(comFlowManager);
+		
 		const typeString = Object.prototype.toString.call(result);
-		const type = typeString.substring('[object '.length, typeString.lastIndexOf(']'));		
-	//	console.log( channel, arg0, args, typeString, type, result )
+		const type = typeString.substring('[object '.length, typeString.length - 1);
+		console.log( channel, key, args, typeString, type, result )
 		
 		const ctor = MappedOps[type];
 		if ( ctor )
@@ -58,26 +70,6 @@ export class ICP_RendererComs
 		}
 		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${key}, ${args}), type is ${type}` );
 		return null;
-	}
-
-
-	/**
-	 * @param channel 
-	 * @param args 
-	 */
-	public static Send(channel: string, ...args: any[]): void
-	{
-		ipcRenderer.send(channel, args);
-	}
-
-	public static Once(channel: string, callback: (event: Electron.IpcRendererEvent, ...args: any[]) => void)
-	{
-		ipcRenderer.once(channel, callback);
-	}
-
-	public static On(channel: string, callback: (event: Electron.IpcRendererEvent, ...args: any[]) => void)
-	{
-		ipcRenderer.on(channel, callback);
 	}
 }
 

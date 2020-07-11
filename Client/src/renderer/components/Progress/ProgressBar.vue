@@ -1,7 +1,7 @@
 <template>
 	<div>
 		<div class="progress-bar-viewport">
-			<span v-if="ClampedValue >= 0" class="progress-percentage">{{ClampedValue}}</span>
+			<span v-if="value >= 0" class="progress-percentage">{{ClampedValue}}</span>
 			<div v-if="value === undefined" class="progress-bar-novalue"/>
 			<div v-else-if="value === -1" class="progress-bar-error"/>
 			<div v-else class="progress-bar-value" :style="`width: ${ProgressBarWidth}%;`"/>

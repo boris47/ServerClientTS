@@ -62,14 +62,14 @@ const PingResponse = async ( request : http.IncomingMessage, response : http.Ser
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /** Client -> Server */
-const UploadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const DownloadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
 	const searchParams = new URLSearchParams( request.url.split('?')[1] );
 	const identifier = searchParams.get( 'identifier' );
 
 	const filePath = path.join( DOWNLOAD_LOCATION, identifier );
-	FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
+	await FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
 
 	const options = <IServerRequestInternalOptions>
 	{
@@ -81,7 +81,7 @@ const UploadResource = async ( request : http.IncomingMessage, response : http.S
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /** Server -> Client */
-const DownloadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const UploadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
 	const searchParams = new URLSearchParams( request.url.split('?')[1] );
@@ -98,7 +98,7 @@ const DownloadResource = async ( request : http.IncomingMessage, response : http
 	{
 		const err = `Resource ${identifier} doesn't exist`;
 		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "ServerResponses:DownloadResource", err );
+		return ComUtils.ResolveWithError( "ServerResponses:UploadResource", err );
 	}
 
 	serverRequestInternalOptions.Headers = {};
@@ -113,7 +113,7 @@ const DownloadResource = async ( request : http.IncomingMessage, response : http
 		{
 			const err = `Cannot obtain size of file ${filePath}`;
 			ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-			return ComUtils.ResolveWithError( "ServerResponses:DownloadResource", err );
+			return ComUtils.ResolveWithError( "ServerResponses:UploadResource", err );
 		}
 		serverRequestInternalOptions.Headers['content-length'] = sizeInBytes;
 	}
@@ -259,12 +259,12 @@ export const ResponsesMap : ServerResponsesMap =
 
 	'/upload' 		: <IResponseMethods>
 	{
-		put 		: UploadResource,
+		put 		: DownloadResource,
 	},
 
 	'/download' 	: <IResponseMethods>
 	{
-		get 		: DownloadResource,
+		get 		: UploadResource,
 	},
 
 	'/storage' 		: <IResponseMethods>

@@ -25,6 +25,12 @@ export interface IClientRequestInternalOptions
 
 export class ClientRequestsProcessing
 {
+	private static zlibOptions: zlib.ZlibOptions =
+	{
+		flush: zlib.constants.Z_SYNC_FLUSH,
+		finishFlush: zlib.constants.Z_SYNC_FLUSH
+	};
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
 	public static async Request_GET( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
@@ -53,24 +59,18 @@ export class ClientRequestsProcessing
 				{
 					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
-
-				const zlibOptions = <zlib.ZlibOptions>
-				{
-					flush: zlib.constants.Z_SYNC_FLUSH,
-					finishFlush: zlib.constants.Z_SYNC_FLUSH
-				};
 				
 				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 				switch ( response.headers['content-encoding']?.trim().toLowerCase() )
 				{
 					case 'gzip': case 'compress':
 					{
-						stream = response.pipe( zlib.createGunzip( zlibOptions ) );
+						stream = response.pipe( zlib.createGunzip( ClientRequestsProcessing.zlibOptions ) );
 						break;
 					}
 					case 'deflate':
 					{
-						stream = response.pipe( zlib.createInflate( zlibOptions ) );
+						stream = response.pipe( zlib.createInflate( ClientRequestsProcessing.zlibOptions ) );
 						break;
 					}
 				}
@@ -79,19 +79,13 @@ export class ClientRequestsProcessing
 				{
 					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
-
 				
+				const totalLength : number = Number( response.headers['content-length'] );
 				if ( clientRequestInternalOptions.WriteStream )
 				{
 					stream.pipe( clientRequestInternalOptions.WriteStream );
 					
-					clientRequestInternalOptions.WriteStream.on( 'error', ( err: Error ) =>
-					{
-						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
-					});
-					
 					let currentLength : number = 0;
-					const totalLength : number = Number( response.headers['content-length'] );
 					stream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
@@ -99,7 +93,7 @@ export class ClientRequestsProcessing
 					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
 					});
 					
-					clientRequestInternalOptions.WriteStream.on( 'finish', () =>
+					stream.on( 'end', () =>
 					{
 						const result = Buffer.from( 'ClientRequests:Request_GET: Data received correcly' );
 						ComUtils.ResolveWithGoodResult( result, resolve );

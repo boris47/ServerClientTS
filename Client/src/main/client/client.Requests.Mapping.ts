@@ -44,7 +44,6 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	const filePathParsed = path.parse( identifier );
 
 	// Headers
-//	clientRequestInternalOptions.Headers = new Map();
 	clientRequestInternalOptions.Headers = {};
 	{
 		// Check if content type can be found
@@ -81,16 +80,16 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 	options.path += '?' + requestPath.toString();
 	options.method = 'get';
 
-	FSUtils.EnsureDirectoryExistence(DownloadLocation);
-	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
-
-	const result : IClientRequestResult = await ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
-	if ( !result.bHasGoodResult )
+	await FSUtils.EnsureDirectoryExistence(DownloadLocation);
+	const filePath = path.join( DownloadLocation, Identifier );
+	if ( !await FSUtils.EnsureWritableFile( filePath ) )
 	{
-		return result;
+		clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
+		return ComUtils.ResolveWithError<IClientRequestResult>( `Error`, `Client:DownloadResource: Cannot write file: ${filePath}` )
 	}
 
-	return ComUtils.ResolveWithGoodResult<IClientRequestResult>( Buffer.from( "Done" ) );
+	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
+	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
 };
 
 

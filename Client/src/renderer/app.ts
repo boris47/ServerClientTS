@@ -21,6 +21,7 @@ import CustomTableTd from './components/Table/CustomTableTd.vue';
 import CustomButton from './components/CustomButton.vue';
 import CustomSelect from './components/CustomSelect.vue';
 import CustomDatalist from './components/CustomDatalist.vue';
+import { ipcRenderer } from 'electron';
 
 
 
@@ -84,7 +85,7 @@ async function Initialize()
 	vueInstance.$mount('#app');
 
 	// notify Main that Renderer is ready
-	ICP_RendererComs.Send('rendererReady', null);
+	ipcRenderer.send('rendererReady', null);
 }
 
 Initialize().catch(function(error: Error)

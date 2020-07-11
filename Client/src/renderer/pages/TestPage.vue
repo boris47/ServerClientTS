@@ -19,22 +19,20 @@
 			<div><label>"My File selector"</label>
 				<input-selector type='file' itemListTag='li' @select="onInputFilePathsSelected" multiple />
 				<custom-button @click="UploadFiles" >Upload File</custom-button>
-				<progress-bar :value="comFlowManager.Progress.NormalizedValue" />
-				<div v-if="bUploadRequestLaunched">
-					<span>{{UploadStatus}}</span>
-				</div>
+				<progress-bar :value="uploadComFlowManager.Progress.NormalizedValue" />
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</p>
 				<p v-if="!bUploadRequestLaunched">WAITING</p>
 			</div>
-			<!--div><label>"My Folder selector"</label>
+			<div><label>"My Folder selector"</label>
 				<input-selector type='folder' @select="onDownloadFolderSelected"></input-selector>
 				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile">Download File</custom-button>
+				<progress-bar :value="downloadComFlowManager.Progress.NormalizedValue" />
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
 				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
 				<p v-if="!bDownloadRequestLaunched">WAITING</p>
-			</div-->
-			<div><label>"My Progress Bar"</label>
+			</div>
+			<!--div><label>"My Progress Bar"</label>
 					<progress-bar :value='75'/>
 					<progress-bar/>
 				<label>"My Progress Spinner"</label>
@@ -49,7 +47,7 @@
 			</div>
 			<div><label>"My datalist"</label>
 				<custom-datalist :values="['Roberto', 'Melissa', 'Davide', 'Mariateresa']" @select="onSelected_Datalist"/>
-			</div>
+			</div-->
 		</div>
 	</global-layout>
 </template>
@@ -86,12 +84,13 @@ export default class TestPage extends Vue
 	protected inputFilePaths = Array<string>();
 	protected bUploadRequestSucceded = false;
 	protected bUploadRequestLaunched = false;
-	protected comFlowManager  = new ComFlowManager;
+	protected uploadComFlowManager  = new ComFlowManager;
 
 	protected downloadFileLocation = '';
 	protected listToDownload = Array<string>();
 	protected bDownloadRequestSucceded = false;
 	protected bDownloadRequestLaunched = false;
+	protected downloadComFlowManager  = new ComFlowManager;
 
 	protected headers = Array<ITableHeader>();
 	protected tableRows = Array<ITableRow>();
@@ -187,17 +186,12 @@ export default class TestPage extends Vue
 		}
 	}
 
-	protected get UploadStatus() : string
-	{
-		return ''; // `${this.comFlowManager.Progress.CurrentValue}/${this.comFlowManager.Progress.MaxValue}`;
-	}
-
 	protected async UploadFiles()
 	{
 		this.bUploadRequestLaunched = true;
 		for(const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.comFlowManager, filePath );
+			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.uploadComFlowManager, filePath );
 			if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
 			{
 				console.error( `"${result.name}:${result.message}"` );
@@ -213,7 +207,7 @@ export default class TestPage extends Vue
 	protected async DownloadFile()
 	{
 		this.bDownloadRequestLaunched = true;
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, null, 'Clear.bat', this.downloadFileLocation );
+		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
 		if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
 		{
 			console.error( `"${result.name}:${result.message}"` );

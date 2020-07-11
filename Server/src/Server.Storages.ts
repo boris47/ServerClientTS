@@ -58,7 +58,7 @@ class ServerStorage_FileSystem implements IServerStorage
 			
 		const storageRelativePath = `./ServerStorage/${StorageName}.json`;
 		const folderPath = path.parse( storageRelativePath ).dir;
-		FSUtils.EnsureDirectoryExistence( folderPath );
+		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( storageRelativePath ) )
 		{
 			fs.writeFileSync( storageRelativePath, "{}", 'utf8' );
@@ -123,7 +123,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		FSUtils.DeleteFolder( folderPath );
 
 		// Re-create folder and file
-		FSUtils.EnsureDirectoryExistence( folderPath );
+		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( this.m_StorageName ) )
 		{
 			fs.writeFileSync( this.m_StorageName, "{}", 'utf8' );

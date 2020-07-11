@@ -60,7 +60,6 @@ export namespace ProcessManager
 			{
 				const message = PendingMessages[i];
 				const dateNow = Date.now();
-				const ver = message.date + PENDING_MESSAGE_TIMEOUT - dateNow;
 				if ( ( message.date + PENDING_MESSAGE_TIMEOUT - dateNow ) < 0 )
 				{
 					message.onTimeout?.call(null);
@@ -80,7 +79,7 @@ export namespace ProcessManager
 
 			return new Promise<boolean>( resolve =>
 			{
-				child.send( msgType, ( error: Error ) =>
+				child.send( msgType, ( error: Error | null ) =>
 				{
 					if ( error )
 					{
@@ -88,12 +87,12 @@ export namespace ProcessManager
 					}
 					else
 					{
-						const pendingMessage = <IPendingMessage>
+						const pendingMessage : IPendingMessage =
 						{
 							msgType : msgType,
 							processName : processName,
 							date : Date.now(),
-							onReceived : <IOnMessageReceivedCallback>
+							onReceived :
 							{
 								msg : msgType,
 								processName : processName,
@@ -107,13 +106,26 @@ export namespace ProcessManager
 				});
 			});
 		};
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////
+		const HandleReceivedMessage = async ( message: child_process.Serializable /*string | number | boolean | object*/ ): Promise<void> =>
+		{
+			const IsSubProcessMessage = (message: any): message is ISubProcessMessage => !!message.processName && message.msgType && !!message.msg
+			if (IsSubProcessMessage(message))
+			{
+				const pendingMessage = PendingMessages.find( pending => pending.msgType === message.msgType && pending.processName === message.processName );
+				pendingMessage?.onReceived?.onMessageReceived( <ISubProcessMessage>message );
+			}
+		}
+
 	
 		/////////////////////////////////////////////////////////////////////////////////////////
 		export class ForkedProcess
 		{
 			private child : child_process.ChildProcess = null;
 			private childName : string = '';
-			private respawnFunction : () => child_process.ChildProcess		= null;
+			private respawnFunction : () => child_process.ChildProcess = null;
 			private restartRequested : boolean = false;
 	
 			//
@@ -121,7 +133,7 @@ export namespace ProcessManager
 			{
 				this.child = child;
 				this.childName = childName;
-
+				this.respawnFunction = respawnFunction;
 				this.RegisterCallbacks();
 			}
 
@@ -211,28 +223,7 @@ export namespace ProcessManager
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		const HandleReceivedMessage = async ( message: child_process.Serializable ) =>
-		{
-			if ( typeof message !== 'object' )
-			{
-				console.error( `ProcessManager:Fork: Received an invalid message\n"${message}"` );
-				return;
-			}
-
-			const messageParsed = <ISubProcessMessage> message;
-			if ( !messageParsed.processName || !messageParsed.msgType || !messageParsed.msg )
-			{
-				console.error( `ProcessManager:Fork: Received a malformed object\n${JSON.stringify(message)}` );
-				return;
-			}
-
-			const pendingMessage = PendingMessages.find( message => message.msgType === messageParsed.msgType && message.processName === messageParsed.processName );
-			pendingMessage?.onReceived?.onMessageReceived( <ISubProcessMessage>message );
-		}
-	
-
-		/////////////////////////////////////////////////////////////////////////////////////////
-		export const ForkProcess = async ( containerId : string, processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : Promise<ForkedProcess | null> =>
+		export async function ForkProcess( containerId : string, processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : Promise<ForkedProcess | null>
 		{
 			console.log( `ProcessManager:ForkProcess: Process to execute "${processToExecute}"` );
 
@@ -291,7 +282,7 @@ export namespace ProcessManager
 //			}
 //			catch ( e )
 //			{
-//				console.error( `Cannot fork and leave process ${e}` );
+//				console.error( `ProcessManager:ForkAndLeave: Cannot fork and leave process ${e}` );
 //			}
 //			return false;
 //		}
@@ -358,59 +349,45 @@ export namespace ProcessManager
 			// 
 			private RegisterCallbacks()
 			{
-		//		new Promise<void>( ( resolve ) =>
-		//		{
-					this.child.on( 'error', ( err : Error ) =>
-					{
-						this.processResult.stdError = `${err.name}:${err.message}`;
-						this.processResult.exitCode = -1,
-						console.error( `ProcessManager::SpawnedProcess: Fail to start process ${this.childName}!\n${err.name}:${err.message}`);
-					});
+				this.child.on( 'error', ( err : Error ) =>
+				{
+					this.processResult.stdError = `${err.name}:${err.message}`;
+					this.processResult.exitCode = -1,
+					console.error( `ProcessManager::SpawnedAsyncProcess: Fail to start process ${this.childName}!\n${err.name}:${err.message}`);
+				});
 
-					this.child.stdout.setEncoding('utf8').on( 'data', ( chunk : string ) =>
+				this.child.stdout.setEncoding('utf8').on( 'data', ( chunk : string ) =>
+				{
+					chunk.split('\n').filter( l => l.length > 0 ).forEach( l => 
 					{
-						chunk.split('\n').filter( l => l.length > 0 ).forEach( l => 
-						{
-							this.processResult.stdOutput += `${l}\n`;
-							console.log( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tSTDOUT:"${l}"` );
-						});
+						this.processResult.stdOutput += `${l}\n`;
+						console.log( `ProcessManager::SpawnedAsyncProcess:"${this.childName}"\n\tSTDOUT:"${l}"` );
 					});
-			
-					this.child.stderr.setEncoding('utf8').on( 'data', ( chunk : string ) =>
+				});
+		
+				this.child.stderr.setEncoding('utf8').on( 'data', ( chunk : string ) =>
+				{
+					chunk.split('\n').filter( l => l.length > 0 ).forEach( l =>
 					{
-						chunk.split('\n').filter( l => l.length > 0 ).forEach( l =>
-						{
-							this.processResult.stdError = ( this.processResult.stdError ? this.processResult.stdError : '' ) + `${l}\n`;
-							console.error( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tSTDERR:"${l}"` );
-						});
+						this.processResult.stdError = ( this.processResult.stdError ? this.processResult.stdError : '' ) + `${l}\n`;
+						console.error( `ProcessManager::SpawnedAsyncProcess:"${this.childName}"\n\tSTDERR:"${l}"` );
 					});
-					/*
-					this.child.on( 'close', ( code : number, signal: NodeJS.Signals ) =>
+				});
+				
+				this.child.on( 'exit', ( code: number | null, signal: NodeJS.Signals | null ) =>
+				{
+					this.processResult.exitCode = code || 0;
+					console.log( `ProcessManager::SpawnedAsyncProcess:"${this.childName}"\n\tExited with ` + (typeof code === 'number' ? `code : ${code}` : `signal ${signal}`) );
+					this.internalFinishCallback();
+					this.onExitOrClose( this.processResult );
+					
+					if( this.restartRequested )
 					{
-						this.processResult.exitCode = code;
-						console.log( `ProcessManager::SpawnedProcess: Process ${this.childName} closed with ` + (typeof code === 'number' ? `code : ${code}` : `signal ${signal}`) );
-						this.internalFinishCallback();
-						this.onExitOrClose( this.processResult );
-						resolve();
-
-					});
-					*/
-					this.child.on( 'exit', ( code: number | null, signal: NodeJS.Signals | null ) =>
-					{
-						this.processResult.exitCode = code || 0;
-						console.log( `ProcessManager::SpawnedProcess:"${this.childName}"\n\tExited with ` + (typeof code === 'number' ? `code : ${code}` : `signal ${signal}`) );
-						this.internalFinishCallback();
-						this.onExitOrClose( this.processResult );
-		//				resolve();
-						
-						if( this.restartRequested )
-						{
-							this.restartRequested = false;
-							this.child = this.respawnFunction();
-							this.RegisterCallbacks();
-						}
-					});
-		//		});
+						this.restartRequested = false;
+						this.child = this.respawnFunction();
+						this.RegisterCallbacks();
+					}
+				});
 			}
 
 
@@ -433,7 +410,7 @@ export namespace ProcessManager
 		/////////////////////////////////////////////////////////////////////////////////////////
 		export const SpawnAsyncProcess = ( processToExecute : string, stdin? : string|null, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : SpawnedAsyncProcess =>
 		{
-			const spawmProcess = () => child_process.spawn
+			const spawnProcess = () => child_process.spawn
 			(
 				processToExecute,
 				args || [],
@@ -445,15 +422,15 @@ export namespace ProcessManager
 				}
 			);
 
-			const child = spawmProcess();
+			const child = spawnProcess();
 			child.stdin.end( stdin );
-			return new SpawnedAsyncProcess( child, processToExecute, spawmProcess );
+			return new SpawnedAsyncProcess( child, processToExecute, spawnProcess );
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////
 		export const SpawnSyncProcess = ( processToExecute : string, args? : string[], additionalEnvVars? : Object, absoluteCWD? : string ) : ISpawnProcessResult =>
 		{
-			const spawmProcess = () => child_process.spawnSync
+			const spawnProcess = () => child_process.spawnSync
 			(
 				processToExecute,
 				args || [],
@@ -465,11 +442,11 @@ export namespace ProcessManager
 				}
 			);
 
-			const result = spawmProcess();
+			const child = spawnProcess();
 			return {
-				exitCode: result.stderr ? 1 : 0,
-				stdError: result.stderr?.toString() || null,
-				stdOutput: result.stdout?.toString() || null
+				exitCode: child.stderr ? 1 : 0,
+				stdError: child.stderr?.toString() || null,
+				stdOutput: child.stdout?.toString() || null
 			};
 		}
 
@@ -502,7 +479,7 @@ export namespace ProcessManager
 			}
 			catch ( e )
 			{
-				console.error( `Cannot spawn and leave process ${process}` );
+				console.error( `ProcessManager:SpawnAndLeave:  Cannot spawn process ${processToExecute}` );
 			}
 			return false;
 		}
