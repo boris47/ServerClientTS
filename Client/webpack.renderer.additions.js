@@ -13,6 +13,9 @@ const isDevelopmentEnvironment = process.env.NODE_ENV == "development";
 module.exports = function(config)
 {
 	config.devtool = isDevelopmentEnvironment ? "inline-source-map" : false;
+	config.performance = {
+		hints : false //"error"
+	};
 
 	/** @param {string} key @param {any} value */
 	const replacer = ( key, value ) =>

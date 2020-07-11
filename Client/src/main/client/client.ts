@@ -98,7 +98,9 @@ export async function RequestResourceUpload( ComFlowManager: ComFlowManager, Abs
 export async function InstallRequestsProcessor()
 {
 	let bResult = true;
-	const serverConfigFilePath = '../Temp/ServerCfg.json';
+	const bIsDev = process.env.NODE_ENV === 'development'; //TODO Remove this workaround
+	const serverConfigFilePath = (bIsDev ? '' : '../../' ) + '../Temp/ServerCfg.json';
+	console.log(serverConfigFilePath);
 	bResult = bResult && ServerConfigs.Load( serverConfigFilePath );
 	if ( bResult )
 	{
