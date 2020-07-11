@@ -39,7 +39,8 @@
 			"output": "build"
 		},
 		"files": [
-			"dist/**/*"
+			"dist/**/*",
+			"resources/*"
 		],
 		"electronDownload": {
 			"cache": "cache"

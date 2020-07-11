@@ -1,4 +1,5 @@
 
+import * as path from 'path';
 import * as electron from 'electron';
 import { EComunications } from '../icpComs';
 
@@ -6,6 +7,7 @@ import FSUtils from '../../../Common/Utils/FSUtils';
 import * as RequestProcessor from './client/client';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
+const bIsDev = process.env.NODE_ENV === 'development';
 
 
 const GetElectronProperty = (funcPath: string[]): any | null =>
@@ -39,6 +41,16 @@ export function SetupMainHandlers()
 		}
 		return flowManager;
 	};
+
+	//
+	const DirectoryAdjustment = (filePath: string): string =>
+	{
+		return bIsDev ?
+			filePath.replace( '$static', 'static' ).replace( '$resources', 'resources' )
+		:
+			filePath.replace( '$static', __static ).replace( '$resources', path.resolve( electron.app.getAppPath(), 'resources') )
+		;
+	}
 
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
@@ -92,7 +104,8 @@ export function SetupMainHandlers()
 	{
 	//	console.log( EComunications.READ_FILE, filePath );
 	//	const flowManager = RegisterComFlowManager(event.sender, flowManagerId);
-		return FSUtils.ReadFileAsync(filePath);
+	
+		return FSUtils.ReadFileAsync(DirectoryAdjustment(filePath));
 	});
 
 	electron.ipcMain.handle(EComunications.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>

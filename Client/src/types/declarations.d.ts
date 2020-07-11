@@ -1,4 +1,5 @@
 
+declare const __static: string;
 
 declare namespace NodeJS
 {

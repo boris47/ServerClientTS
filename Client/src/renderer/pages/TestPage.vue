@@ -125,6 +125,19 @@ export default class TestPage extends Vue
 				content: [ { id: '5', value: '' }, { id: '2', value: undefined }, { id: '3', value: 'Melissa Ti Amo' }, ]
 			}
 		);
+		// @ts-ignore
+		ICP_RendererComs.Invoke<NodeJS.ErrnoException | Buffer>(EComunications.READ_FILE, null, '$resources/TestStatic.txt' )
+		.then( (arg : NodeJS.ErrnoException | Buffer) =>
+		{
+			if ( Buffer.isBuffer(arg) )
+			{
+				console.log('Static: Content,', arg.toString());
+			}
+			else
+			{
+				console.error('Static: Error,', arg);
+			}
+		});
 	}
 
 	protected onInputFilePathsSelected( selected: string[] )
