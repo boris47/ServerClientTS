@@ -7,7 +7,7 @@
 *.map
 
 #custom
-package-lock.json
+# package-lock.json
 bin/*
 
 .DS_Store
