@@ -13,9 +13,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as ComUtils from '../Common/ComUtils';
-import * as FSUtils from '../Common/FSUtils';
-import * as GenericUtils from '../Common/GenericUtils';
+import * as ComUtils from '../Common/Utils/ComUtils';
+import FSUtils from '../Common/Utils/FSUtils';
 import { ProcessManager } from '../Common/ProcessManager';
 import { IPackageJSON } from '../Common/IPackageJSON';
 
@@ -107,7 +106,7 @@ async function DownloadFiles( downloadLocation : string, user : string, fileRef 
 		// Apply decoding
 		const content = Buffer.from( fileref.content, <BufferEncoding>fileref.encoding ).toString();
 		return FSUtils.WriteFileAsync( absoluteFilePath, content )
-		.then( ( result: FSUtils.IASyncFileOpResult ) => FSUtils.LogIfError( result ).bHasGoodResult );
+		.then( ( result: NodeJS.ErrnoException ) => !FSUtils.LogIfError( result ) );
 	})
 }
 
@@ -161,18 +160,18 @@ async function UpdateProgram() : Promise<boolean>
 	const repositoryName : string 	= programDetailsParsed.repositoryName	 		// ServerClientTS
 	const mainFolder : string 		= programDetailsParsed.mainFolder;				// Server
 	const otherFolders : string[] 	= programDetailsParsed.otherFolders;			// ['Common']
-	FSUtils.DeleteContentFolder( DOWNLOAD_LOCATION );
+	FSUtils.DeleteFolder( DOWNLOAD_LOCATION );
 	FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
 
 	let bOverhaulResult = true;
 
 	// Donwload Form repository
 //	bOverhaulResult = bOverhaulResult && await SyncRepositoryFolders( DOWNLOAD_LOCATION, user, repositoryName, mainFolder, otherFolders );
-	if ( bOverhaulResult && false )
+	if ( bOverhaulResult )
 	{
 		{
 			const destinationFolder = processDirectory;
-			FSUtils.DeleteContentFolder( destinationFolder );
+			FSUtils.DeleteFolder( destinationFolder );
 			FSUtils.EnsureDirectoryExistence( destinationFolder );
 			const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, mainFolder );
 			for( const [ fileRelativePath, error ] of results.entries() )
@@ -188,12 +187,12 @@ async function UpdateProgram() : Promise<boolean>
 			}
 		}
 		console.log( '.' ); console.log( '.' );
-		/*
+		
 		for ( let index = 0; index < otherFolders.length; index++ )
 		{
 			const otherFolder = otherFolders[index];
 			const destinationFolder = path.join( processDirectory.substring( 0, processDirectory.lastIndexOf('\\') ), otherFolder );
-			FSUtils.DeleteContentFolder( destinationFolder );
+			FSUtils.DeleteFolder( destinationFolder );
 			FSUtils.EnsureDirectoryExistence( destinationFolder );
 			const results : Map<string, (NodeJS.ErrnoException | null )> = await FSUtils.Copy( DOWNLOAD_LOCATION, destinationFolder, otherFolder );
 			for( const [ fileRelativePath, error ] of results.entries() )
@@ -208,7 +207,7 @@ async function UpdateProgram() : Promise<boolean>
 				}
 			}
 		}
-		*/
+		
 	}
 
 	if ( bOverhaulResult )
@@ -262,7 +261,8 @@ async function Execute()
 				'User-Agent': user
 			}
 		});
-		const currentPackageJsonText : string | null = await FSUtils.ReadFileAsync( './package.json' ).then( ( result : FSUtils.IASyncFileOpResult ) => result.bHasGoodResult ? String( result.data ) : null );
+		const currentPackageJsonText : string | null = await FSUtils.ReadFileAsync( './package.json' )
+			.then( ( result : Buffer | NodeJS.ErrnoException ) => Buffer.isBuffer(result) ? result.toString('utf8') : null );
 		if ( packageJsonBuffer && currentPackageJsonText )
 		{
 			const packageJsonParsed = <IPackageJSON>JSON.parse( packageJsonBuffer.toString() );

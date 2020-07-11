@@ -5,7 +5,10 @@
 		"watch": true,
 		"strict": true,
 		"strictNullChecks": false,
+		"sourceMap": true,
 		"inlineSourceMap" : true,
+		"noUnusedLocals": true,
+		"noFallthroughCasesInSwitch": true,
 		"noImplicitReturns" : true,
 		"removeComments": true
 	},

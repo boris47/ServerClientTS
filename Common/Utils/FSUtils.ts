@@ -43,7 +43,7 @@ export default class FSUtils
 
 
 	/**  */
-	public LogIfError( result? : NodeJS.ErrnoException )
+	public static LogIfError( result? : NodeJS.ErrnoException )
 	{
 		if ( GenericUtils.IsTypeOf(result, Error) )
 		{
