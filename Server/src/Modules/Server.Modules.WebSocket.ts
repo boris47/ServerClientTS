@@ -19,7 +19,6 @@ export default class WebSocketModule
 	private static instance: WebSocketModule = null;
 	private connection: WebSocketConnection;
 	private webSocketServer: WebSocketServer = null;
-	private ruleName: string = null;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////

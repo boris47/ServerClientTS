@@ -1,13 +1,9 @@
 
 import * as http from 'http';
 import * as fs from 'fs'
-import * as path from 'path'
-import * as mime from 'mime-types';
 
 import { HTTPCodes } from '../HTTP.Codes';
-
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import FSUtils from '../../../Common/Utils/FSUtils';
 
 
 export interface IServerRequestInternalOptions

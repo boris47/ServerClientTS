@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import ServerConfigs from '../../Common/ServerConfigs'
 import GenericUtils from '../../Common/Utils/GenericUtils';
 import FSUtils from '../../Common/Utils/FSUtils';
-import { Logger } from '../../Common/Logger';
 import * as ComUtils from '../../Common/Utils/ComUtils';
 
 import { MongoDatabase } from '../Utils/MongoDatabase';

@@ -6,8 +6,8 @@
 		"strict": true,
 		"strictNullChecks": false,
 		"sourceMap": true,
-		"inlineSourceMap" : true,
-		"noUnusedLocals": true,
+		"inlineSources" : true,
+		"noUnusedLocals": false,
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitReturns" : true,
 		"removeComments": true
