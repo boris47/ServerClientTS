@@ -47,6 +47,13 @@ export default class GenericUtils
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
+	public static IsPromise<TResult = any>(obj: any): obj is Promise<TResult>
+	{
+		return obj !== null && typeof(obj.then) === 'function' && typeof(obj.finally) === 'function';
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public static DelayMS(ms: number): Promise<void>
 	{
 		return new Promise<void>((resolve) => setTimeout(resolve, ms));
