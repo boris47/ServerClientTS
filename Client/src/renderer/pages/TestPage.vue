@@ -2,35 +2,26 @@
 	<global-layout>
 		<div slot="header">
 			<p>Test Page!</p>
-			<!--div>
+			<div>
 				<input type="text" v-model="valueToSet"/>
 				<button type="button" @click.stop="SetValue">Set value</button>
-				<p v-if="bSetRequestLaunched && bSetRequestSucceded===true">SUCCESS</p>
-				<p v-if="bSetRequestLaunched && bSetRequestSucceded===false">FAIL</p>
-				<p v-if="!bSetRequestLaunched">WAITING</p>
+				<progress-bar :value="setValueComFlowManager.Progress.NormalizedValue" />
 			</div>
 			<div>
+				<input type="text" v-model="valueToGet"/>
 				<button type="button" @click.stop="GetValue">Get value</button>
-				<p v-if="bGetRequestLaunched && bGetRequestSucceded===true">SUCCESS</p>
-				<p v-if="bGetRequestLaunched && bGetRequestSucceded===false">FAIL</p>
-				<p v-if="!bGetRequestLaunched">WAITING</p>
-				<p v-if="bGetRequestLaunched && bGetRequestSucceded===true">{{getValue}}</p>
-			</div-->
+				<progress-bar :value="getValueComFlowManager.Progress.NormalizedValue" />
+				<p v-if="valueGot">{{valueGot}}</p>
+			</div>
 			<div><label>"My File selector"</label>
 				<input-selector type='file' itemListTag='li' @select="onInputFilePathsSelected" multiple />
 				<custom-button @click="UploadFiles" >Upload File</custom-button>
 				<progress-bar :value="uploadComFlowManager.Progress.NormalizedValue" />
-				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===true">SUCCESS</p>
-				<p v-if="bUploadRequestLaunched && bUploadRequestSucceded===false">FAIL</p>
-				<p v-if="!bUploadRequestLaunched">WAITING</p>
 			</div>
 			<div><label>"My Folder selector"</label>
 				<input-selector type='folder' @select="onDownloadFolderSelected"></input-selector>
-				<custom-button v-if="true || downloadFileLocation" @click="DownloadFile">Download File</custom-button>
+				<custom-button v-if="downloadFileLocation" @click="DownloadFile">Download File</custom-button>
 				<progress-bar :value="downloadComFlowManager.Progress.NormalizedValue" />
-				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===true">SUCCESS</p>
-				<p v-if="bDownloadRequestLaunched && bDownloadRequestSucceded===false">FAIL</p>
-				<p v-if="!bDownloadRequestLaunched">WAITING</p>
 			</div>
 			<!--div><label>"My Progress Bar"</label>
 					<progress-bar :value='75'/>
@@ -56,7 +47,7 @@
 
 import { Component, Vue } from 'vue-property-decorator';
 import { ICP_RendererComs } from '../icpRendererComs';
-import { EComunications } from '../../icpComs';
+import { EComunicationsChannels } from '../../icpComs';
 import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 import { ITableHeader, ITableRow } from '../components/Table/CustomTable.vue';
@@ -67,29 +58,22 @@ import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 @Component
 export default class TestPage extends Vue
 {
-
 	protected selectVoices = ['New York', 'Los Angeles', 'Paris', 'Washington', 'Seattle', 'San Francisco', 'Los Angeles'];
 
 	protected onSelected_Select = (selected: string, index: number) => console.log(index, selected);
 	protected onSelected_Datalist = ( index: number, value: string ) => console.log(index, value);
 
 	protected valueToSet = '';
-	protected bSetRequestSucceded = false;
-	protected bSetRequestLaunched = false;
+	protected setValueComFlowManager  = new ComFlowManager;
 
-	protected getValue = ''
-	protected bGetRequestSucceded = false;
-	protected bGetRequestLaunched = false;
+	protected valueToGet = '';
+	protected valueGot = ''
+	protected getValueComFlowManager  = new ComFlowManager;
 
-	protected inputFilePaths = Array<string>();
-	protected bUploadRequestSucceded = false;
-	protected bUploadRequestLaunched = false;
+	protected inputFilePaths = new Array<string>();
 	protected uploadComFlowManager  = new ComFlowManager;
 
 	protected downloadFileLocation = '';
-	protected listToDownload = Array<string>();
-	protected bDownloadRequestSucceded = false;
-	protected bDownloadRequestLaunched = false;
 	protected downloadComFlowManager  = new ComFlowManager;
 
 	protected headers = Array<ITableHeader>();
@@ -126,7 +110,7 @@ export default class TestPage extends Vue
 			}
 		);
 		// @ts-ignore
-		ICP_RendererComs.Invoke<NodeJS.ErrnoException | Buffer>(EComunications.READ_FILE, null, '$resources/TestStatic.txt' )
+		ICP_RendererComs.Invoke<NodeJS.ErrnoException | Buffer>(EComunicationsChannels.READ_FILE, null, '$resources/TestStatic.txt' )
 		.then( (arg : NodeJS.ErrnoException | Buffer) =>
 		{
 			if ( Buffer.isBuffer(arg) )
@@ -149,7 +133,7 @@ export default class TestPage extends Vue
 	{
 		console.log("onDownloadFolderSelected", folderPath)
 		this.downloadFileLocation = folderPath;
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_LIST );
+		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_LIST );
 		if ( Buffer.isBuffer(result) )
 		{
 			console.log("onDownloadFolderSelected", result.toString())
@@ -162,16 +146,14 @@ export default class TestPage extends Vue
 
 	protected async SetValue()
 	{
-		this.bSetRequestLaunched = true;
-
 		const test = Array<string>();
 		for (let index = 0; index < 15; index++)
 		{
 			test.push( `Test Array ${index}` );
 		}
 
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>(EComunications.REQ_PUT, null, 'keyy', JSON.stringify(test));
-		if( !(this.bSetRequestSucceded = Buffer.isBuffer( result )))
+		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_PUT, null, this.valueToSet, JSON.stringify(test));
+		if( !Buffer.isBuffer( result ))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}
@@ -183,11 +165,10 @@ export default class TestPage extends Vue
 
 	protected async GetValue()
 	{
-		this.bGetRequestLaunched = true;
-		const result = await ICP_RendererComs.Invoke<Buffer | null | Error>( EComunications.REQ_GET, null, 'keyy' );
-		if( this.bGetRequestSucceded = Buffer.isBuffer( result ) )
+		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_GET, null, this.valueToGet );
+		if( Buffer.isBuffer( result ) )
 		{
-			this.getValue = result.toString();
+			this.valueGot = result.toString();
 		}
 		else if ( GenericUtils.IsTypeOf(result, Error) )
 		{
@@ -201,11 +182,10 @@ export default class TestPage extends Vue
 
 	protected async UploadFiles()
 	{
-		this.bUploadRequestLaunched = true;
-		for(const filePath of this.inputFilePaths)
+		for (const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_UPLOAD, this.uploadComFlowManager, filePath );
-			if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
+			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_UPLOAD, this.uploadComFlowManager, filePath );
+			if( !Buffer.isBuffer( result ))
 			{
 				console.error( `"${result.name}:${result.message}"` );
 				break;
@@ -219,9 +199,8 @@ export default class TestPage extends Vue
 
 	protected async DownloadFile()
 	{
-		this.bDownloadRequestLaunched = true;
-		const result = await ICP_RendererComs.Invoke<Buffer | Error>( EComunications.REQ_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
-		if( !(this.bUploadRequestSucceded = Buffer.isBuffer( result )))
+		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
+		if( !Buffer.isBuffer( result ))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}

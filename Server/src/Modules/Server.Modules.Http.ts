@@ -5,6 +5,7 @@ import * as net from 'net';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
 import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from '../Responses/Server.Responses.Mapping';
 import { ServerInfo } from '../Server.Globals';
+import ServerUserRequestHandler from '../Users/Server.User.RequestHandler';
 
 
 export default class HttpModule
@@ -98,29 +99,35 @@ export default class HttpModule
 	{
 		console.log(
 			[
-				`Request: ${request.url}`,
+				`Incoming: "${request.url}"`,
 				`Result: ${value.bHasGoodResult}`,
-				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
-				`Time: ${(Date.now()- startTime).toString()}ms\n`,
+				`Duration: ${(Date.now()- startTime).toString()}ms`,
 			].join('\n\t')
 		);
 	};
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private HandleRequest( request : http.IncomingMessage, response : http.ServerResponse )
+	private async HandleRequest( request : http.IncomingMessage, response : http.ServerResponse )
 	{
 		const startTime = Date.now();
-		const identifier : string = request.url.split('?')[0];
-		const availableMethods : IResponseMethods = ResponsesMap[identifier];
-		if ( availableMethods )
+		const path: string = request.url.split('?')[0];
+
+//		const searchParams = new URLSearchParams(request.url.split('?')[1]);
+//		const userId = searchParams.get('identifier');
+		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(undefined, path, request, response);
+		if ( userRequestApprovation.bHasGoodResult )
 		{
-			const method = availableMethods[request.method.toLowerCase()] || ( MethodNotAllowed );
-			method( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
+			const availableMethods : IResponseMethods = ResponsesMap[path];
+			const method = availableMethods ? ( availableMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotImplementedResponse;
+			method( request, response ).then( ( value ) =>
+			{
+				HttpModule.ReportResponseResult( request, value, startTime );
+			});
 		}
 		else
 		{
-			NotImplementedResponse( request, response ).then( ( value ) => HttpModule.ReportResponseResult( request, value, startTime ) );
+			HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
 		}
 	};
 

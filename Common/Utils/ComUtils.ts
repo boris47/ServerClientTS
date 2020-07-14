@@ -169,11 +169,11 @@ export async function HTTP_Get( URL : string, requestOptions?: https.RequestOpti
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export async function ResolveWithGoodResult<T extends ICommonResult>( body : Buffer, cb? : ( value: T ) => void  ) : Promise<T>
+export async function ResolveWithGoodResult<T extends ICommonResult>( body?: Buffer, cb?: ( value: T ) => void  ) : Promise<T>
 {
 	const resultObject = <T>
 	{
-		body : body,
+		body : body || Buffer.from('OK'),
 		bHasGoodResult : true
 	}
 	if ( typeof cb === 'function' )

@@ -33,7 +33,7 @@ export class ClientRequestsProcessing
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
-	public static async Request_GET( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
+	public static async ServetToClient( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
@@ -51,13 +51,13 @@ export class ClientRequestsProcessing
 				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
-					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[StatusCode]', `${response.statusCode}:${response.statusMessage}`, resolve );
+					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[StatusCode]', `${response.statusCode}:${response.statusMessage}`, resolve );
 					return;
 				}
 
 				response.on( 'error', ( err : Error ) =>
 				{
-					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
 				
 				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
@@ -77,7 +77,7 @@ export class ClientRequestsProcessing
 
 				stream.on( 'error', ( err : Error ) =>
 				{
-					ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve );
 				});
 				
 				const totalLength : number = Number( response.headers['content-length'] );
@@ -89,13 +89,13 @@ export class ClientRequestsProcessing
 					stream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength );
-					//	console.log( "ClientRequestsProcessing.Request_GET:data: ", totalLength, currentLength, progress );
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( totalLength, currentLength );
+					//	console.log( "ClientRequestsProcessing.ServetToClient:data: ", totalLength, currentLength, progress );
 					});
 					
 					stream.on( 'end', () =>
 					{
-						const result = Buffer.from( 'ClientRequests:Request_GET: Data received correcly' );
+						const result = Buffer.from( 'ClientRequests:ServetToClient: Data received correcly' );
 						ComUtils.ResolveWithGoodResult( result, resolve );
 					})
 				}
@@ -105,8 +105,8 @@ export class ClientRequestsProcessing
 					let contentLength = 0;
 					stream.on( 'error', ( err : Error ) =>
 					{
-						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
-						ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[ResponseError]', `${err.name}:${err.message}`, resolve );
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( -1, 1 );
+						ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve );
 					});
 					stream.on( 'data', function( chunk : Buffer )
 					{
@@ -122,9 +122,15 @@ export class ClientRequestsProcessing
 				}
 			});
 
+			request.on('timeout', () =>
+			{
+				request.abort();
+				ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[TIMEOUT]', `Request for path ${options.path}`, resolve );
+			});
+
 			request.on('error', function( err : Error )
 			{
-				return ComUtils.ResolveWithError( 'ClientRequests:Request_GET:[RequestError]', `${err.name}:${err.message}`, resolve );
+				ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[RequestError]', `${err.name}:${err.message}`, resolve );
 			})
 			request.end();
 		});
@@ -133,7 +139,7 @@ export class ClientRequestsProcessing
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async Request_PUT( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
+	public static async ClientToServer( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
@@ -151,9 +157,15 @@ export class ClientRequestsProcessing
 				const statusCode : number = response.statusCode || 200;
 				if ( statusCode !== 200 )
 				{
-					ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[StatusCode]", `${response.statusCode}:${response.statusMessage}`, resolve );
+					ComUtils.ResolveWithError( "ClientRequests:ClientToServer:[StatusCode]", `${response.statusCode}:${response.statusMessage}`, resolve );
 					return;
 				}
+			});
+
+			request.on('timeout', () =>
+			{
+				request.abort();
+				ComUtils.ResolveWithError( 'ClientRequests:ClientToServer:[TIMEOUT]', `Request for path ${options.path}`, resolve );
 			});
 
 			request.on( 'close', function()
@@ -165,8 +177,8 @@ export class ClientRequestsProcessing
 			{
 				clientRequestInternalOptions.ReadStream?.unpipe();
 				clientRequestInternalOptions.ReadStream?.close();
-				clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
-				ComUtils.ResolveWithError( "ClientRequests:Request_PUT:[RequestError]", `${err.name}:${err.message}`, resolve );
+				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( -1, 1 );
+				ComUtils.ResolveWithError( "ClientRequests:ClientToServer:[RequestError]", `${err.name}:${err.message}`, resolve );
 			});
 
 			// Set headers
@@ -189,7 +201,7 @@ export class ClientRequestsProcessing
 					clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
 					{
 						currentLength += chunk.length;
-						clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( totalLength, currentLength );
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( totalLength, currentLength );
 					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, currentLength / totalLength );
 					});
 				}

@@ -1,6 +1,7 @@
 
+import * as electron from 'electron';
 
-export enum EComunications
+export enum EComunicationsChannels
 {
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
@@ -26,6 +27,16 @@ export enum EComunications
 	/////////////////////////////////////////////////
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
+	
+	/** string, string -> Buffer | Error */ 
+	REQ_REGISTER = 'REQ_REGISTER',
+
+	/** string -> Buffer | Error */ 
+	REQ_LOGIN = 'REQ_LOGIN',
+
+	/** string -> Buffer | Error */ 
+	REQ_LOGOUT = 'REQ_LOGOUT',
+
 	/** string -> Buffer | null | Error */
 	REQ_GET = 'REQ_GET',
 
@@ -40,6 +51,26 @@ export enum EComunications
 
 	/** string -> Buffer | Error */
 	REQ_DOWNLOAD = 'REQ_DOWNLOAD',
+}
+
+export interface IComunications
+{
+	[EComunicationsChannels.ELECTRON_PROPERTY] : string | number | object;
+	[EComunicationsChannels.ELECTRON_CALL] : string | number | object;
+	[EComunicationsChannels.ELECTRON_PATH] : string | Error;
+	[EComunicationsChannels.ELECTRON_MODAL_OPEN]: electron.OpenDialogReturnValue;
+
+	[EComunicationsChannels.READ_FILE]: NodeJS.ErrnoException | Buffer;
+	[EComunicationsChannels.WRITE_FILE]: NodeJS.ErrnoException | null;
+
+	[EComunicationsChannels.REQ_REGISTER]: Buffer | Error;
+	[EComunicationsChannels.REQ_LOGIN]: Buffer | Error;
+	[EComunicationsChannels.REQ_LOGOUT]: Buffer | Error;
+	[EComunicationsChannels.REQ_GET]: Buffer | null | Error;
+	[EComunicationsChannels.REQ_PUT]: Buffer | Error;
+	[EComunicationsChannels.REQ_LIST]: Buffer | Error;
+	[EComunicationsChannels.REQ_UPLOAD]: Buffer | Error;
+	[EComunicationsChannels.REQ_DOWNLOAD]: Buffer | Error;
 }
 
 export enum EMessageContent

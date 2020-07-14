@@ -1,7 +1,7 @@
 
 
 import { ipcRenderer } from 'electron';
-import { EComunications, EMessageContent } from '../icpComs';
+import { EMessageContent, IComunications } from '../icpComs';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 
@@ -53,7 +53,7 @@ export class ICP_RendererComs
 	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
 	 * @param args Arguments to pass to the caller 
 	 */
-	public static async Invoke<T = any>(channel: EComunications, comFlowManager?: ComFlowManager, key?: string | string[], ...args: any | any[]): Promise<T | null>
+	public static async Invoke<T extends keyof IComunications>(channel: T, comFlowManager?: ComFlowManager, key?: string | string[], ...args: any | any[]): Promise<IComunications[T] | null>
 	{
 		ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
 		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager?.Id, key, args));
@@ -61,12 +61,12 @@ export class ICP_RendererComs
 		
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.length - 1);
-		console.log( channel, key, args, typeString, type, result )
+	//	console.log( channel, key, args, typeString, type, result )
 		
 		const ctor = MappedOps[type];
 		if ( ctor )
 		{
-			return ctor(result) as T;
+			return ctor(result);
 		}
 		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${key}, ${args}), type is ${type}` );
 		return null;

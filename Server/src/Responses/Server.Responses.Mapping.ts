@@ -1,125 +1,161 @@
 
 import * as http from 'http';
 import * as fs from 'fs';
-import * as path from 'path'
-
+import * as path from 'path';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
 import * as mime from 'mime-types';
-
 import FSUtils from '../../../Common/Utils/FSUtils';
-
 import ServerResponsesProcessing, { IServerRequestInternalOptions } from "./Server.Responses.Processing";
 import { IServerStorage, StorageManager } from "../Server.Storages";
 import { DOWNLOAD_LOCATION } from '../Server.Globals';
 import { HTTPCodes } from "../HTTP.Codes";
+import { ITemplatedObject } from '../../../Common/Utils/GenericUtils';
+import ServerUserManager from '../Users/Server.User.Manager';
 
-
-export const NotImplementedResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
-{
-	const options = <IServerRequestInternalOptions>
-	{
-		Value : Buffer.from( HTTPCodes[404] )
-	}
-	const result : ComUtils.IServerResponseResult = await ServerResponsesProcessing.Request_GET( request, response, options );
-	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
-	return result;
-};
-
-export const MethodNotAllowed = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
-{
-	const options = <IServerRequestInternalOptions>
-	{
-		Value : Buffer.from( HTTPCodes[405] )
-	};
-	const result : ComUtils.IServerResponseResult = await ServerResponsesProcessing.Request_GET( request, response, options );
-	result.bHasGoodResult = false; // bacause in any case on server we want register as failure
-	return result;
-};
 
 
 export interface IResponseMethods
 {
-	[key:string]: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-	post? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-	get? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-	put? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-	patch? 		: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
-	delete? 	: ( request : http.IncomingMessage, response : http.ServerResponse ) => Promise<ComUtils.IServerResponseResult>;
+	[key: string]: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	post?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	get?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	put?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	patch?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	delete?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const PingResponse = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+export const NotImplementedResponse = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const options = <IServerRequestInternalOptions>
+	const options: IServerRequestInternalOptions =
 	{
-		Value : Buffer.from( 'Ping Response' )
+		Value: Buffer.from(HTTPCodes[404])
 	};
-	const result : ComUtils.IServerResponseResult = await ServerResponsesProcessing.Request_GET( request, response, options );
+	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
+	result.bHasGoodResult = false; // bacause on server we want register as failure
 	return result;
 };
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
+export const MethodNotAllowed = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const options: IServerRequestInternalOptions =
+	{
+		Value: Buffer.from(HTTPCodes[405])
+	};
+	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
+	result.bHasGoodResult = false; // bacause on server we want register as failure
+	return result;
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const PingResponse = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const options: IServerRequestInternalOptions =
+	{
+		Value: Buffer.from('Ping Response')
+	};
+	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
+	return result;
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const UserRegister = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const username = request.headers.username as string;
+	const password = request.headers.password as string;
+	const token = await ServerUserManager.RegisterUser(username, password);
+	ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
+	return ComUtils.ResolveWithGoodResult();
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const UserLogin = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const token = request.headers.token as string;
+	if (!(await ServerUserManager.UserLogin(token)))
+	{
+		const err = `Server:Login Failed`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 401);
+		return ComUtils.ResolveWithError('[LOGIN]', err);
+	}
+
+	ServerResponsesProcessing.EndResponseWithGoodResult(response);
+	return ComUtils.ResolveWithGoodResult();
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const UserLogout = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const token = request.headers.token as string;
+	await ServerUserManager.Logout(token);
+
+	ServerResponsesProcessing.EndResponseWithGoodResult(response);
+	return ComUtils.ResolveWithGoodResult();
+};
+
+
 /////////////////////////////////////////////////////////////////////////////////////////
 /** Client -> Server */
-const DownloadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const DownloadResource = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
-	const searchParams = new URLSearchParams( request.url.split('?')[1] );
-	const identifier = searchParams.get( 'identifier' );
+	const searchParams = new URLSearchParams(request.url.split('?')[1]);
+	const identifier = searchParams.get('identifier');
 
-	const filePath = path.join( DOWNLOAD_LOCATION, identifier );
-	await FSUtils.EnsureDirectoryExistence( DOWNLOAD_LOCATION );
+	const filePath = path.join(DOWNLOAD_LOCATION, identifier);
+	await FSUtils.EnsureDirectoryExistence(DOWNLOAD_LOCATION);
 
-	const options = <IServerRequestInternalOptions>
+	const options: IServerRequestInternalOptions =
 	{
-		WriteStream: fs.createWriteStream( filePath )
+		WriteStream: fs.createWriteStream(filePath)
 	};
-
-	return ServerResponsesProcessing.Request_PUT( request, response, options );
+	return ServerResponsesProcessing.ClientToServer(request, response, options);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /** Server -> Client */
-const UploadResource = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const UploadResource = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
-	const searchParams = new URLSearchParams( request.url.split('?')[1] );
-	const identifier = searchParams.get( 'identifier' );
-	const serverRequestInternalOptions = <IServerRequestInternalOptions>
-	{
-		Identifier : identifier
-	};
+	const searchParams = new URLSearchParams(request.url.split('?')[1]);
+	const identifier = searchParams.get('identifier');
+	const options: IServerRequestInternalOptions = {};
 
-	const filePath = path.join( DOWNLOAD_LOCATION, identifier );
+	const filePath = path.join(DOWNLOAD_LOCATION, identifier);
 
 	// Check if file exists
-	if ( !(await FSUtils.FileExistsAsync( filePath ) ))
+	if (!(await FSUtils.FileExistsAsync(filePath)))
 	{
-		const err = `Resource ${identifier} doesn't exist`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "ServerResponses:UploadResource", err );
+		const err = `Resource ${ identifier } doesn't exist`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("ServerResponses:UploadResource", err);
 	}
 
-	serverRequestInternalOptions.Headers = {};
+	options.Headers = {};
 	{
 		// Check if content type can be found
-		const contentType : string = mime.lookup( path.parse(filePath).ext ) || 'application/octet-stream';
-		serverRequestInternalOptions.Headers['content-type'] = contentType;
+		const contentType: string = mime.lookup(path.parse(filePath).ext) || 'application/octet-stream';
+		options.Headers['content-type'] = contentType;
 
 		// Check file Size
-		const sizeInBytes : number | null = FSUtils.GetFileSizeInBytesOf( filePath );
-		if ( sizeInBytes === null )
+		const sizeInBytes: number | null = FSUtils.GetFileSizeInBytesOf(filePath);
+		if (sizeInBytes === null)
 		{
-			const err = `Cannot obtain size of file ${filePath}`;
-			ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-			return ComUtils.ResolveWithError( "ServerResponses:UploadResource", err );
+			const err = `Cannot obtain size of file ${ filePath }`;
+			ServerResponsesProcessing.EndResponseWithError(response, err, 400);
+			return ComUtils.ResolveWithError("ServerResponses:UploadResource", err);
 		}
-		serverRequestInternalOptions.Headers['content-length'] = sizeInBytes;
+		options.Headers['content-length'] = sizeInBytes;
 	}
 
-	serverRequestInternalOptions.ReadStream = fs.createReadStream( filePath );
-
-	return ServerResponsesProcessing.Request_GET( request, response, serverRequestInternalOptions );
+	options.ReadStream = fs.createReadStream(filePath);
+	return ServerResponsesProcessing.ServetToClient(request, response, options);
 };
 
 
@@ -128,108 +164,108 @@ const UploadResource = async ( request : http.IncomingMessage, response : http.S
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const Storage_Get = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const Storage_Get = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams( request.url.split('?')[1] );
-	const key = searchParams.get( 'key' );
-	const storageID = searchParams.get( 'stg' );
-	const storage : IServerStorage = StorageManager.GetStorage( storageID );
-	if( !storage )
+	const searchParams = new URLSearchParams(request.url.split('?')[1]);
+	const key = searchParams.get('key');
+	const storageID = searchParams.get('stg');
+	const storage: IServerStorage = StorageManager.GetStorage(storageID);
+	if (!storage)
 	{
-		const err = `Storage "${storageID}" Not Found`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:get", err );
+		const err = `Storage "${ storageID }" Not Found`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:get", err);
 	}
 
-	if( !key )
+	if (!key)
 	{
 		const err = `Storage Get: Invalid Key`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:get", err );
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:get", err);
 	}
 
-	const options = <IServerRequestInternalOptions>
+	const options: IServerRequestInternalOptions =
 	{
-		Key : key,
-		Value : await storage.GetResource( key )
+		Key: key,
+		Value: await storage.GetResource(key)
 	};
-	return ServerResponsesProcessing.Request_GET( request, response, options );
+	return ServerResponsesProcessing.ServetToClient(request, response, options);
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const Storage_Put = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const Storage_Put = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams( request.url.split('?')[1] );
-	const key = searchParams.get( 'key' );
-	const storageID = searchParams.get( 'stg' );
-	const storage : IServerStorage = StorageManager.GetStorage( storageID );
-	if( !storage )
+	const searchParams = new URLSearchParams(request.url.split('?')[1]);
+	const key = searchParams.get('key');
+	const storageID = searchParams.get('stg');
+	const storage: IServerStorage = StorageManager.GetStorage(storageID);
+	if (!storage)
 	{
-		const err = `Storage "${storageID}" Not Found`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:put", err );
+		const err = `Storage "${ storageID }" Not Found`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:put", err);
 	}
 
-	const options = <IServerRequestInternalOptions>
+	const options: IServerRequestInternalOptions =
 	{
-		Key : key
+		Key: key
 	};
-	const result : ComUtils.IServerResponseResult = await ServerResponsesProcessing.Request_PUT( request, response, options );
-	if ( result.bHasGoodResult )
+	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ClientToServer(request, response, options);
+	if (result.bHasGoodResult)
 	{
-		await storage.AddResource( key, result.body, true );
+		await storage.AddResource(key, result.body, true);
 	}
 	return result;
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const Storage_Delete = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const Storage_Delete = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const parsedUrl = new URL( request.url );
-	const key = parsedUrl.searchParams.get( 'key' );
-	const storageID = parsedUrl.searchParams.get( 'stg' );
-	const storage : IServerStorage = StorageManager.GetStorage( storageID );
-	if( !storage )
+	const parsedUrl = new URL(request.url);
+	const key = parsedUrl.searchParams.get('key');
+	const storageID = parsedUrl.searchParams.get('stg');
+	const storage: IServerStorage = StorageManager.GetStorage(storageID);
+	if (!storage)
 	{
-		const err = `Storage "${storageID}" Not Found`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:delete", err );
+		const err = `Storage "${ storageID }" Not Found`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:delete", err);
 	}
 
-	if ( await storage.HasResource( key ) )
+	if (await storage.HasResource(key))
 	{
-		if( !await storage.RemoveResource( key ) )
+		if (!await storage.RemoveResource(key))
 		{
-			const err = `Cannot remove "${key}" from "${storageID}"`;
-			ServerResponsesProcessing.EndResponseWithError( response, err, 500 );
-			return ComUtils.ResolveWithError( "/localstorage:delete", err );
+			const err = `Cannot remove "${ key }" from "${ storageID }"`;
+			ServerResponsesProcessing.EndResponseWithError(response, err, 500);
+			return ComUtils.ResolveWithError("/localstorage:delete", err);
 		}
-		ServerResponsesProcessing.EndResponseWithGoodResult( response );
-		return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ) );
+		ServerResponsesProcessing.EndResponseWithGoodResult(response);
+		return ComUtils.ResolveWithGoodResult(Buffer.from(HTTPCodes[200]));
 	}
 	else
 	{
-		const err = `Entry "${key}" not found`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:delete", err );
+		const err = `Entry "${ key }" not found`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:delete", err);
 	}
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
-const Storage_List = async ( request : http.IncomingMessage, response : http.ServerResponse ) : Promise<ComUtils.IServerResponseResult> =>
+const Storage_List = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams( request.url.split('?')[1] );
-	const storageID = searchParams.get( 'stg' );
-	const storage : IServerStorage = StorageManager.GetStorage( storageID );
-	if( !storage )
+	const searchParams = new URLSearchParams(request.url.split('?')[1]);
+	const storageID = searchParams.get('stg');
+	const storage: IServerStorage = StorageManager.GetStorage(storageID);
+	if (!storage)
 	{
-		const err = `Storage "${storageID}" Not Found`;
-		ServerResponsesProcessing.EndResponseWithError( response, err, 404 );
-		return ComUtils.ResolveWithError( "/localstorage:get", err );
+		const err = `Storage "${ storageID }" Not Found`;
+		ServerResponsesProcessing.EndResponseWithError(response, err, 404);
+		return ComUtils.ResolveWithError("/localstorage:get", err);
 	}
-	const list : string[] = await storage.ListResources();
-	ServerResponsesProcessing.EndResponseWithGoodResult( response, JSON.stringify(list) );
-	return ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ) );
+	const list: string[] = await storage.ListResources();
+	ServerResponsesProcessing.EndResponseWithGoodResult(response, JSON.stringify(list));
+	return ComUtils.ResolveWithGoodResult(Buffer.from(HTTPCodes[200]));
 };
 
 
@@ -239,42 +275,51 @@ const Storage_List = async ( request : http.IncomingMessage, response : http.Ser
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-interface ServerResponsesMap
+export const ResponsesMap: ITemplatedObject<IResponseMethods> =
 {
-	[key:string] : IResponseMethods
-}
-
-export const ResponsesMap : ServerResponsesMap =
-{
-	'/ping' 		: <IResponseMethods>
+	'/ping':
 	{
-		post 		: PingResponse,
-		get 		: PingResponse,
-		put 		: PingResponse,
-		patch 		: PingResponse,
-		delete 		: PingResponse,
+		post: PingResponse,
+		get: PingResponse,
+		put: PingResponse,
+		patch: PingResponse,
+		delete: PingResponse,
 	},
 
-
-	'/upload' 		: <IResponseMethods>
+	'/user_register':
 	{
-		put 		: DownloadResource,
+		put: UserRegister,
 	},
 
-	'/download' 	: <IResponseMethods>
+	'/user_login':
 	{
-		get 		: UploadResource,
+		put: UserLogin,
 	},
 
-	'/storage' 		: <IResponseMethods>
+	'/user_logout':
 	{
-		get			: Storage_Get,
-		put 		: Storage_Put,
-		delete		: Storage_Delete,
+		put: UserLogout,
 	},
 
-	'/storage_list'	: <IResponseMethods>
+	'/upload':
 	{
-		get 		: Storage_List,
+		put: DownloadResource,
+	},
+
+	'/download':
+	{
+		get: UploadResource,
+	},
+
+	'/storage':
+	{
+		get: Storage_Get,
+		put: Storage_Put,
+		delete: Storage_Delete,
+	},
+
+	'/storage_list':
+	{
+		get: Storage_List,
 	}
 };

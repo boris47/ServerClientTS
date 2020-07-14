@@ -1,6 +1,8 @@
 
 import {
-	RequestServerPing,
+//	RequestServerPing,
+	RequestUserRegister,
+	RequestLogin,
 	RequestStorageList,
 	RequestResourceUpload,
 	RequestResourceDownload,
@@ -11,14 +13,18 @@ import {
 import { InstallRequestsProcessor } from "./client";
 import { ComFlowManager } from "../../../../Common/Utils/ComUtils";
 
-//	import * as path from 'path';
-
 async function Main()
 {
+	process.env.NODE_ENV = 'development';
 	await InstallRequestsProcessor();
 	{
-
-		RequestServerPing()
+		RequestUserRegister('Rob', 'erto')
+		
+		.then( ( result : Buffer | Error ) =>
+		{
+			return Buffer.isBuffer(result) ? RequestLogin(result.toString()) : Promise.reject(result);
+		})
+	//	RequestServerPing()
 		.then( ( result : Buffer | Error ) =>
 		{
 			return Buffer.isBuffer(result) ? RequestStorageList( new ComFlowManager ) : Promise.reject(result);
@@ -41,7 +47,7 @@ async function Main()
 	
 		.then( ( result : Buffer | Error ) =>
 		{
-			return Buffer.isBuffer(result) ? RequestGetData( new ComFlowManager, 'kedyy' ) : Promise.reject(result);
+			return Buffer.isBuffer(result) ? RequestGetData( new ComFlowManager, 'MyDataName' ) : Promise.reject(result);
 		})
 	
 		.then( ( value: Error | Buffer ) =>
@@ -49,7 +55,9 @@ async function Main()
 			console.log( "Value", value.toString() );
 		})
 	
-		.catch( reason => console.error(reason) );
+		.catch( reason => {
+			console.log();
+		}/*console.error(reason)*/ );
 		
 	}
 }

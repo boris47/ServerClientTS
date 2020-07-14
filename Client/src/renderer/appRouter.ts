@@ -4,7 +4,7 @@ import LoginManager from './plugins/loginManager';
 import VueRouter, { Route, RouterOptions, RawLocation } from 'vue-router';
 
 //import HomePage from "./Pages/HomePage.vue";
-import TestPage from "./Pages/TestPage.vue";
+//import TestPage from "./Pages/TestPage.vue";
 import LoginPage from "./Pages/LoginPage.vue";
 import AboutPage from "./Pages/AboutPage.vue";
 
@@ -27,7 +27,7 @@ export default class AppRouter
 			const routerOptions = <RouterOptions>
 			{
 				routes: [
-					{	path: '/testPage',		name: 'testPage',		component: TestPage		},
+				//	{	path: '/testPage',		name: 'testPage',		component: TestPage		},
 					{	path: '/loginPage',		name: 'loginPage',		component: LoginPage	},
 					{	path: '/mainPage',		name: 'mainPage',		component: MainPage,	meta: { requiresAuth: true },
 						children: [
@@ -39,7 +39,7 @@ export default class AppRouter
 					{	path: '/aboutPage',		name: 'aboutPage',		component: AboutPage	},
 
 					// Fallback to avoid 404 error
-					{ path: '*', redirect: { path: '/testPage' } }
+					{ path: '*', redirect: { path: '/loginPage' } }
 				]
 			};
 

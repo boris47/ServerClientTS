@@ -4,13 +4,13 @@
 			<h3>Login</h3>
 			<form v-on:submit.prevent="handleSubmit">
 				<div>
-					<label>Username</label>
-					<input type="text" v-model="username" name="username"/>
-					<div v-show="submitted && !username">Username is required</div>
+					<label>username</label>
+					<input type="text" v-model="username" name="username" />
+					<div v-show="submitted && !username">username is required</div>
 				</div>
 				<div>
 					<label>Password</label>
-					<input type="password" v-model="password" name="password"/>
+					<input type="password" v-model="password" name="password" />
 					<div v-show="submitted && !password">Password is required</div>
 				</div>
 				<div>
@@ -26,8 +26,10 @@
 	import Vue from 'vue';
 	import AppRouter from '../appRouter';
 	import LoginManager from '../plugins/loginManager';
+	import { ICP_RendererComs } from '../icpRendererComs';
+	import { EComunicationsChannels } from '../../icpComs';
 
-	export default Vue.extend( {
+	export default Vue.extend({
 
 		name: "LoginPage",
 		data()
@@ -41,25 +43,31 @@
 
 		created()
 		{
-			console.log( 'LoginPage' );
+			console.log('LoginPage');
 			LoginManager.IsLogged = false;
 		},
 
-		methods: {
-
-			handleSubmit( e : any )
+		methods:
+		{
+			async handleSubmit()
 			{
 				this.submitted = true;
-				const { username, password } = this;
-				if ( username && password )
-				{
-					console.log( username, password );
-					LoginManager.IsLogged = true;
-					AppRouter.NavigateTo( 'entrancePage' );
+				if (this.username && this.password)
+				{ // TODO
+					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_LOGIN, null, '9b040c93-e756-4eea-bc30-31fd2323e1c9', this.username, this.password);
+					if (Buffer.isBuffer(result))
+					{
+						LoginManager.IsLogged = true;
+						console.log('TOKEN', result.toString());
+						AppRouter.NavigateTo('entrancePage');
+					}
+					else
+					{
+						console.error("Login Failed");
+					}
 				}
 			}
-			
 		}
-	} )
+	});
 
 </script>

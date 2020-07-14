@@ -8,6 +8,12 @@ export interface ICommonResult
 	body : Buffer | null;
 }
 
+export enum EHeaders
+{
+	USERNAME = 'username',
+	PASSWORD = 'password'
+}
+
 export interface IClientRequestResult extends ICommonResult
 {
 

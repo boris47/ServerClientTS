@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 
-import { IClientRequestResult } from '../../../../Common/Interfaces'
+import { IClientRequestResult, EHeaders } from '../../../../Common/Interfaces'
 import ServerConfigs from '../../../../Common/ServerConfigs'
 import * as ClientWebSocket from './client.Modules.WebSocket';
 import { IRequestsMethods, RequestsMap } from './client.Requests.Mapping';
@@ -11,7 +11,7 @@ import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 const CommonOptions : http.RequestOptions = {
 	host: '0.0.0.0',
 	port: 3000,
-	timeout : 500,
+	timeout : 10000,
 };
 
 interface IClientRequest
@@ -65,13 +65,42 @@ export async function RequestServerPing() : Promise<Buffer|Error>
 	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: { ComFlowManager: undefined } } );
 }
 
+// Register Request
+export async function RequestUserRegister( username: string, Password: string ) : Promise<Buffer|Error>
+{	
+	const headers : http.IncomingHttpHeaders =
+	{
+		[EHeaders.USERNAME] : username,
+		[EHeaders.PASSWORD] : Password
+	}
+	return ProcessRequest( { path: '/user_register', method: 'put', reqArgs: { Headers: headers } } );
+}
+// Login Request
+export async function RequestLogin( Token: string ) : Promise<Buffer|Error>
+{
+	// TODO Get token by username and password on this machine
+	const headers : http.IncomingHttpHeaders =
+	{
+		'token': Token,
+	}
+	return ProcessRequest( { path: '/user_login', method: 'put', reqArgs: { Headers: headers } } );
+}
+// Logout Request
+export async function requestLogout( Token: string ): Promise<Buffer|Error>
+{
+	const headers : http.IncomingHttpHeaders =
+	{
+		'token': Token,
+	}
+	return ProcessRequest( { path: '/user_logout', method: 'put', reqArgs: { Headers: headers } } );
+}
+
 
 // Easy PUT and GET
 export async function RequestGetData( ComFlowManager: ComFlowManager, Key : string ) : Promise<Buffer|Error>
 {
 	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, ComFlowManager: ComFlowManager } } );
 }
-
 export async function RequestPutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
 {
 	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key : Key, Value: Value, ComFlowManager: ComFlowManager } } );
@@ -83,12 +112,10 @@ export async function RequestStorageList( ComFlowManager: ComFlowManager ) : Pro
 {
 	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage:'local', ComFlowManager: ComFlowManager } } );
 }
-
 export async function RequestResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
 {
 	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier: Identifier, DownloadLocation : DownloadLocation, ComFlowManager: ComFlowManager } } );
 }
-
 export async function RequestResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
 {
 	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, ComFlowManager: ComFlowManager } } );
@@ -99,6 +126,8 @@ export async function InstallRequestsProcessor()
 {
 	let bResult = true;
 	const bIsDev = process.env.NODE_ENV === 'development'; //TODO Remove this workaround
+	CommonOptions.timeout = bIsDev ? undefined : CommonOptions.timeout;
+
 	const serverConfigFilePath = (bIsDev ? '' : '../../' ) + '../Temp/ServerCfg.json';
 //	console.log(serverConfigFilePath);
 	bResult = bResult && ServerConfigs.Load( serverConfigFilePath );

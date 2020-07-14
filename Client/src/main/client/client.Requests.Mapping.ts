@@ -9,6 +9,7 @@ import FSUtils from '../../../../Common/Utils/FSUtils';
 import { IClientRequestResult } from '../../../../Common/Interfaces';
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { ClientRequestsProcessing, IClientRequestInternalOptions } from './client.Requests.Processing';
+import { ITemplatedObject } from '../../../../Common/Utils/GenericUtils';
 
 
 export interface IRequestsMethods
@@ -25,7 +26,28 @@ export interface IRequestsMethods
 /////////////////////////////////////////////////////////////////////////////////////////
 const PingRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const RegisterRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+{
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const LoginRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+{
+	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
+};
+
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const LogoutRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+{
+	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
 };
 
 
@@ -66,7 +88,7 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	requestPath.set('identifier', filePathParsed.base);
 	options.path += '?' + requestPath.toString();
 
-	return ClientRequestsProcessing.Request_PUT( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +111,7 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 	}
 
 	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
 };
 
 
@@ -100,61 +122,70 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Get = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Put = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_PUT( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Delete = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_List = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.Request_GET( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-interface ServerResponseMap
+export const RequestsMap : ITemplatedObject<IRequestsMethods> =
 {
-	[key:string] : IRequestsMethods
-}
-
-export const RequestsMap : ServerResponseMap = {
-
-	'/ping'			: <IRequestsMethods>
+	'/ping':
 	{
 		get 		: PingRequest,
 	},
 
-	'/upload' 		: <IRequestsMethods>
+	'/user_register'	:
+	{
+		put:		RegisterRequest,
+	},
+
+	'/user_login':
+	{
+		put			: LoginRequest,
+	},
+	'/user_logout':
+	{
+		put			: LogoutRequest,
+	},
+
+	'/upload':
 	{
 		put			: UploadResource,
 	},
 
-	'/download' 	: <IRequestsMethods>
+	'/download':
 	{
 		get 		: DownloadResource,
 	},
 
-	'/storage'		: <IRequestsMethods>
+	'/storage':
 	{
 		get			: Storage_Get,
 		put			: Storage_Put,
 		delete		: Storage_Delete,
 	},
 
-	'/storage_list'	: <IRequestsMethods>
+	'/storage_list':
 	{
 		get			: Storage_List,
 	},

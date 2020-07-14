@@ -8,7 +8,6 @@ import * as ComUtils from '../../../Common/Utils/ComUtils';
 
 export interface IServerRequestInternalOptions
 {
-	Identifier? : string;
 	Key? : string;
 	Value? : Buffer | null;
 	Headers? : http.OutgoingHttpHeaders;
@@ -46,7 +45,7 @@ export default class ServerResponsesProcessing
 
 
 	/** Resource: Server -> Client' */
-	public static async Request_GET( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
+	public static async ServetToClient( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
@@ -91,7 +90,7 @@ export default class ServerResponsesProcessing
 
 	
 	/** Resource: Client -> Server */
-	public static async Request_PUT( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
+	public static async ClientToServer( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{

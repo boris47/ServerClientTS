@@ -1,0 +1,6 @@
+{
+	"PublicIPv4": "109.117.38.36",
+	"PublicIPv6": "2001:b07:ae6:2f48:b548:abb4:b5f0:6f99",
+	"RequestsListenerPort": 53328,
+	"WebSocketPort": 53329
+}
