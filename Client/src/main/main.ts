@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import * as electron from 'electron';
 import { SetupMainHandlers } from './icpMainComs';
-import { InstallRequestsProcessor } from './client/client';
+import { InstallRequestsProcessor } from './client/client.Bridge';
 
 //const packageText = fs.readFileSync( '' )
 
@@ -17,6 +17,7 @@ electron.app.name = `${productName} - ${description} v.${version}`
 
 //Here is where we change the default path of the cookies in order to keep them if we make automatic updates//
 {
+	console.log('userData', electron.app.getPath('userData'));
 	const cookiePath = path.join(electron.app.getPath('userData'), 'UserData', 'Cookies');
 	electron.app.setPath('userData', cookiePath);
 }

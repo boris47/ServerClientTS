@@ -29,6 +29,14 @@ export interface ITemplatedObject<T = any>
 	[key: string]: T;
 }
 
+export function Yieldable<T>(fn: () => T): Promise<T>
+{
+	return new Promise( ( resolve ) =>
+	{
+		resolve(fn());
+	});
+}
+
 
 export type GenericConstructor<T> = { new(...Args: any[]): T; };
 export default class GenericUtils
@@ -61,8 +69,8 @@ export default class GenericUtils
 
 	
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async WaitFrames(count: number): Promise<void>
+	public static async WaitFrames(frameCount: number): Promise<void>
 	{
-		for (let index = 0; index < count; index++) await GenericUtils.DelayMS(1);
+		for (let index = 0; index < frameCount; index++) await GenericUtils.DelayMS(1);
 	}
 }

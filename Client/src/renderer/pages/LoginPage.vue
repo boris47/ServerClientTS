@@ -6,12 +6,12 @@
 				<div>
 					<label>username</label>
 					<input type="text" v-model="username" name="username" />
-					<div v-show="submitted && !username">username is required</div>
+					<div class="red-label" v-show="submitted && !username">username is required</div>
 				</div>
 				<div>
 					<label>Password</label>
 					<input type="password" v-model="password" name="password" />
-					<div v-show="submitted && !password">Password is required</div>
+					<div class="red-label" v-show="submitted && !password">Password is required</div>
 				</div>
 				<div>
 					<button class="btn btn-primary">Login</button>
@@ -54,7 +54,7 @@
 				this.submitted = true;
 				if (this.username && this.password)
 				{ // TODO
-					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_LOGIN, null, '9b040c93-e756-4eea-bc30-31fd2323e1c9', this.username, this.password);
+					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_LOGIN, null, this.username, this.password);
 					if (Buffer.isBuffer(result))
 					{
 						LoginManager.IsLogged = true;
@@ -63,7 +63,7 @@
 					}
 					else
 					{
-						console.error("Login Failed");
+						console.error("Login Failed", result);
 					}
 				}
 			}
@@ -71,3 +71,11 @@
 	});
 
 </script>
+
+<style scoped>
+
+.red-label{
+	color: red;
+}
+
+</style>

@@ -9,27 +9,20 @@ import ServerUserManager from './Server.User.Manager';
 
 export default class ServerUserRequestHandler
 {
-	public static async CheckUserAuths( token: string, path: string, request: http.IncomingMessage, response: http.ServerResponse ) : Promise<ComUtils.IServerResponseResult>
+	public static async CheckUserAuths(path: string, requiresAuth: boolean, request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
 		// Login is OK?
-		if ( token )
+		const token = request.headers.token as string;
+		if (requiresAuth && (!token || !ServerUserManager.FindLoggedInUserByToken(token)))
 		{
-			if ( !ServerUserManager.IsUserLoggedIn(token) )
-			{
-				ServerResponsesProcessing.EndResponseWithError(response, 'Login required', 401 );
-				return ComUtils.ResolveWithError('Login Requested', HTTPCodes[401]);
-			}
-			else	// Redirect to login
-			{
-				
-			}
+			ServerResponsesProcessing.EndResponseWithError(response, 'Login required', 401);
+			return ComUtils.ResolveWithError('Login Requested', HTTPCodes[401]);
 		}
 
-		
 		// Auth is OK?
-		if ( !ServerUserManager.HasAuthorizationFor(token, path) )
+		if (token && !ServerUserManager.HasAuthorizationFor(token, path))
 		{
-			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401 );
+			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401);
 			return ComUtils.ResolveWithError('PermissionError', HTTPCodes[401]);
 		}
 

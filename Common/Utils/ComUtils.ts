@@ -199,7 +199,7 @@ export async function ResolveWithError<T extends ICommonResult>( errName : strin
 
 	const resultObject = <T>
 	{
-		body: Buffer.from( `${errName}.\n${msg}` ),
+		body: Buffer.from( `${errName}. ${msg}` ),
 		bHasGoodResult : false
 	};
 	if ( typeof cb === 'function' )

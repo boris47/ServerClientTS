@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import FSUtils from '../../Common/Utils/FSUtils';
-import GenericUtils, { GenericConstructor } from '../../Common/Utils/GenericUtils';
+import GenericUtils, { GenericConstructor, Yieldable } from '../../Common/Utils/GenericUtils';
 import { AWSUtils } from '../Utils/AWSUtils';
 import { IIndexableObject } from '../../Common/Interfaces';
 
@@ -90,7 +90,7 @@ class ServerStorage_FileSystem implements IServerStorage
 			for( const Key/*string*/in parsed )
 			{
 				const buffer = parsed[Key];
-				this.m_Storage.set( Key, Buffer.from( buffer ) );
+				await Yieldable( () => this.m_Storage.set( Key, Buffer.from( buffer ) ) );
 			}
 			return true;
 		}
@@ -102,13 +102,15 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage() : Promise<boolean>
 	{
+		console.log(`Storage:Saving storage ${this.m_StorageName}`);
 		let objectToSave : IIndexableObject = {};
-		this.m_Storage.forEach( ( value: Buffer, Key: string ) =>
+		for( const [Key, value] of this.m_Storage )
 		{
-			objectToSave[Key] = value.toJSON().data;
-		});
+			await Yieldable( () => objectToSave[Key] = value.toJSON().data );
+		}
 
 		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
+		console.log(`Storage:Storage ${this.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
 		return !result;
 	}
 
@@ -157,7 +159,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResource( Key : string ) : Promise<Buffer | null>
 	{
-		if ( this.HasResource( Key ) )
+		if ( await this.HasResource( Key ) )
 		{
 			return this.m_Storage.get( Key ) || null;
 		}
@@ -225,6 +227,8 @@ class ServerStorage_AWS implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage(): Promise<boolean>
 	{
+		console.log(`Storage:Saving storage ${this.bucketName}`);
+		console.log(`Storage:Storage ${this.bucketName} saved`);
 		return true; // nothing to save
 	}
 
@@ -310,28 +314,30 @@ export class StorageManager
 		{
 			if( await storage.Initialize( StorageName ) )
 			{
-				this.m_Storages.set( StorageName, storage );
+				StorageManager.m_Storages.set( StorageName, storage );
 			}
 		}
 
+		console.log( `Storage ${type} Created and Initialized` );
 		return storage;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static GetStorage( StorageName : string ) : IServerStorage | undefined
 	{
-		return this.m_Storages.get( StorageName );
+		return StorageManager.m_Storages.get( StorageName );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async CloseStorage( StorageName : string ) : Promise<boolean>
 	{
-		const storage : IServerStorage = this.m_Storages.get( StorageName );
+		const storage : IServerStorage = StorageManager.m_Storages.get( StorageName );
 		if ( storage )
 		{
+			await storage.SaveStorage();
 			if ( await storage.ClearStorage() )
 			{
-				this.m_Storages.delete( StorageName );
+				StorageManager.m_Storages.delete( StorageName );
 				return true;
 			}
 		}

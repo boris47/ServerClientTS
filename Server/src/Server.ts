@@ -13,6 +13,7 @@ import HttpModule from './Modules/Server.Modules.Http';
 import WebSocketModule from './Modules/Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
 import { StorageManager, EStorageType } from './Server.Storages';
+import ServerUserDB from './Users/Server.User.DB';
 
 /*
 // Very simple answer
@@ -31,146 +32,6 @@ process.on( 'message', ( message : any ) =>
 */
 
 
-/////////////////////////////////////////////////////////////////////////////////////////
-async function UploadConfigurationFile() : Promise<boolean>
-{
-	const serverConfigs = new ServerConfigs();
-	serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
-	serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
-	serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
-	serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
-	
-	const filePath = "../Temp/ServerCfg.json";
-	await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
-	fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
-
-	return serverConfigs.AreValidData();
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-async function SaveMachinePublicIP(): Promise<boolean>
-{
-	let bResult = true;
-	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
-	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
-	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
-	
-	if ( publicIPv6 )
-	{
-		console.log( "Server", 'publicIPv6', publicIPv6 );
-		ServerInfo.MACHINE_PUBLIC_IPv6 = publicIPv6;
-	}
-	if ( publicIPv4 )
-	{
-		console.log( "Server", 'publicIPv4', publicIPv4 );
-		ServerInfo.MACHINE_PUBLIC_IPv4 = publicIPv4;
-	}
-	else
-	{
-		console.error( `Cannot retrieve public ip` );
-		bResult = false;
-	}
-
-	return bResult;
-}
-
-
-async function Main()
-{
-	// LOGGER
-//	const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
-//	if ( !bLoggerCreated )
-	{
-//		debugger;
-//		return process.exit(1);
-	}
-
-	// Machine public ip
-	{
-		const bResult = await SaveMachinePublicIP();
-		if ( !bResult )
-		{
-			console.error( "Cannot find Public Ip" );
-			debugger;
-			return process.exit(1);
-		}
-	}
-
-	// DATABASE
-	{
-		const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
-		if ( !db )
-		{
-			console.error( "Database Unavailable" );
-			debugger;
-			process.exit(1);
-		}
-	}
-
-	const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
-	const remoteStorage = await StorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
-	{
-		const bResultLocal = await localStorage.LoadStorage();
-		if ( !bResultLocal )
-		{
-			console.error( "Local Storage Unavailable" );
-			debugger;
-			return process.exit(1);
-		}
-		
-		const bResultRemote = await remoteStorage.LoadStorage();
-		if ( !bResultRemote )
-		{
-			console.error( "Remote Storage Unavailable" );
-			debugger;
-			return process.exit(1);
-		}
-	}
-
-	{	
-		const bResult = await HttpModule.Initialize();
-		if ( !bResult )
-		{
-			console.error( "Cannot create server" );
-			debugger;
-			return process.exit(1);
-		}
-	}
-
-	{
-		const bResult = await WebSocketModule.Initialize();
-		if ( !bResult )
-		{
-			console.error( "Cannot create websocket" );
-			debugger;
-			return process.exit(1);
-		}
-	}
-
-	{
-		const bHasCommittedConfigFile = await UploadConfigurationFile();
-		if ( !bHasCommittedConfigFile )
-		{
-			console.error( "Cannot upload configuration file" );
-			debugger;
-			return process.exit(1);
-		}
-	}
-
-	console.log("---- SERVER IS RUNNING ----");
-
-	{
-		while( true )
-		{
-			await GenericUtils.DelayMS( 5000 );
-	
-			await localStorage.SaveStorage();
-		}
-	}
-
-}
 
 /*
 process.on( 'uncaughtException', ( error: Error ) =>
@@ -191,24 +52,6 @@ process.on( 'multipleResolves', ( type: NodeJS.MultipleResolveType, promise: Pro
 });
 */
 
-// catching signals and do something before exit
-['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT','SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'].forEach(function (sig:string)
-{
-	process.on(sig as any, function ()
-	{
-		terminator(sig);
-	});
-});
-
-
-function terminator(sig: string)
-{
-	Promise.resolve()
-	.then( _ => HttpModule.Finalize() )
-	.then( _ => WebSocketModule.Finalize() )
-	.then(  _ => process.exit(1) );
-}
-
 
 /**
  * The 'beforeExit' event is emitted when Node.js empties its event loop and has no additional work to schedule.
@@ -217,12 +60,12 @@ function terminator(sig: string)
  * 
  * The 'beforeExit' event is not emitted for conditions causing explicit termination, such as calling process.exit() or uncaught exceptions.
  * The 'beforeExit' should not be used as an alternative to the 'exit' event unless the intention is to schedule additional work.
- */
+ *//*
 process.on('beforeExit', ( code:number ) =>
 {
 	console.error( 'beforeExit' );
 });
-
+*/
 /**
  * The 'exit' event is emitted when the Node.js process is about to exit as a result of either:
  * 
@@ -233,11 +76,206 @@ process.on('beforeExit', ( code:number ) =>
  * The listener callback function is invoked with the exit code specified either by the process.exitCode property, or the exitCode argument passed to the process.exit() method.
  * Listener functions must only perform synchronous operations.
  * The Node.js process will exit immediately after calling the 'exit' event listeners causing any additional work still queued in the event loop to be abandoned.
- */
+ *//*
 process.on( 'exit', ( code: number ) =>
 {
 	console.error( 'exit' );
 });
+*/
+
+interface IFinalizer
+{
+	function: (args?:any | any[]) => Promise<any>;
+	args?: any;
+}
+
+class App
+{
+	private finalizers = new Map<object, IFinalizer>();
+	private count = 0;	// catching signals and do something before exit
 
 
-Main();
+	/////////////////////////////////////////////////////////////////////////////////////////
+	constructor()
+	{
+		['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT','SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'].forEach((sig: any) =>
+		{
+			process.once(sig, () =>
+			{
+				this.AppTerminator(sig);
+			});
+		});
+	}
+
+	private bIsTerminating = false;
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async AppTerminator(sig: string): Promise<void>
+	{
+		if (this.bIsTerminating) return Promise.resolve();
+		this.bIsTerminating = true;
+
+		const finalizersCount = this.finalizers.size;
+		
+		console.log( `FINALIZATION START, Singal: ${sig}, count: ${finalizersCount}` );
+		for( const [context, finalizer] of this.finalizers )
+		{
+			await finalizer.function.apply(context, [finalizer.args]).then( () =>
+			{
+				console.log( `FINALIZATION: ${++this.count}/${finalizersCount}`);
+			});
+		}
+		console.log( `FINALIZATION END` );
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async FinalizationExit(exitCode: number) : Promise<void>
+	{
+		this.AppTerminator(null).then( () => process.exit(exitCode) );
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async UploadConfigurationFile() : Promise<boolean>
+	{
+		const serverConfigs = new ServerConfigs();
+		serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
+		serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
+		serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
+		serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
+		
+		const filePath = "../Temp/ServerCfg.json";
+		await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
+		fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
+
+		return serverConfigs.AreValidData();
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async SaveMachinePublicIP(): Promise<boolean>
+	{
+		let bResult = true;
+		const url_v6 = 'https://ipv6-api.speedtest.net/getip';
+		const url_v4 = 'https://ipv4-api.speedtest.net/getip';
+		const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
+		const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
+		
+		if ( publicIPv6 )
+		{
+			console.log( "Server", 'publicIPv6', publicIPv6 );
+			ServerInfo.MACHINE_PUBLIC_IPv6 = publicIPv6;
+		}
+		if ( publicIPv4 )
+		{
+			console.log( "Server", 'publicIPv4', publicIPv4 );
+			ServerInfo.MACHINE_PUBLIC_IPv4 = publicIPv4;
+		}
+		if ( !publicIPv6 && !publicIPv4 )
+		{
+			console.error( `Cannot retrieve public ip` );
+			bResult = false;
+		}
+
+		return bResult;
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public async Execute(): Promise<void>
+	{
+		// LOGGER
+	//	const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
+	//	if ( !bLoggerCreated )
+		{
+		//	debugger; process.exit(1);
+		}
+	
+		// Machine public ip
+		if ( !await this.SaveMachinePublicIP() )
+		{
+			console.error( "Cannot find Public Ip" );
+			debugger; return this.FinalizationExit(1);
+		}
+		
+	
+		// DATABASE
+		{
+			const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+			if ( !db )
+			{
+				console.error( "Database Unavailable" );
+				debugger; return this.FinalizationExit(1);
+			}
+			this.finalizers.set( MongoDatabase, { function: MongoDatabase.CloseClient, args: db });
+		}
+	
+		const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
+		const remoteStorage = await StorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
+		const bResultServerUserDBInitialization = await ServerUserDB.Initialize();
+		this.finalizers.set( localStorage, { function: localStorage.SaveStorage });
+		this.finalizers.set( remoteStorage, { function: remoteStorage.SaveStorage});
+		this.finalizers.set( ServerUserDB, { function: ServerUserDB.SaveStorage });
+		{
+			if ( !localStorage || !await localStorage.LoadStorage() )
+			{
+				console.error( "Local Storage Unavailable" );
+				debugger; return this.FinalizationExit(1);
+			}
+			
+			if ( !remoteStorage || !await remoteStorage.LoadStorage() )
+			{
+				console.error( "Remote Storage Unavailable" );
+				debugger; return this.FinalizationExit(1);
+			}
+	
+			if ( !bResultServerUserDBInitialization || !await ServerUserDB.LoadStorage() )
+			{
+				console.error( !bResultServerUserDBInitialization ? 'Server User DB Initialization Failed' : 'Server User DB Unavailable' );
+				debugger; return this.FinalizationExit(1);
+			}
+		}
+
+		if ( !await HttpModule.Initialize() )
+		{
+			console.error( "Cannot create server" );
+			debugger; return this.FinalizationExit(1);
+		}
+		this.finalizers.set( HttpModule, { function: HttpModule.Finalize });
+
+		if ( !await WebSocketModule.Initialize() )
+		{
+			console.error( "Cannot create websocket" );
+			debugger; return this.FinalizationExit(1);
+		}
+		this.finalizers.set( WebSocketModule, { function: WebSocketModule.Finalize });
+
+		if ( !await this.UploadConfigurationFile() )
+		{
+			console.error( "Cannot upload configuration file" );
+			debugger; return this.FinalizationExit(1);
+		}
+	
+		console.log("---- SERVER IS RUNNING ----");
+		{
+			let bRunning = true;
+			this.finalizers.set( this, { function: () =>
+				{
+					console.log("Server: Breaking Main Loop");
+					return Promise.resolve(bRunning = false);
+				}
+			});
+		//	while( bRunning )
+			{
+				await GenericUtils.WaitFrames( 1 );
+				
+			//	await localStorage.SaveStorage();
+			}
+	
+			this.FinalizationExit(0);
+		}
+	}
+}
+
+new App().Execute();

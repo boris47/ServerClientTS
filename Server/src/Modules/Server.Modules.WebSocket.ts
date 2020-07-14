@@ -50,8 +50,7 @@ export default class WebSocketModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Finalize(): Promise<void>
 	{
-		WebSocketModule.instance.webSocketServer.shutDown();
-		console.log("WebSocketServer Closed");
+		await WebSocketModule.instance.Finalize();
 	}
 
 
@@ -91,6 +90,10 @@ export default class WebSocketModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async Finalize(): Promise<void>
 	{
+		console.log(`WebSocketModule.Finalize:Closing Web Socket Server`);
+		WebSocketModule.instance.webSocketServer.shutDown();
+		console.log(`WebSocketModule.Finalize:Web Socket Server Closed`);
+
 	//	const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
 	//	const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.WEBSOCKET_SERVER_ADDRESS, ServerInfo.WEBSOCKET_SERVER_PORT );
 	}

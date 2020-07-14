@@ -13,10 +13,16 @@ import { ITemplatedObject } from '../../../Common/Utils/GenericUtils';
 import ServerUserManager from '../Users/Server.User.Manager';
 
 
+export interface IResponsesMapItem
+{
+	requiresAuth: boolean;
+	responseMethods : IResponseMethods
+}
+
 
 export interface IResponseMethods
 {
-	[key: string]: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
+	[key: string]: ( (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>);
 	post?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
 	get?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
 	put?: (request: http.IncomingMessage, response: http.ServerResponse) => Promise<ComUtils.IServerResponseResult>;
@@ -69,6 +75,12 @@ const UserRegister = async (request: http.IncomingMessage, response: http.Server
 	const username = request.headers.username as string;
 	const password = request.headers.password as string;
 	const token = await ServerUserManager.RegisterUser(username, password);
+	if (!token)
+	{
+		ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401);
+		return ComUtils.ResolveWithError('[LOGIN]', 'User already exists');
+	}
+
 	ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
 	return ComUtils.ResolveWithGoodResult();
 };
@@ -77,23 +89,39 @@ const UserRegister = async (request: http.IncomingMessage, response: http.Server
 /////////////////////////////////////////////////////////////////////////////////////////
 const UserLogin = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const token = request.headers.token as string;
-	if (!(await ServerUserManager.UserLogin(token)))
+	const username = request.headers.username as string;
+	const password = request.headers.password as string;
+	const token = await ServerUserManager.UserLogin(username, password);
+	if ( !token )
 	{
-		const err = `Server:Login Failed`;
+		ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401);
+		return ComUtils.ResolveWithError('[LOGIN]', 'User not exists');
+	}
+	ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
+	return ComUtils.ResolveWithGoodResult();
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const UserLoginByToken = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+{
+	const token = request.headers.token as string;
+	const bLoggedIn = await ServerUserManager.UserLoginByToken(token);
+	if ( !bLoggedIn )
+	{
+		const err = `Login required`;
 		ServerResponsesProcessing.EndResponseWithError(response, err, 401);
 		return ComUtils.ResolveWithError('[LOGIN]', err);
 	}
 
 	ServerResponsesProcessing.EndResponseWithGoodResult(response);
 	return ComUtils.ResolveWithGoodResult();
-};
+}
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const UserLogout = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	const token = request.headers.token as string;
-	await ServerUserManager.Logout(token);
+	await ServerUserManager.UserLogout(token);
 
 	ServerResponsesProcessing.EndResponseWithGoodResult(response);
 	return ComUtils.ResolveWithGoodResult();
@@ -275,51 +303,92 @@ const Storage_List = async (request: http.IncomingMessage, response: http.Server
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-export const ResponsesMap: ITemplatedObject<IResponseMethods> =
+export const ResponsesMap: ITemplatedObject<IResponsesMapItem> =
 {
 	'/ping':
 	{
-		post: PingResponse,
-		get: PingResponse,
-		put: PingResponse,
-		patch: PingResponse,
-		delete: PingResponse,
+		requiresAuth: false,
+		responseMethods:
+		{
+			post: PingResponse,
+			get: PingResponse,
+			put: PingResponse,
+			patch: PingResponse,
+			delete: PingResponse,
+		}
 	},
 
 	'/user_register':
 	{
-		put: UserRegister,
+		requiresAuth: false,
+		responseMethods:
+		{
+			put: UserRegister,
+		}
 	},
 
 	'/user_login':
 	{
-		put: UserLogin,
+		requiresAuth: false,
+		responseMethods:
+		{
+			put: UserLogin,
+		}
+	},
+
+	'user_login_token':
+	{
+		requiresAuth: false,
+		responseMethods:
+		{
+			put: UserLoginByToken,
+		}
 	},
 
 	'/user_logout':
 	{
-		put: UserLogout,
+		requiresAuth: false,
+		responseMethods:
+		{
+			put: UserLogout,
+		}
 	},
 
 	'/upload':
 	{
-		put: DownloadResource,
+		requiresAuth: true,
+		responseMethods:
+		{
+			put: DownloadResource,
+		}
 	},
 
 	'/download':
 	{
-		get: UploadResource,
+		requiresAuth: true,
+		responseMethods:
+		{
+			get: UploadResource,
+		}
 	},
 
 	'/storage':
 	{
-		get: Storage_Get,
-		put: Storage_Put,
-		delete: Storage_Delete,
+		requiresAuth: true,
+		responseMethods:
+		{
+			get: Storage_Get,
+			put: Storage_Put,
+			delete: Storage_Delete,
+		}
 	},
 
 	'/storage_list':
 	{
-		get: Storage_List,
+		requiresAuth: true,
+		responseMethods:
+		{
+			get: Storage_List,
+		}
 	}
 };

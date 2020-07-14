@@ -60,65 +60,94 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 }
 
 
-export async function RequestServerPing() : Promise<Buffer|Error>
+export async function Request_ServerPing() : Promise<Buffer|Error>
 {
 	return ProcessRequest( { path: '/ping', method: 'get', reqArgs: { ComFlowManager: undefined } } );
 }
 
-// Register Request
-export async function RequestUserRegister( username: string, Password: string ) : Promise<Buffer|Error>
+/** Register Request */
+export async function Request_UserRegister( Username: string, Password: string ) : Promise<Buffer|Error>
 {	
-	const headers : http.IncomingHttpHeaders =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		[EHeaders.USERNAME] : username,
+		[EHeaders.USERNAME] : Username,
 		[EHeaders.PASSWORD] : Password
-	}
-	return ProcessRequest( { path: '/user_register', method: 'put', reqArgs: { Headers: headers } } );
+	};
+	return ProcessRequest( { path: '/user_register', method: 'put', reqArgs: { Headers } } );
 }
-// Login Request
-export async function RequestLogin( Token: string ) : Promise<Buffer|Error>
+/** Login Request */
+export async function Request_UserLogin( Username: string, Password: string ) : Promise<Buffer|Error>
 {
 	// TODO Get token by username and password on this machine
-	const headers : http.IncomingHttpHeaders =
+	const Headers : http.IncomingHttpHeaders =
+	{
+		[EHeaders.USERNAME] : Username,
+		[EHeaders.PASSWORD] : Password
+	};
+	return ProcessRequest( { path: '/user_login', method: 'put', reqArgs: { Headers } } );
+}
+/** Login by token request */
+export async function Request_UserLoginByToken( Token: string ): Promise<Buffer|Error>
+{
+	const Headers : http.IncomingHttpHeaders =
 	{
 		'token': Token,
-	}
-	return ProcessRequest( { path: '/user_login', method: 'put', reqArgs: { Headers: headers } } );
+	};
+	return ProcessRequest( { path: '/user_login_token', method: 'put', reqArgs: { Headers } } );
 }
-// Logout Request
-export async function requestLogout( Token: string ): Promise<Buffer|Error>
+
+/** Logout Request */
+export async function Request_UserLogout( Token: string ): Promise<Buffer|Error>
 {
-	const headers : http.IncomingHttpHeaders =
+	const Headers : http.IncomingHttpHeaders =
 	{
 		'token': Token,
-	}
-	return ProcessRequest( { path: '/user_logout', method: 'put', reqArgs: { Headers: headers } } );
+	};
+	return ProcessRequest( { path: '/user_logout', method: 'put', reqArgs: { Headers } } );
 }
 
-
-// Easy PUT and GET
-export async function RequestGetData( ComFlowManager: ComFlowManager, Key : string ) : Promise<Buffer|Error>
-{
-	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, ComFlowManager: ComFlowManager } } );
-}
-export async function RequestPutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
-{
-	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key : Key, Value: Value, ComFlowManager: ComFlowManager } } );
-}
-
+const RetrieveToken = async () => (await customLocalStorage.GetResource('token')).toString() 
 
 // STORAGE
-export async function RequestStorageList( ComFlowManager: ComFlowManager ) : Promise<Buffer|Error>
+export async function Request_StorageGetData( ComFlowManager: ComFlowManager, Key : string ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage:'local', ComFlowManager: ComFlowManager } } );
+	const Headers =
+	{
+		'token': await RetrieveToken()
+	};
+	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, ComFlowManager, Headers } } );
 }
-export async function RequestResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
+export async function Request_StoragePutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier: Identifier, DownloadLocation : DownloadLocation, ComFlowManager: ComFlowManager } } );
+	const Headers =
+	{
+		'token': await RetrieveToken()
+	};
+	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key, Value, ComFlowManager, Headers } } );
 }
-export async function RequestResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
+export async function Request_StorageList( ComFlowManager: ComFlowManager ) : Promise<Buffer|Error>
 {
-	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, ComFlowManager: ComFlowManager } } );
+	const Headers =
+	{
+		'token': await RetrieveToken()
+	};
+	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage: 'local', ComFlowManager, Headers } } );
+}
+export async function Request_StorageResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
+{
+	const Headers =
+	{
+		'token': await RetrieveToken()
+	};
+	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier, DownloadLocation, ComFlowManager, Headers } } );
+}
+export async function Request_StorageResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
+{
+	const Headers =
+	{
+		'token': await RetrieveToken()
+	};
+	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, ComFlowManager, Headers } } );
 }
 
 

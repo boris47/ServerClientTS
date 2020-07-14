@@ -1,6 +1,6 @@
 
 
-import { UniqueID } from "../../../Common/Utils/GenericUtils";
+import { UniqueID, ITemplatedObject } from "../../../Common/Utils/GenericUtils";
 
 export class UserLoginData
 {
@@ -79,9 +79,27 @@ export class ServerUser
 	}
 
 	//
+	public IsPassword( password: string )
+	{
+		return this.password === password;
+	}
+
+	//
 	public async Logout()
 	{
 		this.LoginData.LogOut();
 		// TODO Release every data left outside
+	}
+
+
+	private toJSON()
+	{
+		const toSkip : string[] = ['loginData'];
+		const output : ITemplatedObject = {};
+		for ( const prop in this )
+		{
+			output[prop] = toSkip.includes(prop) ? undefined : this[prop];
+		}
+		return output;
 	}
 }

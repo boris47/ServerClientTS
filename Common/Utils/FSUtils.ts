@@ -18,7 +18,6 @@ export default class FSUtils
 		return process.env.APPDATA || path.join( process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share" );
 	}
 
-
 	/**  */
 	public static async Copy( absoluteSourceFolder : string, absoluteDestinationFolder : string, subfolder? : string ) : Promise<Map<string, (NodeJS.ErrnoException | null )>>
 	{
@@ -41,7 +40,6 @@ export default class FSUtils
 		return results;
 	}
 
-
 	/**  */
 	public static LogIfError( result? : NodeJS.ErrnoException )
 	{
@@ -53,7 +51,6 @@ export default class FSUtils
 		return result;
 	}
 
-	
 	/**  */
 	public static ExistsSync( pathToAccess : string ) : boolean
 	{
@@ -65,7 +62,6 @@ export default class FSUtils
 		return false
 	}
 
-
 	/**  */
 	public static FileExistsAsync( pathToAccess : string ) : Promise<boolean>
 	{
@@ -75,17 +71,16 @@ export default class FSUtils
 		});
 	}
 
-
 	/**  */
 	public static WriteFileAsync( filePath : string, data: string | Buffer ) : Promise<NodeJS.ErrnoException | null>
 	{
 		return new Promise( ( resolve ) =>
 		{
-			fs.writeFile( filePath, Buffer.isBuffer(data) ? data : Buffer.from(data, 'utf-8'), ( err: NodeJS.ErrnoException ) => resolve( err ) );
+			fs.writeFile( filePath, data, ( err: NodeJS.ErrnoException ) => resolve( err ) );
 		});
 	}
 
-
+	/**  */
 	public static MakeDirectoryAsync( dirPath: string ) : Promise<boolean>
 	{
 		return new Promise( ( resolve ) =>
@@ -93,7 +88,6 @@ export default class FSUtils
 			fs.mkdir( dirPath, ( err: NodeJS.ErrnoException ) => resolve(!err) );
 		});
 	}
-
 
 	/**  */
 	public static ReadFileAsync( filePath : string ) : Promise<NodeJS.ErrnoException | Buffer>
@@ -104,7 +98,6 @@ export default class FSUtils
 		});
 	}
 
-
 	/**  */
 	public static ReadFileStat( filePath : string ) : Promise<NodeJS.ErrnoException | fs.Stats>
 	{
@@ -114,7 +107,6 @@ export default class FSUtils
 		});
 	}
 
-
 	/**  */
 	public static IsDirectorySafe( directoryPath: string ): boolean
 	{
@@ -122,7 +114,7 @@ export default class FSUtils
 		try{ result = fs.lstatSync( directoryPath ).isDirectory(); } catch ( e ) {}
 		return result;
 	}
-	
+
 
 	/** Ensure that a folder exist, creating all directory tree if needed */
 	public static async EnsureDirectoryExistence( filePath: string ): Promise<void>
@@ -137,7 +129,6 @@ export default class FSUtils
 			}
 		};
 	}
-
 	
 	/** Check if a file can be written at given path */
 	public static EnsureWritableFile( filePath: string ): Promise<boolean>
@@ -147,7 +138,6 @@ export default class FSUtils
 			fs.writeFile( filePath, '', ( err: NodeJS.ErrnoException ) => resolve(!err) );
 		});
 	}
-
 
 	/**  */
 	public static MapFolder( folderPath: string ): IMappedFolderData
@@ -181,7 +171,6 @@ export default class FSUtils
 	
 		return result;
 	}
-
 	
 	/** If directory exists, clear all the content */
 	public static DeleteFolder( folderPath: string ): void
@@ -190,7 +179,6 @@ export default class FSUtils
 		mapped.files.forEach( filePath => fs.unlinkSync(filePath) );
 		mapped.folders.reverse().forEach( directoryPath => fs.rmdirSync(directoryPath) );
 	}
-
 
 	/** (Promise) Returns the size in Bytes of the given file or directory, or null in case of error */
 	public static GetFileSizeInBytesOf( filePath : string ) : number | null

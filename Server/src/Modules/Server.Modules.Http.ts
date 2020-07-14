@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as net from 'net';
 
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import { IResponseMethods, ResponsesMap, MethodNotAllowed, NotImplementedResponse } from '../Responses/Server.Responses.Mapping';
+import { ResponsesMap, MethodNotAllowed, NotImplementedResponse, IResponsesMapItem } from '../Responses/Server.Responses.Mapping';
 import { ServerInfo } from '../Server.Globals';
 import ServerUserRequestHandler from '../Users/Server.User.RequestHandler';
 
@@ -77,6 +77,7 @@ export default class HttpModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private async Finalize(): Promise<void>
 	{
+		console.log(`HttpModule.Finalize:Closing Http Server`);
 		const error: Error | undefined = await new Promise( ( resolve ) =>
 		{
 			HttpModule.instance.server.close(resolve);
@@ -85,10 +86,8 @@ export default class HttpModule
 		{
 			console.error( error.name, error.message );
 		}
-		else
-		{
-			console.log("Server Closed");
-		}
+		
+		console.log(`HttpModule.Finalize:Http Server Closed`);
 		
 //		const result11 = await ServerCommunications.RemoveFirewallRule( this.ruleName );
 //		const result1 = await ServerCommunications.RemovePortForwarding( ServerInfo.HTTP_SERVER_ADDRESS, ServerInfo.HTTP_SERVER_PORT );
@@ -97,11 +96,12 @@ export default class HttpModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private static ReportResponseResult( request : http.IncomingMessage, value : ComUtils.IServerResponseResult, startTime : number ) : void
 	{
-		console.log(
+		console[(value.bHasGoodResult ? 'log':'warn')](
 			[
 				`Incoming: "${request.url}"`,
 				`Result: ${value.bHasGoodResult}`,
 				`Duration: ${(Date.now()- startTime).toString()}ms`,
+				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 			].join('\n\t')
 		);
 	};
@@ -112,23 +112,20 @@ export default class HttpModule
 	{
 		const startTime = Date.now();
 		const path: string = request.url.split('?')[0];
+		const responseMapItem : IResponsesMapItem = ResponsesMap[path];
 
-//		const searchParams = new URLSearchParams(request.url.split('?')[1]);
-//		const userId = searchParams.get('identifier');
-		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(undefined, path, request, response);
-		if ( userRequestApprovation.bHasGoodResult )
+		// Check Auths
+		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(path, responseMapItem?.requiresAuth, request, response);
+		if ( !userRequestApprovation.bHasGoodResult )
 		{
-			const availableMethods : IResponseMethods = ResponsesMap[path];
-			const method = availableMethods ? ( availableMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotImplementedResponse;
-			method( request, response ).then( ( value ) =>
-			{
-				HttpModule.ReportResponseResult( request, value, startTime );
-			});
+			return HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
 		}
-		else
+
+		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotImplementedResponse;
+		method( request, response ).then( ( value: ComUtils.IServerResponseResult ) =>
 		{
-			HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
-		}
+			HttpModule.ReportResponseResult( request, value, startTime );
+		});
 	};
 
 }

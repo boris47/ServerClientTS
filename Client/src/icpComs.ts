@@ -30,25 +30,22 @@ export enum EComunicationsChannels
 	
 	/** string, string -> Buffer | Error */ 
 	REQ_REGISTER = 'REQ_REGISTER',
-
-	/** string -> Buffer | Error */ 
+	/** string, string -> Buffer | Error */ 
 	REQ_LOGIN = 'REQ_LOGIN',
-
+	/** string -> Buffer | Error */ 
+	REQ_LOGIN_TOKEN = 'REQ_LOGIN_TOKEN',
 	/** string -> Buffer | Error */ 
 	REQ_LOGOUT = 'REQ_LOGOUT',
 
 	/** string -> Buffer | null | Error */
 	REQ_GET = 'REQ_GET',
-
 	/** string, string | Buffer -> Buffer | Error */
 	REQ_PUT = 'REQ_PUT',
 
 	/** none -> Buffer | Error */
 	REQ_LIST = 'REQ_LIST',
-
 	/** string -> Buffer | Error */
 	REQ_UPLOAD = 'REQ_UPLOAD',
-
 	/** string -> Buffer | Error */
 	REQ_DOWNLOAD = 'REQ_DOWNLOAD',
 }
@@ -64,7 +61,8 @@ export interface IComunications
 	[EComunicationsChannels.WRITE_FILE]: NodeJS.ErrnoException | null;
 
 	[EComunicationsChannels.REQ_REGISTER]: Buffer | Error;
-	[EComunicationsChannels.REQ_LOGIN]: Buffer | Error;
+	[EComunicationsChannels.REQ_LOGIN]: Buffer | Error;	
+	[EComunicationsChannels.REQ_LOGIN_TOKEN]: Buffer | Error;
 	[EComunicationsChannels.REQ_LOGOUT]: Buffer | Error;
 	[EComunicationsChannels.REQ_GET]: Buffer | null | Error;
 	[EComunicationsChannels.REQ_PUT]: Buffer | Error;

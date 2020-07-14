@@ -1,10 +1,10 @@
 <template>
 	<div>
-		<button type="button" @click.stop="SelectFile">{{buttonLabel}}</button>
+		<button type="button" @click.stop="SelectFile">{{ButtonLabel}}</button>
 		<ul>
 			<component
 				class="inputSelectorListItem"
-				v-bind:is="validatedTag"
+				v-bind:is="ValidatedTag"
 				v-for="(item, index) in SelectedAbsolutePaths"
 				v-bind:key="index"
 			>{{item}}</component>
@@ -19,7 +19,7 @@
 	import { PropOptions } from 'vue';
 	import electron from 'electron';
 	import { ICP_RendererComs } from '../icpRendererComs';
-	import { EComunications } from '../../icpComs';
+	import { EComunicationsChannels } from '../../icpComs';
 	import ObjectUtils from '../../../../Common/Utils/ObjectUtils';
 import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
@@ -73,14 +73,14 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		protected get validatedTag()
+		protected get ValidatedTag()
 		{
 			return InputSelector.SupportedItemListTag.includes(this.itemListTag) ? this.itemListTag : 'li';
 		}
 
 
 		/////////////////////////////////////////////////////////////////////////////////////////
-		protected get buttonLabel(): string
+		protected get ButtonLabel(): string
 		{
 			return this.type === ESelectorType.FOLDER ? "Select Folder" : "Select File";
 		}
@@ -91,7 +91,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 		{
 			const property = this.type === ESelectorType.FILE ? 'openFile' : 'openDirectory';
 			const multiple = this.multiple ? 'multiSelections' : undefined;
-			const defaultPath = await ICP_RendererComs.Invoke<string | Error>(EComunications.ELECTRON_PATH, null, 'exe');
+			const defaultPath = await ICP_RendererComs.Invoke(EComunicationsChannels.ELECTRON_PATH, null, 'exe');
 			if ( !GenericUtils.IsTypeOf<string>( defaultPath, 'string' ) )
 			{
 				console.error( `InputSelector.SelectFile: Cannot retrieve defaultPath\nError${defaultPath}` );
@@ -103,7 +103,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 				defaultPath: defaultPath,
 				properties: [property, multiple],
 			};
-			const result = await ICP_RendererComs.Invoke<electron.OpenDialogReturnValue>( EComunications.ELECTRON_MODAL_OPEN, null, undefined, modalOptions );
+			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.ELECTRON_MODAL_OPEN, null, undefined, modalOptions );
 			if ( !result.canceled && result.filePaths.length)
 			{
 				this.$emit("select", this.SelectedAbsolutePaths = result.filePaths);

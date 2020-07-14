@@ -26,28 +26,28 @@ export interface IRequestsMethods
 /////////////////////////////////////////////////////////////////////////////////////////
 const PingRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const RegisterRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 }
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const LoginRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const LogoutRequest = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 
@@ -66,7 +66,7 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	const filePathParsed = path.parse( identifier );
 
 	// Headers
-	clientRequestInternalOptions.Headers = {};
+	clientRequestInternalOptions.Headers = clientRequestInternalOptions.Headers || {};
 	{
 		// Check if content type can be found
 		// Considering https://stackoverflow.com/a/1176031 && https://stackoverflow.com/a/12560996 but appling https://stackoverflow.com/a/28652339
@@ -88,7 +88,7 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	requestPath.set('identifier', filePathParsed.base);
 	options.path += '?' + requestPath.toString();
 
-	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 	}
 
 	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 
@@ -122,26 +122,27 @@ const DownloadResource = async ( options: http.RequestOptions, clientRequestInte
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Get = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Put = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ClientToServer( options, clientRequestInternalOptions );
-};
-
-/////////////////////////////////////////////////////////////////////////////////////////
-const Storage_Delete = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
-{
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_List = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	return ClientRequestsProcessing.ServetToClient( options, clientRequestInternalOptions );
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////
+const Storage_Delete = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
+{
+	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+};
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////

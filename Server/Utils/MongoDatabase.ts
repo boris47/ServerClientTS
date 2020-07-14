@@ -4,9 +4,9 @@ import * as MongoDB from 'mongodb';
 
 export class MongoDatabase
 {
-	private client : MongoDB.MongoClient = null;
-	private connection : MongoDB.MongoClient = null;
-	private database : MongoDB.Db = null;
+	public readonly client : MongoDB.MongoClient = null;
+	private readonly connection : MongoDB.MongoClient = null;
+	private readonly database : MongoDB.Db = null;
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async CreateConnection( clasterName : string, username : string, password: string, databaseName : string ) : Promise<MongoDatabase | null>
@@ -33,20 +33,26 @@ export class MongoDatabase
 		if ( connection )
 		{
 			const database : MongoDB.Db = connection.db( databaseName );
-			const instance = new MongoDatabase();
-			instance.connection = connection;
-			instance.database = database;
-			instance.client = client;
+			const instance = new MongoDatabase(client, connection, database);
 			return instance;
 		}
 
 		return null;
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////
+	constructor( client: MongoDB.MongoClient, connection: MongoDB.MongoClient, database: MongoDB.Db )
+	{
+		this.client = client;
+		this.connection = connection;
+		this.database = database;
+	}
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async CloseClient( database : MongoDatabase ) : Promise<boolean>
 	{
+		console.log(`MongoDatabase.CloseClient:Closing ${database.database.databaseName}`);
 		return new Promise<boolean>( ( resolve : ( value : boolean ) => void ) =>
 		{
 /*			database.client.close( false, ( error: MongoDB.MongoError, result: void ) =>
@@ -64,6 +70,7 @@ export class MongoDatabase
 				{
 					console.error( `MongoDatabase:CloseClient: Cannot close connection "${database.database.databaseName}"\n${error.name}:${error.message}` );
 				}
+				console.log(`MongoDatabase.CloseClient:Database ${database.database.databaseName} ${(!error ? 'closed':`not closed because ${error}`)}`);
 				resolve( !error );
 			});
 		});

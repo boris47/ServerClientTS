@@ -33,19 +33,29 @@ export class ClientRequestsProcessing
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
-	public static async ServetToClient( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
+	public static async MakeRequest( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
 			if ( clientRequestInternalOptions.Storage )
 			{
-				const path = new URLSearchParams();
-				path.set( 'stg', clientRequestInternalOptions.Storage );
-				!clientRequestInternalOptions.Key || path.set( 'key', clientRequestInternalOptions.Key );
-				options.path += '?' + path.toString();
+				const requestPath = new URLSearchParams();
+				requestPath.set( 'stg', clientRequestInternalOptions.Storage );
+				!clientRequestInternalOptions.Key || requestPath.set( 'key', clientRequestInternalOptions.Key );
+				options.path += '?' + requestPath.toString();
 			}
 
 			const request : http.ClientRequest = http.request( options );
+
+			// Set headers
+			if ( clientRequestInternalOptions.Headers )
+			{
+				for( const [key, value] of Object.entries(clientRequestInternalOptions.Headers) )
+				{
+					request.setHeader( key, value );
+				}
+			}
+			
 			request.on( 'response', ( response: http.IncomingMessage ) : void =>
 			{
 				const statusCode : number = response.statusCode || 200;
@@ -55,10 +65,10 @@ export class ClientRequestsProcessing
 					return;
 				}
 
-				response.on( 'error', ( err : Error ) =>
-				{
-					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve );
-				});
+			//	response.on( 'error', ( err : Error ) =>
+			//	{
+			//		ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve );
+			//	});
 				
 				let stream : ( zlib.Unzip | http.IncomingMessage ) = response;
 				switch ( response.headers['content-encoding']?.trim().toLowerCase() )
@@ -122,6 +132,11 @@ export class ClientRequestsProcessing
 				}
 			});
 
+			request.on( 'close', function()
+			{
+				ComUtils.ResolveWithGoodResult( Buffer.from( "Done" ), resolve );
+			});
+
 			request.on('timeout', () =>
 			{
 				request.abort();
@@ -130,16 +145,40 @@ export class ClientRequestsProcessing
 
 			request.on('error', function( err : Error )
 			{
+				clientRequestInternalOptions.WriteStream?.close();
+				clientRequestInternalOptions.ReadStream?.unpipe();
+				clientRequestInternalOptions.ReadStream?.close();
+				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( -1, 1 );
 				ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[RequestError]', `${err.name}:${err.message}`, resolve );
-			})
-			request.end();
+			});
+
+			// If upload of file is requested
+			if ( clientRequestInternalOptions.ReadStream )
+			{
+				clientRequestInternalOptions.ReadStream.pipe( request );
+				if ( clientRequestInternalOptions.Headers['content-length'] )
+				{
+					let currentLength : number = 0;
+					const totalLength : number = Number( clientRequestInternalOptions.Headers['content-length'] );
+					clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
+					{
+						currentLength += chunk.length;
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress( totalLength, currentLength );
+					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, currentLength / totalLength );
+					});
+				}
+			}
+			else // direct value sent
+			{
+				request.end( clientRequestInternalOptions.Value );
+			}
 		});
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async ClientToServer( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
+	public static async ClientToServer2( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) : Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>( (resolve) =>
 		{
