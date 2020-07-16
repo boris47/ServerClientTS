@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import GenericUtils from './GenericUtils';
+import GenericUtils, { Yieldable } from './GenericUtils';
 
 
 ///////////////////////////////////////////
@@ -122,11 +122,14 @@ export default class FSUtils
 		const dirNames: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
 		for (let index = 0; index < dirNames.length; index++)
 		{
-			const dirPath = dirNames.slice(0, index + 1).join(path.sep);
-			if ( ( !FSUtils.IsDirectorySafe( dirPath ) ) )
+			Yieldable( () =>
 			{
-				await FSUtils.MakeDirectoryAsync( dirPath );
-			}
+				const dirPath = dirNames.slice(0, index + 1).join(path.sep);
+				if ( ( !FSUtils.IsDirectorySafe( dirPath ) ) )
+				{
+					FSUtils.MakeDirectoryAsync( dirPath );
+				}
+			});
 		};
 	}
 	

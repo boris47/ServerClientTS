@@ -37,6 +37,7 @@ export interface IServerStorage
 	GetResources( Keys : string[] ) : Promise<(Buffer | null)[]>
 	RemoveResource( Key : string ) : Promise<boolean>;
 	RemoveResources( Key : string[] ) : Promise<string[]>;
+	Finalize(): Promise<void>;
 }
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +50,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	private m_Storage : Map<string, Buffer> = new Map<string, Buffer>();
 	private m_StorageName : string = '';
 	private m_IsInitialized : boolean = false;
-
+	
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async Initialize( StorageName : string ) : Promise<boolean>
 	{
@@ -66,7 +67,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		this.m_StorageName = storageRelativePath;
 		return true;
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async LoadStorage() : Promise<boolean>
 	{
@@ -155,7 +156,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		return Array.from(this.m_Storage.keys());
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResource( Key : string ) : Promise<Buffer | null>
 	{
@@ -165,7 +166,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		}
 		return null;
 	}
-
+	
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async GetResources( Keys : string[] ) : Promise<( Buffer | null )[]>
 	{
@@ -192,17 +193,20 @@ class ServerStorage_FileSystem implements IServerStorage
 		return Promise.all( promises ).then( () => results );
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public async Finalize(): Promise<void>
+	{
+		await this.SaveStorage();
+	}
 }
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////    AWS    ///////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////////////////////////
-
+/////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////    AWS    ///////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////
 
 class ServerStorage_AWS implements IServerStorage
 {
-
 	private s3Instance : AWS.S3 = null;
 	private bucketName : string = null;
 	private m_IsInitialized : boolean = false;
@@ -285,6 +289,12 @@ class ServerStorage_AWS implements IServerStorage
 		const results : (string | AWS.AWSError)[] = await AWSUtils.S3.RemoveResources( this.s3Instance, this.bucketName, Keys );
 		return results.map( v => typeof v === 'string' ? v : null ).filter( v => v );
 	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public async Finalize(): Promise<void>
+	{
+		this.SaveStorage();
+	}
 }
 
 
@@ -310,16 +320,17 @@ export class StorageManager
 			}
 		}
 
+		let binitialized = true;
 		if ( storage )
 		{
-			if( await storage.Initialize( StorageName ) )
+			if( binitialized = await storage.Initialize( StorageName ) )
 			{
 				StorageManager.m_Storages.set( StorageName, storage );
 			}
 		}
 
 		console.log( `Storage ${type} Created and Initialized` );
-		return storage;
+		return binitialized ? storage : null;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

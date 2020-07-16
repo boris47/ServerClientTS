@@ -55,7 +55,7 @@ const LogoutRequest = async ( options: http.RequestOptions, clientRequestInterna
 /** Client -> Server */
 const UploadResource = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	const identifier = clientRequestInternalOptions.Identifier || '';
+	const identifier = clientRequestInternalOptions.Headers.identifier as string;
 	
 	// Check if file exists
 	if ( fs.existsSync( identifier ) === false )
@@ -64,10 +64,9 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 	}
 
 	const filePathParsed = path.parse( identifier );
-
 	// Headers
-	clientRequestInternalOptions.Headers = clientRequestInternalOptions.Headers || {};
 	{
+		clientRequestInternalOptions.Headers.identifier = filePathParsed.base;
 		// Check if content type can be found
 		// Considering https://stackoverflow.com/a/1176031 && https://stackoverflow.com/a/12560996 but appling https://stackoverflow.com/a/28652339
 		const contentType : string = mime.lookup( filePathParsed.ext ) || 'application/octet-stream';
@@ -84,10 +83,6 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 
 	clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier );
 
-	const requestPath = new URLSearchParams();
-	requestPath.set('identifier', filePathParsed.base);
-	options.path += '?' + requestPath.toString();
-
 	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 
@@ -95,22 +90,18 @@ const UploadResource = async ( options: http.RequestOptions, clientRequestIntern
 /** Server -> Client */
 const DownloadResource = async ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) =>
 {
-	const { DownloadLocation, Identifier } = clientRequestInternalOptions;
-
-	const requestPath = new URLSearchParams();
-	requestPath.set('identifier', Identifier);
-	options.path += '?' + requestPath.toString();
-	options.method = 'get';
+	const { DownloadLocation } = clientRequestInternalOptions;
+	const identifier = clientRequestInternalOptions.Headers.identifier as string;
 
 	await FSUtils.EnsureDirectoryExistence(DownloadLocation);
-	const filePath = path.join( DownloadLocation, Identifier );
+	const filePath = path.join( DownloadLocation, identifier );
 	if ( !await FSUtils.EnsureWritableFile( filePath ) )
 	{
 		clientRequestInternalOptions.ComFlowManager.Progress.SetProgress( -1, 1 );
 		return ComUtils.ResolveWithError<IClientRequestResult>( `Error`, `Client:DownloadResource: Cannot write file: ${filePath}` )
 	}
 
-	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, Identifier ) );
+	clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, identifier ) );
 	return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
 };
 

@@ -1,11 +1,11 @@
 
 import {
 	Request_ServerPing,
-//	Request_UserRegister,
+	Request_UserRegister,
 	Request_UserLogin,
 	Request_StorageList,
-	Request_StorageResourceUpload,
-	Request_StorageResourceDownload,
+	Request_ResourceUpload,
+	Request_ResourceDownload,
 	Request_StorageGetData,
 	Request_StoragePutData
 } from "./client.Bridge";
@@ -24,6 +24,10 @@ async function Main()
 		Request_ServerPing()
 		.then( ( result : Buffer | Error ) =>
 		{
+			return Buffer.isBuffer(result) ? Request_UserRegister('Rob', 'erto') : Promise.reject(result);
+		})
+		.then( ( result : Buffer | Error ) =>
+		{
 			return Buffer.isBuffer(result) ? Request_UserLogin('Rob', 'erto') : Promise.reject(result);
 		})
 		.then( ( result : Buffer | Error ) =>
@@ -39,12 +43,12 @@ async function Main()
 	
 		.then( ( result : Buffer | Error ) =>
 		{
-			return Buffer.isBuffer(result) ? Request_StorageResourceUpload( new ComFlowManager, './Tests/RequestResourceUpload/GPU-Z.2.25.0.exe' ) : Promise.reject(result);
+			return Buffer.isBuffer(result) ? Request_ResourceUpload( new ComFlowManager, './Tests/RequestResourceUpload/GPU-Z.2.25.0.exe' ) : Promise.reject(result);
 		})
 	
 		.then( ( result : Buffer | Error ) =>
 		{
-			return Buffer.isBuffer(result) ? Request_StorageResourceDownload( new ComFlowManager, 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/Tests/RequestResourceDownload' ) : Promise.reject(result);
+			return Buffer.isBuffer(result) ? Request_ResourceDownload( new ComFlowManager, 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/Tests/RequestResourceDownload' ) : Promise.reject(result);
 		})
 	
 		.then( ( result : Buffer | Error ) =>

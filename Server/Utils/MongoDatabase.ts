@@ -50,7 +50,7 @@ export class MongoDatabase
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async CloseClient( database : MongoDatabase ) : Promise<boolean>
+	public static async Finalize( database : MongoDatabase ) : Promise<boolean>
 	{
 		console.log(`MongoDatabase.CloseClient:Closing ${database.database.databaseName}`);
 		return new Promise<boolean>( ( resolve : ( value : boolean ) => void ) =>

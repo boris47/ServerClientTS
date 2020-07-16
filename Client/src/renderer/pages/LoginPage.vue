@@ -17,6 +17,7 @@
 					<button class="btn btn-primary">Login</button>
 				</div>
 			</form>
+			<button class="btn btn-primary" v-on:click.stop="GoToRegisterPage">Register</button>
 		</div>
 	</global-layout>
 </template>
@@ -66,6 +67,11 @@
 						console.error("Login Failed", result);
 					}
 				}
+			},
+
+			GoToRegisterPage()
+			{
+				AppRouter.NavigateTo('registrationPage');
 			}
 		}
 	});

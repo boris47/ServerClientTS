@@ -6,8 +6,11 @@ import * as fs from 'fs';
 import FSUtils from "../../../Common/Utils/FSUtils";
 import { ITemplatedObject, Yieldable } from '../../../Common/Utils/GenericUtils';
 import { ServerUser } from './Server.User';
+import { ILifeCycleObject } from '../../../Common/Interfaces';
+import { RequireStatics } from '../../../Common/Decorators';
 
 /** Main process side storage */
+@RequireStatics<ILifeCycleObject>()
 export default class ServerUserDB
 {
 	private static m_Storage : Map<string, ServerUser> = new Map<string, ServerUser>();
@@ -17,7 +20,7 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Initialize() : Promise<boolean>
 	{
-		if ( this.m_IsInitialized )
+		if ( ServerUserDB.m_IsInitialized )
 		{
 			return true;
 		}
@@ -29,16 +32,31 @@ export default class ServerUserDB
 		{
 			fs.writeFileSync( storageAbsolutepath, "{}", 'utf8' );
 		}
-		this.m_StorageName = storageAbsolutepath;
+		ServerUserDB.m_StorageName = storageAbsolutepath;
 		console.log( `ServerUserDB: Location: ${storageAbsolutepath}` );
 		return true;
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async LoadStorage() : Promise<boolean>
+	public static async Save() : Promise<boolean>
+	{
+		console.log(`Storage:Saving storage ${ServerUserDB.m_StorageName}`);
+		const objectToSave : ITemplatedObject<ServerUser> = {};
+		for( const [userId, user] of ServerUserDB.m_Storage )
+		{
+			await Yieldable( () => objectToSave[userId] = user );
+		}
+
+		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
+		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
+		return !result;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async Load() : Promise<boolean>
 	{
 		// Load storage file
-		const filePath = this.m_StorageName;
+		const filePath = ServerUserDB.m_StorageName;
 		const readReasult: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync( filePath );
 		if ( Buffer.isBuffer(readReasult) )
 		{
@@ -50,14 +68,14 @@ export default class ServerUserDB
 			}
 			catch( e )
 			{
-				console.error( "ServerUserDB", `Cannot load resources from file ${this.m_StorageName}` );
+				console.error( "ServerUserDB", `Cannot load resources from file ${ServerUserDB.m_StorageName}` );
 				return false;
 			}
 
 			for( const Key/*string*/in parsed )
 			{
 				const { username, password, id } = parsed[Key];
-				await Yieldable( () => this.m_Storage.set( Key, new ServerUser( username, password, id ) ) );
+				await Yieldable( () => ServerUserDB.m_Storage.set( Key, new ServerUser( username, password, id ) ) );
 			}
 			return true;
 		}
@@ -67,35 +85,28 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async SaveStorage() : Promise<boolean>
+	public static async Finalize(): Promise<boolean>
 	{
-		console.log(`Storage:Saving storage ${this.m_StorageName}`);
-		const objectToSave : ITemplatedObject<ServerUser> = {};
-		for( const [userId, user] of this.m_Storage )
-		{
-			await Yieldable( () => objectToSave[userId] = user );
-		}
-
-		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
-		console.log(`Storage:Storage ${this.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
-		return !result;
+		return ServerUserDB.Save();
 	}
+
+	//---------------------------------------------------------------
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async ClearStorage() : Promise<boolean>
 	{
-		this.m_Storage.clear();
+		ServerUserDB.m_Storage.clear();
 		
-		const folderPath = path.parse( this.m_StorageName ).dir;
+		const folderPath = path.parse( ServerUserDB.m_StorageName ).dir;
 		
 		// Clear existing storage
 		FSUtils.DeleteFolder( folderPath );
 
 		// Re-create folder and file
 		await FSUtils.EnsureDirectoryExistence( folderPath );
-		if ( !fs.existsSync( this.m_StorageName ) )
+		if ( !fs.existsSync( ServerUserDB.m_StorageName ) )
 		{
-			fs.writeFileSync( this.m_StorageName, "{}", 'utf8' );
+			fs.writeFileSync( ServerUserDB.m_StorageName, "{}", 'utf8' );
 		}
 		return true;
 	}
@@ -103,10 +114,10 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async AddUser( user : ServerUser, bForced : boolean = true ) : Promise<boolean>
 	{
-		const bAlreadyExists = this.m_Storage.has( user.ID );
+		const bAlreadyExists = ServerUserDB.m_Storage.has( user.ID );
 		if ( !bAlreadyExists || bForced )
 		{
-			this.m_Storage.set( user.ID, user );
+			ServerUserDB.m_Storage.set( user.ID, user );
 		}
 		return true;
 	}
@@ -114,21 +125,21 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserExists( UserId : string ) : Promise<boolean>
 	{
-		return this.m_Storage.has( UserId );
+		return ServerUserDB.m_Storage.has( UserId );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async ListUserIds() : Promise<string[]>
 	{
-		return Array.from(this.m_Storage.keys());
+		return Array.from(ServerUserDB.m_Storage.keys());
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async GetUser( userId : string ): Promise<ServerUser | null>
 	{
-		if ( await this.UserExists( userId ) )
+		if ( await ServerUserDB.UserExists( userId ) )
 		{
-			return this.m_Storage.get( userId ) || null;
+			return ServerUserDB.m_Storage.get( userId ) || null;
 		}
 		return null;
 	}
@@ -136,7 +147,7 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async GetUserByUsername( username: string ): Promise<ServerUser | null>
 	{
-		for( const [userId, user] of this.m_Storage )
+		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
 			if ( user.Username === username ) return user;
 		}
@@ -146,13 +157,13 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async GetUsers( UserIds : string[] ) : Promise<( ServerUser | null )[]>
 	{
-		return ( await Promise.all( UserIds.map( k => this.GetUser(k) ) ) ).filter( s => !!s );
+		return ( await Promise.all( UserIds.map( k => ServerUserDB.GetUser(k) ) ) ).filter( s => !!s );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async RemoveUser( userId : string ) : Promise<boolean>
 	{
-		return this.m_Storage.delete( userId );
+		return ServerUserDB.m_Storage.delete( userId );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -162,11 +173,10 @@ export default class ServerUserDB
 		const results = new Array<string>();
 		UserIds.forEach( key =>
 		{
-			const promise = this.RemoveUser( key );
+			const promise = ServerUserDB.RemoveUser( key );
 			promise.then( ( bResult: boolean ) => bResult ? results.push( key ) : null );
 			promises.push( promise );
 		});
 		return Promise.all( promises ).then( () => results );
 	}
-
 }

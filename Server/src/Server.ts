@@ -83,17 +83,42 @@ process.on( 'exit', ( code: number ) =>
 });
 */
 
+type FinalizerContextType = { Finalize(...args:any[]) : any | Promise<any> };
 interface IFinalizer
 {
-	function: (args?:any | any[]) => Promise<any>;
-	args?: any;
+	context: FinalizerContextType;
+	args?: any[];
 }
 
-class App
+export default class Finalizers
 {
-	private finalizers = new Map<object, IFinalizer>();
-	private count = 0;	// catching signals and do something before exit
+	private finalizers = new Array<IFinalizer>();
 
+	public Add( context: FinalizerContextType, ...args: any[] )
+	{
+		this.finalizers.push( {context, args} );
+	}
+
+	public async Execute(cb?: Function): Promise<void>
+	{
+		let count = 0;
+		console.log( `FINALIZATION START, count: ${this.finalizers}` );
+		for( const {context, args} of this.finalizers )
+		{
+			await Promise.resolve( context.Finalize(args) ); // Promise.resolve Because can be a function or a promise
+			console.log( `FINALIZATION: ${++count}/${this.finalizers}`);
+			cb?.apply(null);
+		}
+		console.log( `FINALIZATION END` );
+	}
+}
+
+class Server
+{
+	private count = 0;	// catching signals and do something before exit
+	private bIsTerminating = false;
+
+	private finalizers = new Finalizers();
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	constructor()
@@ -107,49 +132,20 @@ class App
 		});
 	}
 
-	private bIsTerminating = false;
-
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private async AppTerminator(sig: string): Promise<void>
 	{
 		if (this.bIsTerminating) return Promise.resolve();
 		this.bIsTerminating = true;
 
-		const finalizersCount = this.finalizers.size;
-		
-		console.log( `FINALIZATION START, Singal: ${sig}, count: ${finalizersCount}` );
-		for( const [context, finalizer] of this.finalizers )
-		{
-			await finalizer.function.apply(context, [finalizer.args]).then( () =>
-			{
-				console.log( `FINALIZATION: ${++this.count}/${finalizersCount}`);
-			});
-		}
-		console.log( `FINALIZATION END` );
+		this.finalizers.Execute();
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private async FinalizationExit(exitCode: number) : Promise<void>
+	private async FinalizationAndExit(exitCode: number) : Promise<void>
 	{
 		this.AppTerminator(null).then( () => process.exit(exitCode) );
-	}
-
-
-	/////////////////////////////////////////////////////////////////////////////////////////
-	private async UploadConfigurationFile() : Promise<boolean>
-	{
-		const serverConfigs = new ServerConfigs();
-		serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
-		serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
-		serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
-		serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
-		
-		const filePath = "../Temp/ServerCfg.json";
-		await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
-		fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
-
-		return serverConfigs.AreValidData();
 	}
 
 
@@ -177,13 +173,27 @@ class App
 			console.error( `Cannot retrieve public ip` );
 			bResult = false;
 		}
-
 		return bResult;
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async UploadConfigurationFile() : Promise<boolean>
+	{
+		const serverConfigs = new ServerConfigs();
+		serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
+		serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
+		serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
+		serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
+		
+		const filePath = "../Temp/ServerCfg.json";
+		await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
+		fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
+
+		return serverConfigs.AreValidData();
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public async Execute(): Promise<void>
+	public async Run(): Promise<void>
 	{
 		// LOGGER
 	//	const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
@@ -196,86 +206,85 @@ class App
 		if ( !await this.SaveMachinePublicIP() )
 		{
 			console.error( "Cannot find Public Ip" );
-			debugger; return this.FinalizationExit(1);
+			debugger; return this.FinalizationAndExit(1);
 		}
-		
 	
 		// DATABASE
+		const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
+		if ( !db )
 		{
-			const db : MongoDatabase = await MongoDatabase.CreateConnection( 'drrqi', 'boris47', 'JEBRBQANDcf3Jodj', 'db0' );
-			if ( !db )
-			{
-				console.error( "Database Unavailable" );
-				debugger; return this.FinalizationExit(1);
-			}
-			this.finalizers.set( MongoDatabase, { function: MongoDatabase.CloseClient, args: db });
+			console.error( "Database Unavailable" );
+			debugger; return this.FinalizationAndExit(1);
 		}
+		this.finalizers.Add(MongoDatabase, db );
 	
+		// STORAGES
 		const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
 		const remoteStorage = await StorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
 		const bResultServerUserDBInitialization = await ServerUserDB.Initialize();
-		this.finalizers.set( localStorage, { function: localStorage.SaveStorage });
-		this.finalizers.set( remoteStorage, { function: remoteStorage.SaveStorage});
-		this.finalizers.set( ServerUserDB, { function: ServerUserDB.SaveStorage });
+		if ( !localStorage || !await localStorage.LoadStorage() )
 		{
-			if ( !localStorage || !await localStorage.LoadStorage() )
-			{
-				console.error( "Local Storage Unavailable" );
-				debugger; return this.FinalizationExit(1);
-			}
-			
-			if ( !remoteStorage || !await remoteStorage.LoadStorage() )
-			{
-				console.error( "Remote Storage Unavailable" );
-				debugger; return this.FinalizationExit(1);
-			}
-	
-			if ( !bResultServerUserDBInitialization || !await ServerUserDB.LoadStorage() )
-			{
-				console.error( !bResultServerUserDBInitialization ? 'Server User DB Initialization Failed' : 'Server User DB Unavailable' );
-				debugger; return this.FinalizationExit(1);
-			}
+			console.error( "Local Storage Unavailable" );
+			debugger; return this.FinalizationAndExit(1);
 		}
+		this.finalizers.Add( localStorage );
+		if ( !remoteStorage || !await remoteStorage.LoadStorage() )
+		{
+			console.error( "Remote Storage Unavailable" );
+			debugger; return this.FinalizationAndExit(1);
+		}
+		this.finalizers.Add( remoteStorage );
+		if ( !bResultServerUserDBInitialization || !await ServerUserDB.Load() )
+		{
+			console.error( !bResultServerUserDBInitialization ? 'Server User DB Initialization Failed' : 'Server User DB Unavailable' );
+			debugger; return this.FinalizationAndExit(1);
+		}
+		this.finalizers.Add( ServerUserDB );
 
+		// MODULES
 		if ( !await HttpModule.Initialize() )
 		{
 			console.error( "Cannot create server" );
-			debugger; return this.FinalizationExit(1);
+			debugger; return this.FinalizationAndExit(1);
 		}
-		this.finalizers.set( HttpModule, { function: HttpModule.Finalize });
+		this.finalizers.Add( HttpModule );
 
 		if ( !await WebSocketModule.Initialize() )
 		{
 			console.error( "Cannot create websocket" );
-			debugger; return this.FinalizationExit(1);
+			debugger; return this.FinalizationAndExit(1);
 		}
-		this.finalizers.set( WebSocketModule, { function: WebSocketModule.Finalize });
+		this.finalizers.Add( WebSocketModule );
 
 		if ( !await this.UploadConfigurationFile() )
 		{
 			console.error( "Cannot upload configuration file" );
-			debugger; return this.FinalizationExit(1);
+			debugger; return this.FinalizationAndExit(1);
 		}
-	
+
 		console.log("---- SERVER IS RUNNING ----");
 		{
+			this.ScheduleEvent( 60 * 1000, localStorage, localStorage.SaveStorage );
+			this.ScheduleEvent( 60 * 1000, remoteStorage, remoteStorage.SaveStorage );
+			this.ScheduleEvent( 60 * 1000, ServerUserDB, ServerUserDB.Save );
+
 			let bRunning = true;
-			this.finalizers.set( this, { function: () =>
-				{
-					console.log("Server: Breaking Main Loop");
-					return Promise.resolve(bRunning = false);
-				}
-			});
-		//	while( bRunning )
-			{
-				await GenericUtils.WaitFrames( 1 );
-				
-			//	await localStorage.SaveStorage();
-			}
-	
-			this.FinalizationExit(0);
+			this.finalizers.Add( { Finalize:() => bRunning = false } );
+
+			// Server Loop
+			while( bRunning ) await GenericUtils.WaitFrames( 1 );
+			this.FinalizationAndExit(0);
 		}
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private async ScheduleEvent( delay: number, context: object, fn: (...args:any[]) => Promise<any>, ...args: any[] ): Promise<void>
+	{
+		let bContinuse = true;
+		this.finalizers.Add( { Finalize:() => bContinuse = false } );
+		while(bContinuse) await GenericUtils.DelayMS(delay).then(() => fn.apply(context, [args]));
 	}
 }
 
-new App().Execute();
+new Server().Run();

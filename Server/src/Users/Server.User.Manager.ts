@@ -12,7 +12,7 @@ export default class ServerUserManager
 	{
 		const newuser = new ServerUser( username, password );
 		const bResult = await ServerUserDB.AddUser( newuser, false );
-		await ServerUserDB.SaveStorage();
+		await ServerUserDB.Save();
 		return bResult ? newuser.ID : null;
 	}
 	
@@ -28,7 +28,7 @@ export default class ServerUserManager
 		if ( serverUser && serverUser.IsPassword(password) )
 		{
 			await serverUser.Login(serverUser.LoginData.Token);
-			console.warn( 'token', serverUser.LoginData.Token );
+//			console.warn( 'token', serverUser.LoginData.Token );
 		}
 		return serverUser?.LoginData.Token || null;
 	}

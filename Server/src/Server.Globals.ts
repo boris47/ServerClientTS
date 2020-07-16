@@ -14,4 +14,4 @@ export const ServerInfo =
 	WEBSOCKET_SERVER_ADDRESS: '',
 };
 
-export const DOWNLOAD_LOCATION : string = '.\\Downloaded\\';
+export const DOWNLOAD_LOCATION : string = 'Downloaded';

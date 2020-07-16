@@ -111,43 +111,50 @@ const RetrieveToken = async () => (await customLocalStorage.GetResource('token')
 // STORAGE
 export async function Request_StorageGetData( ComFlowManager: ComFlowManager, Key : string ) : Promise<Buffer|Error>
 {
-	const Headers =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		'token': await RetrieveToken()
+		'token': await RetrieveToken(),
+		'storage': 'local', 
+		'key' : Key
 	};
-	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { Storage:'local', Key : Key, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: '/storage', method: 'get', reqArgs: { ComFlowManager, Headers } } );
 }
 export async function Request_StoragePutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
 {
-	const Headers =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		'token': await RetrieveToken()
+		'token': await RetrieveToken(),
+		'storage': 'local', 
+		'key' : Key
 	};
-	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Storage:'local', Key, Value, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: '/storage', method: 'put', reqArgs: { Value, ComFlowManager, Headers } } );
 }
 export async function Request_StorageList( ComFlowManager: ComFlowManager ) : Promise<Buffer|Error>
 {
-	const Headers =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		'token': await RetrieveToken()
+		'token': await RetrieveToken(),
+		'storage': 'local'
 	};
-	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { Storage: 'local', ComFlowManager, Headers } } );
+	return ProcessRequest( { path: '/storage_list', method: 'get', reqArgs: { ComFlowManager, Headers } } );
 }
-export async function Request_StorageResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
+export async function Request_ResourceDownload( ComFlowManager: ComFlowManager, Identifier : string, DownloadLocation : string ) : Promise<Buffer|Error>
 {
-	const Headers =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		'token': await RetrieveToken()
+		'token': await RetrieveToken(),
+		'identifier': Identifier
 	};
-	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { Identifier, DownloadLocation, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: '/download', method: 'get', reqArgs: { DownloadLocation, ComFlowManager, Headers } } );
 }
-export async function Request_StorageResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
+export async function Request_ResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
 {
-	const Headers =
+	const Headers : http.IncomingHttpHeaders =
 	{
-		'token': await RetrieveToken()
+		'token': await RetrieveToken(),
+		'identifier': AbsoluteFilePath
 	};
-	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { Identifier: AbsoluteFilePath, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: '/upload', method: 'put', reqArgs: { ComFlowManager, Headers } } );
 }
 
 

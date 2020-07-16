@@ -133,11 +133,10 @@ const UserLogout = async (request: http.IncomingMessage, response: http.ServerRe
 const DownloadResource = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file upload to client
-	const searchParams = new URLSearchParams(request.url.split('?')[1]);
-	const identifier = searchParams.get('identifier');
-
-	const filePath = path.join(DOWNLOAD_LOCATION, identifier);
-	await FSUtils.EnsureDirectoryExistence(DOWNLOAD_LOCATION);
+	const identifier = request.headers.identifier as string;
+	const token = request.headers.token as string;
+	const filePath = path.join(DOWNLOAD_LOCATION, token, identifier);
+	await FSUtils.EnsureDirectoryExistence(path.dirname(filePath));
 
 	const options: IServerRequestInternalOptions =
 	{
@@ -151,11 +150,10 @@ const DownloadResource = async (request: http.IncomingMessage, response: http.Se
 const UploadResource = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	// Execute file download server side
-	const searchParams = new URLSearchParams(request.url.split('?')[1]);
-	const identifier = searchParams.get('identifier');
+	const identifier = request.headers.identifier as string;
+	const token = request.headers.token as string;
 	const options: IServerRequestInternalOptions = {};
-
-	const filePath = path.join(DOWNLOAD_LOCATION, identifier);
+	const filePath = path.join(DOWNLOAD_LOCATION, token, identifier);
 
 	// Check if file exists
 	if (!(await FSUtils.FileExistsAsync(filePath)))
@@ -194,9 +192,8 @@ const UploadResource = async (request: http.IncomingMessage, response: http.Serv
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Get = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams(request.url.split('?')[1]);
-	const key = searchParams.get('key');
-	const storageID = searchParams.get('stg');
+	const key = request.headers.key as string;
+	const storageID = request.headers.storage as string;
 	const storage: IServerStorage = StorageManager.GetStorage(storageID);
 	if (!storage)
 	{
@@ -223,9 +220,8 @@ const Storage_Get = async (request: http.IncomingMessage, response: http.ServerR
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Put = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams(request.url.split('?')[1]);
-	const key = searchParams.get('key');
-	const storageID = searchParams.get('stg');
+	const key = request.headers.key as string;
+	const storageID = request.headers.storage as string;
 	const storage: IServerStorage = StorageManager.GetStorage(storageID);
 	if (!storage)
 	{
@@ -249,9 +245,8 @@ const Storage_Put = async (request: http.IncomingMessage, response: http.ServerR
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_Delete = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const parsedUrl = new URL(request.url);
-	const key = parsedUrl.searchParams.get('key');
-	const storageID = parsedUrl.searchParams.get('stg');
+	const key = request.headers.key as string;
+	const storageID = request.headers.storage as string;
 	const storage: IServerStorage = StorageManager.GetStorage(storageID);
 	if (!storage)
 	{
@@ -282,8 +277,7 @@ const Storage_Delete = async (request: http.IncomingMessage, response: http.Serv
 /////////////////////////////////////////////////////////////////////////////////////////
 const Storage_List = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
-	const searchParams = new URLSearchParams(request.url.split('?')[1]);
-	const storageID = searchParams.get('stg');
+	const storageID = request.headers.storage as string;
 	const storage: IServerStorage = StorageManager.GetStorage(storageID);
 	if (!storage)
 	{

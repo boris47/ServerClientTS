@@ -167,13 +167,13 @@ export function SetupMainHandlers()
 	{
 	//	console.log( EComunicationsChannels.REQ_UPLOAD, absoluteFilePath );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
-		return RequestProcessor.Request_StorageResourceUpload(ComFlowManager, absoluteFilePath);
+		return RequestProcessor.Request_ResourceUpload(ComFlowManager, absoluteFilePath);
 	});
 
 	electron.ipcMain.handle(EComunicationsChannels.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, identifier: string, [downloadLocation]: string[]): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_DOWNLOAD, identifier, downloadLocation );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
-		return RequestProcessor.Request_StorageResourceDownload(ComFlowManager, identifier, downloadLocation);
+		return RequestProcessor.Request_ResourceDownload(ComFlowManager, identifier, downloadLocation);
 	});
 }
