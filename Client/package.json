@@ -1,9 +1,11 @@
 {
 	"name": "client_ts",
-	"productName": "ClientTS",
 	"version": "0.0.0",
 	"author": "r.leogrande<leogranderoberto@gmailcom>",
 	"description": "My client side electron app",
+	"config": {
+		"name": "Client TS"
+	},
 	"license": "",
 	"main": "./dist/electron/main.js",
 	"scripts": {
@@ -40,7 +42,7 @@
 		},
 		"files": [
 			"dist/**/*",
-			"resources/*"
+			"static/*"
 		],
 		"electronDownload": {
 			"cache": "cache"
@@ -50,16 +52,14 @@
 		}
 	},
 	"dependencies": {
-		"electron-log": "4.1.2",
 		"electron-updater": "4.3.1",
 		"mime-types": "2.1.27",
 		"source-map-support": "0.5.19",
 		"vue": "2.6.11",
-		"vue-router": "3.1.6",
+		"vue-router": "3.3.4",
 		"websocket": "1.0.31"
 	},
 	"devDependencies": {
-		"@types/electron-devtools-installer": "2.2.0",
 		"@types/mime-types": "2.1.0",
 		"@types/node": "12.12.38",
 		"@types/source-map-support": "0.5.2",
@@ -67,12 +67,11 @@
 		"@types/websocket": "1.0.1",
 		"electron": "8.2.5",
 		"electron-builder": "22.7.0",
-		"electron-devtools-installer": "3.1.0",
 		"electron-webpack": "2.8.2",
 		"electron-webpack-ts": "4.0.1",
 		"electron-webpack-vue": "2.4.0",
-		"ts-loader": "8.0.0",
-		"typescript": "3.9.6",
+		"ts-loader": "8.0.1",
+		"typescript": "3.9.7",
 		"vue-loader": "15.9.3",
 		"vue-property-decorator": "9.0.0",
 		"vue-template-compiler": "2.6.11",
