@@ -32,11 +32,11 @@ export interface IResponseMethods
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export const NotImplementedResponse = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
+export const NotExistingPath = async (request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult> =>
 {
 	const options: IServerRequestInternalOptions =
 	{
-		Value: Buffer.from(HTTPCodes[404])
+		Value: Buffer.from(HTTPCodes[404]) // Not Found
 	};
 	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
 	result.bHasGoodResult = false; // bacause on server we want register as failure
@@ -49,7 +49,7 @@ export const MethodNotAllowed = async (request: http.IncomingMessage, response: 
 {
 	const options: IServerRequestInternalOptions =
 	{
-		Value: Buffer.from(HTTPCodes[405])
+		Value: Buffer.from(HTTPCodes[405]) // Method Not Allowed
 	};
 	const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
 	result.bHasGoodResult = false; // bacause on server we want register as failure

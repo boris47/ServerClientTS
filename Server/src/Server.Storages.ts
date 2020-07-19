@@ -103,7 +103,6 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage() : Promise<boolean>
 	{
-		console.log(`Storage:Saving storage ${this.m_StorageName}`);
 		let objectToSave : IIndexableObject = {};
 		for( const [Key, value] of this.m_Storage )
 		{
@@ -231,8 +230,8 @@ class ServerStorage_AWS implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage(): Promise<boolean>
 	{
-		console.log(`Storage:Saving storage ${this.bucketName}`);
-		console.log(`Storage:Storage ${this.bucketName} saved`);
+	//	console.log(`Storage:Saving storage ${this.bucketName}`);
+	//	console.log(`Storage:Storage ${this.bucketName} saved`);
 		return true; // nothing to save
 	}
 

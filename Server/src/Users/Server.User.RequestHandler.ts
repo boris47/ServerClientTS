@@ -15,6 +15,7 @@ export default class ServerUserRequestHandler
 		const token = request.headers.token as string;
 		if (requiresAuth && (!token || !ServerUserManager.FindLoggedInUserByToken(token)))
 		{
+			response.setHeader('WWW-Authenticate', 'Basic');
 			ServerResponsesProcessing.EndResponseWithError(response, 'Login required', 401);
 			return ComUtils.ResolveWithError('Login Requested', HTTPCodes[401]);
 		}
@@ -22,6 +23,7 @@ export default class ServerUserRequestHandler
 		// Auth is OK?
 		if (token && !ServerUserManager.HasAuthorizationFor(token, path))
 		{
+			response.setHeader('WWW-Authenticate', 'Basic');
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401);
 			return ComUtils.ResolveWithError('PermissionError', HTTPCodes[401]);
 		}

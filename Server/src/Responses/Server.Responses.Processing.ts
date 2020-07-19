@@ -13,6 +13,8 @@ export interface IServerRequestInternalOptions
 	Headers? : http.OutgoingHttpHeaders;
 	ReadStream? : fs.ReadStream;
 	WriteStream? : fs.WriteStream;
+	OnSuccess? : Function;
+	OnFailure? : Function;
 }
 
 

@@ -3,21 +3,20 @@ import * as fs from 'fs';
 import { ProcessManager } from '../../Common/ProcessManager';
 
 
-if ( fs.existsSync( 'Server.js' ) )
+if ( fs.existsSync( './src/Server.js' ) )
 {
-	ProcessManager.Fork.ForkProcess( 'ServerTS', './Server.js' )
+	ProcessManager.Fork.ForkProcess( 'ServerTS', './src/Server.js' )
 	.then( ( forked : ProcessManager.Fork.ForkedProcess ) =>
 		{
-			forked.SendMessage( ProcessManager.Fork.EForkMessageType.UPDATE,
-				( messsage : ProcessManager.Fork.ISubProcessMessage ) =>
-				{
-					console.log( 'MONITOR received\n' + JSON.stringify( messsage, null, 4 ) );
-				},
-				() =>
-				{
-					console.log("MONITOR message 'update' not receive a response ");
-				}
-			);
+			const onMessageReceived = ( messsage : ProcessManager.Fork.ISubProcessMessage ) =>
+			{
+				console.log( 'MONITOR received\n' + JSON.stringify( messsage, null, 4 ) );
+			};
+			const onTimeout = () =>
+			{
+				console.log("MONITOR message 'update' not receive a response ");
+			}
+			return forked.SendMessage( ProcessManager.Fork.EForkMessageType.UPDATE, onMessageReceived, onTimeout );
 		}
 	);
 }

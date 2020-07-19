@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as net from 'net';
 
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import { ResponsesMap, MethodNotAllowed, NotImplementedResponse, IResponsesMapItem } from '../Responses/Server.Responses.Mapping';
+import { ResponsesMap, MethodNotAllowed, NotExistingPath, IResponsesMapItem } from '../Responses/Server.Responses.Mapping';
 import { ServerInfo } from '../Server.Globals';
 import ServerUserRequestHandler from '../Users/Server.User.RequestHandler';
 
@@ -121,7 +121,7 @@ export default class HttpModule
 			return HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
 		}
 
-		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotImplementedResponse;
+		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotExistingPath;
 		method( request, response ).then( ( value: ComUtils.IServerResponseResult ) =>
 		{
 			HttpModule.ReportResponseResult( request, value, startTime );

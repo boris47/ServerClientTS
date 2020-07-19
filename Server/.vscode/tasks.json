@@ -4,7 +4,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "Compile Typescript",
+			"label": "Compile Typescript Server",
 			"type": "typescript",
 			"tsconfig": "tsconfig.json",
 			"problemMatcher": ["$tsc"],

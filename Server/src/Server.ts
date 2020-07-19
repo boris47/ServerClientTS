@@ -14,22 +14,24 @@ import WebSocketModule from './Modules/Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
 import { StorageManager, EStorageType } from './Server.Storages';
 import ServerUserDB from './Users/Server.User.DB';
+import { ProcessManager } from '../../Common/ProcessManager';
 
-/*
+
 // Very simple answer
 process.on( 'message', ( message : any ) =>
 {
 	if ( message === 'update' )
 	{
-		process.send( <ProcessManager.Fork.ISubProcessMessage>
+		const answer : ProcessManager.Fork.ISubProcessMessage =
 		{
 			processName : 'Server',
 			msg : "Ciao mamma",
 			msgType : message
-		});
+		};
+		process.send(answer);
 	}
 });
-*/
+
 
 
 
@@ -90,7 +92,7 @@ interface IFinalizer
 	args?: any[];
 }
 
-export default class Finalizers
+class Finalizers
 {
 	private finalizers = new Array<IFinalizer>();
 
@@ -102,11 +104,11 @@ export default class Finalizers
 	public async Execute(cb?: Function): Promise<void>
 	{
 		let count = 0;
-		console.log( `FINALIZATION START, count: ${this.finalizers}` );
+		console.log( `FINALIZATION START, count: ${this.finalizers.length}` );
 		for( const {context, args} of this.finalizers )
 		{
-			await Promise.resolve( context.Finalize(args) ); // Promise.resolve Because can be a function or a promise
-			console.log( `FINALIZATION: ${++count}/${this.finalizers}`);
+			await Promise.resolve(context.Finalize(...args)); // Promise.resolve Because can be a function or a promise
+			console.log( `FINALIZATION: ${++count}/${this.finalizers.length}`);
 			cb?.apply(null);
 		}
 		console.log( `FINALIZATION END` );
@@ -115,72 +117,63 @@ export default class Finalizers
 
 class Server
 {
-	private count = 0;	// catching signals and do something before exit
-	private bIsTerminating = false;
-
 	private finalizers = new Finalizers();
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	constructor()
 	{
+		let bIsTerminating = false;
 		['SIGHUP', 'SIGINT', 'SIGQUIT', 'SIGILL', 'SIGTRAP', 'SIGABRT','SIGBUS', 'SIGFPE', 'SIGUSR1', 'SIGSEGV', 'SIGUSR2', 'SIGTERM'].forEach((sig: any) =>
 		{
 			process.once(sig, () =>
 			{
-				this.AppTerminator(sig);
+				if (!bIsTerminating)
+				{
+					this.finalizers.Execute();
+					bIsTerminating = true;
+				}
 			});
 		});
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private async AppTerminator(sig: string): Promise<void>
+	private FinalizationAndExit(exitCode: number)
 	{
-		if (this.bIsTerminating) return Promise.resolve();
-		this.bIsTerminating = true;
-
-		this.finalizers.Execute();
+		this.finalizers.Execute().then( () => process.exit(exitCode) );
 	}
-
-
-	/////////////////////////////////////////////////////////////////////////////////////////
-	private async FinalizationAndExit(exitCode: number) : Promise<void>
-	{
-		this.AppTerminator(null).then( () => process.exit(exitCode) );
-	}
-
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private async SaveMachinePublicIP(): Promise<boolean>
 	{
 		let bResult = true;
-		const url_v6 = 'https://ipv6-api.speedtest.net/getip';
-		const url_v4 = 'https://ipv4-api.speedtest.net/getip';
-		const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
-		const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
-		
-		if ( publicIPv6 )
-		{
-			console.log( "Server", 'publicIPv6', publicIPv6 );
-			ServerInfo.MACHINE_PUBLIC_IPv6 = publicIPv6;
-		}
-		if ( publicIPv4 )
-		{
-			console.log( "Server", 'publicIPv4', publicIPv4 );
-			ServerInfo.MACHINE_PUBLIC_IPv4 = publicIPv4;
-		}
-		if ( !publicIPv6 && !publicIPv4 )
-		{
-			console.error( `Cannot retrieve public ip` );
-			bResult = false;
-		}
+	//	const url_v6 = 'https://ipv6-api.speedtest.net/getip';
+	//	const url_v4 = 'https://ipv4-api.speedtest.net/getip';
+	//	const publicIPv6 : string | null = (await ComUtils.HTTP_Get( url_v6 ))?.toString()?.trim();
+	//	const publicIPv4 : string | null = (await ComUtils.HTTP_Get( url_v4 ))?.toString()?.trim();
+	//	
+	//	if ( publicIPv6 )
+	//	{
+	//		console.log( "Server", 'publicIPv6', publicIPv6 );
+	//		ServerInfo.MACHINE_PUBLIC_IPv6 = publicIPv6;
+	//	}
+	//	if ( publicIPv4 )
+	//	{
+	//		console.log( "Server", 'publicIPv4', publicIPv4 );
+	//		ServerInfo.MACHINE_PUBLIC_IPv4 = publicIPv4;
+	//	}
+	//	if ( !publicIPv6 && !publicIPv4 )
+	//	{
+	//		console.error( `Cannot retrieve public ip` );
+	//		bResult = false;
+	//	}
 		return bResult;
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private async UploadConfigurationFile() : Promise<boolean>
 	{
 		const serverConfigs = new ServerConfigs();
-		serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
-		serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
+	//	serverConfigs.SetCurrentPublicIPv6( ServerInfo.MACHINE_PUBLIC_IPv6 );
+	//	serverConfigs.SetCurrentPublicIPv4( ServerInfo.MACHINE_PUBLIC_IPv4 );
 		serverConfigs.SetHTTPServerPort( ServerInfo.HTTP_SERVER_PORT );
 		serverConfigs.SetWebSocketPort( ServerInfo.WEBSOCKET_SERVER_PORT );
 		
@@ -188,7 +181,7 @@ class Server
 		await FSUtils.EnsureDirectoryExistence( path.parse(filePath).dir );
 		fs.writeFileSync( filePath, JSON.stringify( serverConfigs, null, '\t' ) );
 
-		return serverConfigs.AreValidData();
+		return true; //serverConfigs.AreValidData();
 	}
 
 
