@@ -96,6 +96,18 @@ export interface IServerResponseResult extends ICommonResult
 
 }
 
+// Check that the port number is not NaN when coerced to a number,
+// is an integer and that it falls within the legal range of port numbers.
+export function IsLegalPort(port : number | string)
+{
+	if ((typeof port !== 'number' && typeof port !== 'string') || (typeof port === 'string' && port.trim().length === 0))
+	{
+		return false;
+	}
+	return +port === (+port >>> 0) && port <= 0xFFFF;
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////////
 export async function HTTP_Get( URL : string, requestOptions?: https.RequestOptions ) : Promise<Buffer | null>
 {
@@ -187,6 +199,7 @@ export async function ResolveWithGoodResult<T extends ICommonResult>( body?: Buf
 /////////////////////////////////////////////////////////////////////////////////////////
 export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb? : (value: T) => void ) : Promise<T>
 {
+	//debugger;
 	let msg = '';
 	if ( typeof errMessage === 'string' )
 	{

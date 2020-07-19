@@ -31,10 +31,7 @@ export interface ITemplatedObject<T = any>
 
 export function Yieldable<T>(fn: () => T): Promise<T>
 {
-	return new Promise( ( resolve ) =>
-	{
-		resolve(fn());
-	});
+	return Promise.resolve().then(fn);
 }
 
 

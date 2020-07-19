@@ -81,8 +81,9 @@ export default class FSUtils
 	}
 
 	/**  */
-	public static MakeDirectoryAsync( dirPath: string ) : Promise<boolean>
+	public static async MakeDirectoryAsync( dirPath: string ) : Promise<boolean>
 	{
+		if ( ( FSUtils.IsDirectorySafe( dirPath ) ) ) return true;
 		return new Promise( ( resolve ) =>
 		{
 			fs.mkdir( dirPath, ( err: NodeJS.ErrnoException ) => resolve(!err) );
@@ -96,6 +97,32 @@ export default class FSUtils
 		{
 			fs.readFile( filePath, null, ( err: NodeJS.ErrnoException, data: Buffer ) => resolve( err ? err : data ) );
 		});
+	}
+
+	/** */
+	public static async ReadAndParse<T>( filePath : string, ctor?: (obj: object) => T ) : Promise<T | Error>
+	{
+		const contentOrError : NodeJS.ErrnoException | Buffer = await FSUtils.ReadFileAsync(filePath);
+		if (!Buffer.isBuffer(contentOrError))
+		{
+			return contentOrError; // Error
+		}
+
+		let parsed: any = null;
+		try
+		{
+			parsed = JSON.parse(contentOrError.toString());
+		}
+		catch( ex )
+		{
+			return new Error( `FSUtils:ReadAndParse: Cannot parse content of file "${filePath}" as a json object` );
+		}
+
+		if (ctor)
+		{
+			return ctor(parsed);
+		}
+		return parsed as T;
 	}
 
 	/**  */
@@ -122,13 +149,10 @@ export default class FSUtils
 		const dirNames: string[] = path.normalize(filePath).split(path.sep).filter( p => p );
 		for (let index = 0; index < dirNames.length; index++)
 		{
-			Yieldable( () =>
+			await Yieldable( () =>
 			{
 				const dirPath = dirNames.slice(0, index + 1).join(path.sep);
-				if ( ( !FSUtils.IsDirectorySafe( dirPath ) ) )
-				{
-					FSUtils.MakeDirectoryAsync( dirPath );
-				}
+				return FSUtils.MakeDirectoryAsync( dirPath );
 			});
 		};
 	}
