@@ -5,11 +5,21 @@ import 'material-design-icons/iconfont/material-icons.css'
 import 'typeface-roboto/index.css'
 */
 
-import Vue, { VueConstructor } from 'vue';
 import GenericUtils from '../../../Common/Utils/GenericUtils';
 
+
+// Electron Stuff
+import { ipcRenderer } from 'electron';
+import { ICP_RendererComs } from './icpRendererComs';
+import { EComunicationsChannels } from '../icpComs';
+
+// Vue
+import Vue, { VueConstructor, PluginObject } from 'vue';
+
+// Vue Router
 import AppRouter from './appRouter';
 
+// Vue Components
 import GlobalLayout from './Components/Layouts/GlobalLayout.vue';
 import InputSelector from './Components/InputSelector.vue';
 import ProgressBar from './components/Progress/ProgressBar.vue';
@@ -19,14 +29,14 @@ import CustomTableTd from './components/Table/CustomTableTd.vue';
 import CustomButton from './components/CustomButton.vue';
 import CustomSelect from './components/CustomSelect.vue';
 import CustomDatalist from './components/CustomDatalist.vue';
-import { ipcRenderer } from 'electron';
-import { ICP_RendererComs } from './icpRendererComs';
-import { EComunicationsChannels } from '../icpComs';
+
+// Vue Plugins
+import StaticHelpers from './plugins/vueHelpers';
 
 const bIsDev = process.env.NODE_ENV === 'development';
-const components =
+const components : PluginObject<Vue> =
 {
-	install(Vue: VueConstructor<Vue>)
+	install: (Vue: VueConstructor<Vue>, options?: Vue) =>
 	{
 		[
 			GlobalLayout,
@@ -42,6 +52,17 @@ const components =
 			Vue.component(component.name, component)
 			console.log(`Registered "${component.name}"`);
 		});
+	}
+};
+const customHelpers : PluginObject<Vue> = 
+{
+	install: (Vue: VueConstructor<Vue>, options?: Vue) =>
+	{
+	//	Vue.helpers = StaticHelpers
+		for( const [name, func] of Object.entries(StaticHelpers) )
+		{
+			Vue.prototype[name] = func;
+		}
 	}
 };
 /*
@@ -72,6 +93,7 @@ async function Initialize()
 	// Setup Vue
 //	Vue.use(electron);
 	Vue.use(components);
+	Vue.use(customHelpers);
 	Vue.config.productionTip = false;
 //	Vue.prototype.$sync = function( key: string, value: any )
 //	{

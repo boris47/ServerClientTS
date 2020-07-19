@@ -44,13 +44,9 @@ export function SetupMainHandlers()
 	};
 
 	//
-	const DirectoryAdjustment = (filePath: string): string =>
+	const DirectoryAdjustment = (resourcePath: string): string =>
 	{
-		return bIsDev ?
-			filePath.replace( '$static', 'static' ).replace( '$resources', 'resources' )
-		:
-			filePath.replace( '$static', global.__static ).replace( '$resources', path.resolve( electron.app.getAppPath(), 'resources') )
-		;
+		return path.join( bIsDev ? 'static' : global.__static, resourcePath );
 	}
 
 	/////////////////////////////////////////////////

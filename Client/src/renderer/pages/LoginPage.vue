@@ -1,7 +1,7 @@
 <template>
 	<global-layout>
 		<div slot="header">
-			<!--img :src="getStatic('me.jpg')" alt=""-->
+			<img :src="GetStatic('me.jpg')" alt="">
 			<h3>Login</h3>
 			<form v-on:submit.prevent="handleSubmit">
 				<div>
@@ -30,7 +30,6 @@
 	import LoginManager from '../plugins/loginManager';
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunicationsChannels } from '../../icpComs';
-//	import {getStatic} from '../plugins/staticHelper';
 
 	export default Vue.extend({
 
@@ -48,9 +47,8 @@
 		{
 			console.log('LoginPage');
 			LoginManager.IsLogged = false;
-		//	(this as any).getStatic = getStatic;
 
-			ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, '$static/TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
+			ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, 'TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
 			{
 				if ( Buffer.isBuffer(arg) )
 				{
