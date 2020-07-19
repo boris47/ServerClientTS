@@ -9,15 +9,14 @@
 	"license": "",
 	"main": "./dist/electron/main.js",
 	"scripts": {
-		"dev": "npm run compileCode && electron-webpack && electron-webpack dev",
-		"compile": "electron-webpack",
-		"dist": "npm run compileCode && electron-webpack && electron-builder",
-		"dist:dir": "npm run compileCode && electron-webpack && electron-builder --dir -c.compression=store -c.mac.identity=null",
-		"compileCode": "call \"./node_modules/.bin/tsc.cmd\" -p \"tsconfig.json\"",
+		"dev": "electron-webpack && electron-webpack dev",
+		"update-dist": "electron-webpack",
+		"update-dist-pack": "electron-webpack && electron-builder",
+		"update-dist-pack:dir": "npm run update-dist && electron-builder --dir -c.compression=store -c.mac.identity=null",
 		"postinstall": ""
 	},
 	"electronWebpack": {
-		"staticSourceDirectory": "static",
+		"staticSourceDirectory": "notIncluded",
 		"whiteListedModules": [
 			"electron",
 			"vue-router"
@@ -40,9 +39,24 @@
 		"directories": {
 			"output": "build"
 		},
+		"asar": true,
 		"files": [
+			"!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}",
+			"!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}",
+			"!**/node_modules/*.d.ts",
+			"!**/node_modules/.bin",
+			"!**/*.{iml,o,hprof,orig,pyc,pyo,rbc,swp,csproj,sln,xproj}",
+			"!.editorconfig",
+			"!**/._*",
+			"!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}",
+			"!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}",
+			"!**/{appveyor.yml,.travis.yml,circle.yml}",
+			"!**/{npm-debug.log,yarn.lock,.yarn-integrity,.yarn-metadata.json}",
 			"dist/**/*",
-			"static/*"
+			{
+				"from": "./static",
+				"to": "static"
+			}
 		],
 		"electronDownload": {
 			"cache": "cache"

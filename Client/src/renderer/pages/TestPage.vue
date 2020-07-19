@@ -80,7 +80,7 @@ export default class TestPage extends Vue
 	protected tableRows = Array<ITableRow>();
 
 
-	protected created()
+	protected async created()
 	{
 		console.log('Test Page');
 		const header1 : ITableHeader = { id: '1', text: 'Header 1', width: 25 };
@@ -109,9 +109,8 @@ export default class TestPage extends Vue
 				content: [ { id: '5', value: '' }, { id: '2', value: undefined }, { id: '3', value: 'Melissa Ti Amo' }, ]
 			}
 		);
-		// @ts-ignore
-		ICP_RendererComs.Invoke<NodeJS.ErrnoException | Buffer>(EComunicationsChannels.READ_FILE, null, '$resources/TestStatic.txt' )
-		.then( (arg : NodeJS.ErrnoException | Buffer) =>
+		
+		ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, '$static/TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
 		{
 			if ( Buffer.isBuffer(arg) )
 			{

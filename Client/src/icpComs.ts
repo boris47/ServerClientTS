@@ -18,6 +18,8 @@ export enum EComunicationsChannels
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
+	/** none -> string*/
+	RESOURCE_PATH = 'RESOURCE_PATH',
 	/** string -> NodeJS.ErrnoException | Buffer */
 	READ_FILE = 'READ_FILE',
 	/** string, Buffer -> NodeJS.ErrnoException | null */
@@ -57,6 +59,7 @@ export interface IComunications
 	[EComunicationsChannels.ELECTRON_PATH] : string | Error;
 	[EComunicationsChannels.ELECTRON_MODAL_OPEN]: electron.OpenDialogReturnValue;
 
+	[EComunicationsChannels.RESOURCE_PATH] : string;
 	[EComunicationsChannels.READ_FILE]: NodeJS.ErrnoException | Buffer;
 	[EComunicationsChannels.WRITE_FILE]: NodeJS.ErrnoException | null;
 

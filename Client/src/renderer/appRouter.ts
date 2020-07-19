@@ -4,7 +4,7 @@ import LoginManager from './plugins/loginManager';
 import VueRouter, { Route, RouterOptions, RawLocation } from 'vue-router';
 
 //import HomePage from "./Pages/HomePage.vue";
-//import TestPage from "./Pages/TestPage.vue";
+import TestPage from "./Pages/TestPage.vue";
 import RegistrationPage from "./Pages/RegistrationPage.vue";
 import LoginPage from "./Pages/LoginPage.vue";
 import AboutPage from "./Pages/AboutPage.vue";
@@ -27,12 +27,7 @@ export default class AppRouter
 			const routerOptions = <RouterOptions>
 				{
 					routes: [
-					/*	{
-							path: '/testPage',
-							name: 'testPage',
-							component: TestPage
-						},
-					*/	{
+						{
 							path: '/loginPage',
 							name: 'loginPage',
 							component: LoginPage
@@ -41,6 +36,12 @@ export default class AppRouter
 							path: '/RegistrationPage',
 							name: 'registrationPage',
 							component: RegistrationPage
+						},
+						{
+							path: '/testPage',
+							name: 'testPage',
+							component: TestPage,
+							meta: { requiresAuth: true },
 						},
 						{
 							path: '/mainPage',

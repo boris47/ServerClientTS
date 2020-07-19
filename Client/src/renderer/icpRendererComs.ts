@@ -7,12 +7,12 @@ import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 const MappedOps : {[key:string]: Function} =
 {
-	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> typeof value === 'boolean'		? Boolean(value)					: null,
-	[EMessageContent.NUMBER]		: ( value: Number )			=> typeof value === 'number'		? Number(value)						: null,
-	[EMessageContent.STRING]		: ( value: String )			=> typeof value === 'string'		? String(value)						: null,
+	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> typeof value === 'boolean'		? value						: null,
+	[EMessageContent.NUMBER]		: ( value: Number )			=> typeof value === 'number'		? value						: null,
+	[EMessageContent.STRING]		: ( value: String )			=> typeof value === 'string'		? value						: null,
 	[EMessageContent.BUFFER]		: ( value: Uint8Array )		=> value && value.length > 0 		? Buffer.from(value)				: null,
-	[EMessageContent.OBJECT]		: ( value: Object )			=> typeof value === 'object' 		? Object.assign({}, value)			: null,
-	[EMessageContent.ARRAY]			: ( value: Array<any> )		=> Array.isArray(value)				? Array.from(value)					: null,
+	[EMessageContent.OBJECT]		: ( value: Object )			=> typeof value === 'object' 		? value			: null,
+	[EMessageContent.ARRAY]			: ( value: Array<any> )		=> Array.isArray(value)			? value					: null,
 	[EMessageContent.ERROR]			: ( value: Error )			=> value instanceof Error 			? value								: null,
 	[EMessageContent.NULL]			: ( value: null )			=> value,
 	[EMessageContent.UNDEFINED]		: ( value: undefined )		=> value,
@@ -49,7 +49,7 @@ export class ICP_RendererComs
 
 	/** Allow async comunication to main process
 	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH
-	 * @param progress The progress object to update 
+	 * @param comFlowManager The meanager that will handle data flow
 	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
 	 * @param args Arguments to pass to the caller 
 	 */
@@ -61,7 +61,7 @@ export class ICP_RendererComs
 		
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.length - 1);
-	//	console.log( channel, key, args, typeString, type, result )
+	//	console.log( ''ICP_RendererComs:Invoke, channel, key, args, typeString, type, result )
 		
 		const ctor = MappedOps[type];
 		if ( ctor )
@@ -71,5 +71,28 @@ export class ICP_RendererComs
 		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${key}, ${args}), type is ${type}` );
 		return null;
 	}
+
+	
+	/** Allow sync comunication to main process
+	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH
+	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
+	 * @param args Arguments to pass to the caller 
+	 */
+//	public static InvokeSync<T extends keyof IComunications>(channel: T, key?: string | string[], ...args: any | any[] ) : IComunications[T] | null
+//	{
+//		const result = ipcRenderer.sendSync(channel, key, args);
+//
+//		const typeString = Object.prototype.toString.call(result);
+//		const type = typeString.substring('[object '.length, typeString.length - 1);
+//	//	console.log( 'ICP_RendererComs:InvokeSync', channel, key, args, typeString, type, result )
+//		
+//		const ctor = MappedOps[type];
+//		if ( ctor )
+//		{
+//			return ctor(result);
+//		}
+//		console.error( `RendererComs:InvokeSync: Unrecognized/unsupported type received at channel ${channel} with args: (${key}, ${args}), type is ${type}` );
+//		return null;
+//	}
 }
 

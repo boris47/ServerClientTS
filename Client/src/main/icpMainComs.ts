@@ -1,5 +1,6 @@
 
 import * as path from 'path';
+//import * as url from 'url';
 import * as electron from 'electron';
 import { EComunicationsChannels } from '../icpComs';
 
@@ -48,7 +49,7 @@ export function SetupMainHandlers()
 		return bIsDev ?
 			filePath.replace( '$static', 'static' ).replace( '$resources', 'resources' )
 		:
-			filePath.replace( '$static', __static ).replace( '$resources', path.resolve( electron.app.getAppPath(), 'resources') )
+			filePath.replace( '$static', global.__static ).replace( '$resources', path.resolve( electron.app.getAppPath(), 'resources') )
 		;
 	}
 
@@ -100,6 +101,15 @@ export function SetupMainHandlers()
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
+	electron.ipcMain.handle( EComunicationsChannels.RESOURCE_PATH, async ( event: Electron.IpcMainInvokeEvent, flowManagerId: string ) : Promise<string> =>
+	{
+		return bIsDev ? 'http://127.0.0.1:9080' : process.resourcesPath;
+	//		url.resolve( 'http://127.0.0.1:9080', 'resources' )
+//			:
+//			path.resolve( electron.app.getAppPath(), 'resources')
+//		;
+	});
+
 	electron.ipcMain.handle(EComunicationsChannels.READ_FILE, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
 	{
 	//	console.log( EComunicationsChannels.READ_FILE, filePath );

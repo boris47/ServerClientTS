@@ -1,19 +1,19 @@
 
 import * as path from 'path';
-//import * as fs from 'fs';
-
 import * as electron from 'electron';
+
 import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
+import {IPackageJSON} from '../../../Common/IPackageJSON';
+//import CustomFSStorage from './CustomFSStorage';
+//import GenericUtils from '../../../Common/Utils/GenericUtils';
 
-//const packageText = fs.readFileSync( '' )
-
-const { productName, description, version } = require('../../package.json');
-
-const bIsDev = process.env.NODE_ENV === 'development';
+const { config: {name}, description, version } : IPackageJSON = require('../../package.json');
 
 electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
-electron.app.name = `${productName} - ${description} v.${version}`
+electron.app.name = `${name} - ${description} v.${version}`
+
+const bIsDev = process.env.NODE_ENV === 'development';
 
 //Here is where we change the default path of the cookies in order to keep them if we make automatic updates//
 {
@@ -28,7 +28,7 @@ electron.app.name = `${productName} - ${description} v.${version}`
  */
 if (!bIsDev)
 {
-	global.__static = path.join(__dirname, '/static').replace(/\\/g, '\\\\');
+	global.__static = path.join(__dirname, '/static').replace(/\\/g, /*'/'*/'\\\\');
 }
 
 
@@ -81,6 +81,7 @@ async function createMainWindow()
 				/** Whether node integration is enabled. Default is false. */
 				nodeIntegration: false,
 				nodeIntegrationInSubFrames: false,
+				nativeWindowOpen: true,
 				preload: path.resolve(__dirname, './preload.js'),
 				webSecurity: true,
 				allowRunningInsecureContent: false,
@@ -102,9 +103,6 @@ async function createMainWindow()
 		// Remove the window's menu bar.
 		window.removeMenu();
 
-		// resolve when when 'did-finish-load' has been fired
-		window.webContents.once('did-finish-load', resolve);
-
 		// or reject if it was closed before then
 		window.once('closed', () =>
 		{
@@ -117,8 +115,11 @@ async function createMainWindow()
 		{
 			console.error(error);
 			process.exit(1);
-		});
-	} );
+		})
+		.then(resolve);
+	});
+
+//	await GenericUtils.DelayMS(1000);
 
 	// Open the DevTools if desired
 	window.webContents.openDevTools({ mode: "detach" });
@@ -127,13 +128,19 @@ async function createMainWindow()
 	return window;
 }
 
-
 async function main()
 {
 	// 'ready' will be fired when Electron has finished
 	// initialization and is ready to create browser windows.
 	// Some APIs can only be used after this event occurs.
-	await new Promise(resolve => electron.app.once('ready', resolve));
+	await electron.app.whenReady();
+
+//	const bResult = await CustomFSStorage.Initialize(name, 'cookies');
+//	if (!bResult)
+	{
+		// TODO Handle this case
+//		return;
+	}
 
 	// Second instance is not allowed
 	const isSecondInstance = electron.app.requestSingleInstanceLock();
@@ -149,7 +156,6 @@ async function main()
 	{
 		InstallRequestsProcessor();
 	});
-
 
 	SetupSession();
 

@@ -12,14 +12,15 @@ import {
 
 import { InstallRequestsProcessor } from "./client.Bridge";
 import { ComFlowManager } from "../../../../Common/Utils/ComUtils";
-import CustomLocalStorage from "../LocalStorage";
+import CustomFSStorage from "../CustomFSStorage";
 
 async function Main()
 {
 	process.env.NODE_ENV = 'development';
 	await InstallRequestsProcessor();
 	{
-		await CustomLocalStorage.Initialize('ClientTS', 'cookies');
+		await CustomFSStorage.Initialize('ClientTS', 'cookies');
+		await CustomFSStorage.LoadStorage();
 
 		Request_ServerPing()
 		.then( ( result : Buffer | Error ) =>

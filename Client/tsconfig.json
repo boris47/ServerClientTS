@@ -51,7 +51,7 @@
 		/*
 		* Watch input files.
 		*/
-		"watch": false,
+		"watch": true,
 		/*
 		* Generates corresponding '.map' file.
 		*/
