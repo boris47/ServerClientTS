@@ -31,7 +31,7 @@ import CustomSelect from './components/CustomSelect.vue';
 import CustomDatalist from './components/CustomDatalist.vue';
 
 // Vue Plugins
-import StaticHelpers from './plugins/vueHelpers';
+import VueHelperPlugin from './plugins/vueHelpers';
 
 const bIsDev = process.env.NODE_ENV === 'development';
 const components : PluginObject<Vue> =
@@ -54,23 +54,8 @@ const components : PluginObject<Vue> =
 		});
 	}
 };
-const customHelpers : PluginObject<Vue> = 
-{
-	install: (Vue: VueConstructor<Vue>, options?: Vue) =>
-	{
-	//	Vue.helpers = StaticHelpers
-		for( const [name, func] of Object.entries(StaticHelpers) )
-		{
-			Vue.prototype[name] = func;
-		}
-	}
-};
-/*
-const electron =
-{
-	install: (Vue: VueConstructor<Vue>) => Vue.prototype.$electron = require('electron')
-};
-*/
+
+
 async function Initialize()
 {
 	// localStorage Setup
@@ -91,17 +76,10 @@ async function Initialize()
 	await new Promise((resolve) => document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', resolve) : resolve() );
 
 	// Setup Vue
-//	Vue.use(electron);
 	Vue.use(components);
-	Vue.use(customHelpers);
+	Vue.use(VueHelperPlugin);
 	Vue.config.productionTip = false;
-//	Vue.prototype.$sync = function( key: string, value: any )
-//	{
-//		console.log('Vue.prototype.$sync', key, value);
-//		this.$emit(`update:${key}`, value);
-//	};
 
-	/* eslint-disable no-new */
 	const vueInstance = new Vue(
 		{
 			router: AppRouter.Initialize(),
