@@ -113,8 +113,14 @@ export namespace ProcessManager
 			const IsSubProcessMessage = (message: any): message is ISubProcessMessage => !!message.processName && message.msgType && !!message.msg
 			if (IsSubProcessMessage(message))
 			{
-				const pendingMessage = PendingMessages.find( pending => pending.msgType === message.msgType && pending.processName === message.processName );
-				pendingMessage?.onReceived?.onMessageReceived( <ISubProcessMessage>message );
+				const pendingMessageIndex = PendingMessages.findIndex( pending => pending.msgType === message.msgType && pending.processName === message.processName );
+				if ( pendingMessageIndex >= 0 )
+				{
+					const pendingMessage = PendingMessages[pendingMessageIndex];
+					pendingMessage?.onReceived?.onMessageReceived( <ISubProcessMessage>message );
+					PendingMessages.splice( pendingMessageIndex, 1);
+				}
+				
 			}
 		}
 
