@@ -1,5 +1,25 @@
 
-//	import * as crypto from 'crypto';
+import * as crypto from 'crypto';
+
+
+export class CustomCrypto
+{
+	public static Encrypt(text: string, passPhrase32Bit: string, iv: string): string
+	{
+		const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(passPhrase32Bit), iv);
+		const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+		return encrypted.toString('hex');
+	}
+
+	public static Decrypt(text: string, passPhrase32Bit: string, iv: string): string
+	{
+		const encryptedText = Buffer.from(text, 'hex');
+		const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(passPhrase32Bit), iv);
+		const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
+		return decrypted.toString();
+	}
+}
+
 
 /////////////////////////////////////////////////////////////////////////////////////////
 export class UniqueID
