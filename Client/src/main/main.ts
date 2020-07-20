@@ -4,14 +4,14 @@ import * as electron from 'electron';
 
 import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
-import {IPackageJSON} from '../../../Common/IPackageJSON';
+import { IPackageJSON } from '../../../Common/IPackageJSON';
 //import CustomFSStorage from './CustomFSStorage';
 //import GenericUtils from '../../../Common/Utils/GenericUtils';
 
-const { config: {name}, description, version } : IPackageJSON = require('../../package.json');
+const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
 electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
-electron.app.name = `${name} - ${description} v.${version}`
+electron.app.name = `${ name } - ${ description } v.${ version }`;
 
 const bIsDev = process.env.NODE_ENV === 'development';
 
@@ -56,7 +56,7 @@ function SetupSession()
 		}
 		else
 		{
-			console.error(`The application tried to request permission for '${permission}'. This permission was not whitelisted and has been blocked.`);
+			console.error(`The application tried to request permission for '${ permission }'. This permission was not whitelisted and has been blocked.`);
 			callback(false); // Deny
 		}
 	});
@@ -66,7 +66,7 @@ function SetupSession()
 async function createMainWindow()
 {
 	// Create the browser window.
-	const window = new electron.BrowserWindow( <Electron.BrowserWindowConstructorOptions>
+	const window = new electron.BrowserWindow(<Electron.BrowserWindowConstructorOptions>
 		{
 			// Window's height in pixels. Default is 600.
 			height: 600,
@@ -111,7 +111,7 @@ async function createMainWindow()
 
 		// initiate the loading
 		const winURL = bIsDev ? `http://127.0.0.1:9080` : `file://${ __dirname }/index.html`;
-		window.loadURL( winURL ).catch((error: Error) =>
+		window.loadURL(winURL).catch((error: Error) =>
 		{
 			console.error(error);
 			process.exit(1);
@@ -159,7 +159,7 @@ async function main()
 
 	SetupSession();
 
-	SetupMainHandlers()
+	SetupMainHandlers();
 
 	// exit when all windows are closed and this promise is resolved
 	const terminationPromise = new Promise<void>((resolve: () => void) =>
