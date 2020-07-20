@@ -1,7 +1,8 @@
 <template>
 	<global-layout>
 		<div slot="header">
-			<img :src="GetStatic('me.jpg')" alt="">
+			<!-- <div class="logo"/> -->
+			<!--img :src="GetStatic('me.jpg')" alt=""-->
 			<h3>Login</h3>
 			<form v-on:submit.prevent="handleSubmit">
 				<div>
@@ -43,22 +44,20 @@
 			};
 		},
 
-		created()
+		async created()
 		{
 			console.log('LoginPage');
 			LoginManager.IsLogged = false;
-
-			ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, 'TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
+			
+			const result = await ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, 'TestStatic.txt' );
+			if ( Buffer.isBuffer(result) )
 			{
-				if ( Buffer.isBuffer(arg) )
-				{
-					console.log('Static: Content,', arg.toString());
-				}
-				else
-				{
-					console.error('Static: Error,', arg);
-				}
-			});
+				console.log('Static: Content,', result.toString());
+			}
+			else
+			{
+				console.error('Static: Error,', result);
+			}
 		},
 
 		methods:
@@ -93,8 +92,16 @@
 
 <style scoped>
 
-.red-label{
-	color: red;
-}
+	.red-label{
+		color: red;
+		/* cursor: help; */
+		/* cursor: url('../../../static/smallcursor.png') 2 2, pointer; */
+	}
+
+	/* .logo {
+		background: url('../../../static/me.jpg') 100% 100% no-repeat, blue;
+		height: 100px;
+		width: 300px;
+    } */
 
 </style>
