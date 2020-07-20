@@ -10,10 +10,11 @@ export default class ServerUserManager
 
 	public static async RegisterUser( username: string, password: string ): Promise<string | null>
 	{
-		const newuser = new ServerUser( username, password );
+		const { username: encryptedUsername, password: encriptedPassword, id } = ServerUser.EncryptData( username, password );
+		const newuser = new ServerUser( encryptedUsername, encriptedPassword, id );
 		const bResult = await ServerUserDB.AddUser( newuser, false );
 		await ServerUserDB.Save();
-		return bResult ? newuser.ID : null;
+		return bResult ? newuser.id : null;
 	}
 	
 	///////////////////////////
@@ -24,8 +25,9 @@ export default class ServerUserManager
 	 */
 	public static async UserLogin( username: string, password: string ) : Promise<string | null>
 	{
-		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(username) ) || ( await ServerUserDB.GetUserByUsername(username) );
-		if ( serverUser && serverUser.IsPassword(password) )
+		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
+		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(encryptedUsername) ) || ( await ServerUserDB.GetUserByUsername(encryptedUsername) );
+		if ( serverUser && serverUser.IsPassword(encryptedPassword) )
 		{
 			await serverUser.Login(serverUser.LoginData.Token);
 //			console.warn( 'token', serverUser.LoginData.Token );
@@ -60,7 +62,7 @@ export default class ServerUserManager
 	///////////////////////////
 	public static async FindLoggedInUserByUsername(username: string): Promise<ServerUser | null>
 	{
-		return Array.from(this.LoggedInUsers.values()).find( u => u.Username === username ) || null;
+		return Array.from(this.LoggedInUsers.values()).find( u => u.username === username ) || null;
 	}
 
 

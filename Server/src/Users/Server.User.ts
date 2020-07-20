@@ -1,6 +1,7 @@
 
 
-import { UniqueID, ITemplatedObject } from "../../../Common/Utils/GenericUtils";
+import { UniqueID, ITemplatedObject, CustomCrypto } from "../../../Common/Utils/GenericUtils";
+
 
 export class UserLoginData
 {
@@ -35,40 +36,59 @@ export class UserLoginData
 	}
 };
 
-
-export class ServerUser
+export interface IServerUserBaseProps
 {
+	readonly	username: string;
+	readonly	password: string;
+	readonly	id?: string;
+}
+
+export class ServerUser implements IServerUserBaseProps
+{
+	private static passPhrase32Bit : string = `NEhS@qDBXrmq2qyNe4WUS7Lb+Y=5-gC3`;
+	private static iv: string = '7}t;Ca5R&nT{8>RE';
 	private static users: ServerUser[] = new Array<ServerUser>();
-	public static async  GetUserById(userid: string): Promise<ServerUser| null>
-	{
-		return ServerUser.users.find( u => u.id === userid ) || null;
-	}
 
 	public static async GetUserByToken(token: string): Promise<ServerUser | null>
 	{
 		return ServerUser.users.find( u => u.loginData?.Token === token ) || null;
 	}
 
+	public static EncryptData( username: string, password: string, id?: string ): IServerUserBaseProps
+	{
+		return {
+			username: CustomCrypto.Encrypt( username, ServerUser.passPhrase32Bit, ServerUser.iv ),
+			password: CustomCrypto.Encrypt( password, ServerUser.passPhrase32Bit, ServerUser.iv ),
+			id: id ? CustomCrypto.Encrypt( id, ServerUser.passPhrase32Bit, ServerUser.iv ) : undefined,
+		};
+	}
+
+	public static DecryptData( username: string, password: string, id?: string ): IServerUserBaseProps
+	{
+		return {
+			username: CustomCrypto.Decrypt( username, ServerUser.passPhrase32Bit, ServerUser.iv ),
+			password: CustomCrypto.Decrypt( password, ServerUser.passPhrase32Bit, ServerUser.iv ),
+			id: id ? CustomCrypto.Decrypt( id, ServerUser.passPhrase32Bit, ServerUser.iv ) : undefined,
+		}
+	}
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	private	readonly	username: string			= '';
-	private readonly	password: string 			= '';
-	private readonly	id: string					= UniqueID.Generate();
-	private readonly	loginData: UserLoginData	= new UserLoginData;	
+	public	readonly	username: string			= '';
+	public 	readonly	password: string 			= '';
+	public	readonly	id: string					= UniqueID.Generate();
+	private readonly	loginData: UserLoginData	= new UserLoginData;
 
 	//
-	get ID() : string { return this.id };
-	get Username() : string { return this.username };
-//	get Password() : string { return this.password };
 	get LoginData(): UserLoginData { return this.loginData };
 
 	//
 	constructor( username?: string, password?: string, id?: string )
 	{
+		// Encryp user data
 		this.username = username;
 		this.password = password;
-		this.id = id || this.id;
-
+		this.id = id ? id : this.id;
 		ServerUser.users.push(this);
 	}
 
@@ -81,6 +101,7 @@ export class ServerUser
 	//
 	public IsPassword( password: string )
 	{
+		// TODO impove performance
 		return this.password === password;
 	}
 
@@ -92,7 +113,7 @@ export class ServerUser
 	}
 
 
-	private toJSON()
+	protected toJSON()
 	{
 		const toSkip : string[] = ['loginData'];
 		const output : ITemplatedObject = {};

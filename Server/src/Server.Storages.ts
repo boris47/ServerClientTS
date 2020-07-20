@@ -56,8 +56,8 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		if ( this.m_IsInitialized )
 			return true;
-			
-		const storageRelativePath = `./ServerStorage/${StorageName}.json`;
+
+		const storageRelativePath = path.join( process.cwd(), 'ServerStorage', `${StorageName}.json` );
 		const folderPath = path.parse( storageRelativePath ).dir;
 		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( storageRelativePath ) )
@@ -65,6 +65,7 @@ class ServerStorage_FileSystem implements IServerStorage
 			fs.writeFileSync( storageRelativePath, "{}", 'utf8' );
 		}
 		this.m_StorageName = storageRelativePath;
+		console.log( `ServerStorage[FileSystem]: Location: ${storageRelativePath}` );
 		return true;
 	}
 

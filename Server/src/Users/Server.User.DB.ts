@@ -4,8 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import FSUtils from "../../../Common/Utils/FSUtils";
-import { ITemplatedObject, Yieldable } from '../../../Common/Utils/GenericUtils';
-import { ServerUser } from './Server.User';
+
+import GenericUtils, { ITemplatedObject, Yieldable } from '../../../Common/Utils/GenericUtils';
+import { ServerUser, IServerUserBaseProps } from './Server.User';
 import { ILifeCycleObject } from '../../../Common/Interfaces';
 import { RequireStatics } from '../../../Common/Decorators';
 
@@ -25,7 +26,7 @@ export default class ServerUserDB
 			return true;
 		}
 
-		const storageAbsolutepath = path.join( 'Storage', `UserDB.json` );
+		const storageAbsolutepath = path.join( process.cwd(), 'Storage', `UserDB.json` );
 		const folderPath = path.parse( storageAbsolutepath ).dir;
 		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( storageAbsolutepath ) )
@@ -41,13 +42,13 @@ export default class ServerUserDB
 	public static async Save() : Promise<boolean>
 	{
 		console.log(`Storage:Saving storage ${ServerUserDB.m_StorageName}`);
-		const objectToSave : ITemplatedObject<ServerUser> = {};
+		const objectToSave : ITemplatedObject<IServerUserBaseProps> = {};
 		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
-			await Yieldable( () => objectToSave[userId] = user );
+			await Yieldable( () => objectToSave[user.id] = user );
 		}
 
-		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
+		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, JSON.stringify( objectToSave, null, '\t' /*undefined*/ ) );
 		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
 		return !result;
 	}
@@ -57,31 +58,21 @@ export default class ServerUserDB
 	{
 		// Load storage file
 		const filePath = ServerUserDB.m_StorageName;
-		const readReasult: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync( filePath );
-		if ( Buffer.isBuffer(readReasult) )
+		const parsedOrError : Error | ITemplatedObject<IServerUserBaseProps> = await FSUtils.ReadAndParse<ITemplatedObject<any>>( filePath );
+		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
 		{
-			const asString = readReasult.toString('utf-8');
-			let parsed : ITemplatedObject<any> | null = null;
-			try
-			{
-				parsed = JSON.parse( asString );
-			}
-			catch( e )
-			{
-				console.error( "ServerUserDB", `Cannot load resources from file ${ServerUserDB.m_StorageName}` );
-				return false;
-			}
-
-			for( const Key/*string*/in parsed )
-			{
-				const { username, password, id } = parsed[Key];
-				await Yieldable( () => ServerUserDB.m_Storage.set( Key, new ServerUser( username, password, id ) ) );
-			}
-			return true;
+			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );
+			return false;
 		}
 
-		console.error( "ServerUserDB", 'Error reading local storage', readReasult );
-		return false;
+		for( const [userId, { id, username, password }] of Object.entries(parsedOrError) )
+		{
+			await Yieldable( () =>
+			{
+				ServerUserDB.m_Storage.set( userId, new ServerUser( username, password, id ) );
+			});
+		}
+		return true;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -114,10 +105,10 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async AddUser( user : ServerUser, bForced : boolean = true ) : Promise<boolean>
 	{
-		const bAlreadyExists = ServerUserDB.m_Storage.has( user.ID );
+		const bAlreadyExists = ServerUserDB.m_Storage.has( user.id );
 		if ( !bAlreadyExists || bForced )
 		{
-			ServerUserDB.m_Storage.set( user.ID, user );
+			ServerUserDB.m_Storage.set( user.id, user );
 		}
 		return true;
 	}
@@ -145,11 +136,11 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async GetUserByUsername( username: string ): Promise<ServerUser | null>
+	public static async GetUserByUsername( encryptedUsername: string ): Promise<ServerUser | null>
 	{
 		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
-			if ( user.Username === username ) return user;
+			if ( user.username === encryptedUsername ) return user;
 		}
 		return null;
 	}
