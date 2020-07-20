@@ -12,7 +12,7 @@
 		"dev": "electron-webpack && electron-webpack dev",
 		"update-dist": "electron-webpack",
 		"update-dist-pack": "electron-webpack && electron-builder",
-		"update-dist-pack:dir": "npm run update-dist && electron-builder --dir -c.compression=store -c.mac.identity=null",
+		"update-dist-pack:dir": "npm run update-dist -- --env.production=true --env.minify=true && electron-builder --dir -c.compression=store -c.mac.identity=null",
 		"postinstall": ""
 	},
 	"electronWebpack": {
