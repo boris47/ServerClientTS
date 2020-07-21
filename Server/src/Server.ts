@@ -5,7 +5,6 @@ import * as fs from 'fs';
 import ServerConfigs from '../../Common/ServerConfigs'
 import GenericUtils from '../../Common/Utils/GenericUtils';
 import FSUtils from '../../Common/Utils/FSUtils';
-import * as ComUtils from '../../Common/Utils/ComUtils';
 
 import { MongoDatabase } from '../Utils/MongoDatabase';
 
@@ -15,6 +14,9 @@ import { ServerInfo } from './Server.Globals';
 import { StorageManager, EStorageType } from './Server.Storages';
 import ServerUserDB from './Users/Server.User.DB';
 import { ProcessManager } from '../../Common/ProcessManager';
+
+import { install } from 'source-map-support';
+install({environment: 'node', handleUncaughtExceptions: true});
 
 
 // Very simple answer
