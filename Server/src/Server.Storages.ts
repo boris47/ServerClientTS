@@ -57,7 +57,7 @@ class ServerStorage_FileSystem implements IServerStorage
 		if ( this.m_IsInitialized )
 			return true;
 
-		const storageRelativePath = path.join( process.cwd(), 'ServerStorage', `${StorageName}.json` );
+		const storageRelativePath = path.join( process.cwd(), 'ServerStorage', `${StorageName}Storage.json` );
 		const folderPath = path.parse( storageRelativePath ).dir;
 		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( storageRelativePath ) )
@@ -74,31 +74,19 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		// Load storage file
 		const filePath = this.m_StorageName;
-		const readReasult: Buffer | NodeJS.ErrnoException = await FSUtils.ReadFileAsync( filePath );
-		if ( Buffer.isBuffer(readReasult) )
+		const parsedOrError = await FSUtils.ReadAndParse<ILocalStorage>( filePath );
+		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
 		{
-			const asString = readReasult.toString('utf-8');
-			let parsed : ILocalStorage | null = null;
-			try
-			{
-				parsed = JSON.parse( asString );
-			}
-			catch( e )
-			{
-				console.error( "Server Storage", `Cannot load resources from file ${this.m_StorageName}` );
-				return false;
-			}
-
-			for( const Key/*string*/in parsed )
-			{
-				const buffer = parsed[Key];
-				await Yieldable( () => this.m_Storage.set( Key, Buffer.from( buffer ) ) );
-			}
-			return true;
+			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );
+			return false;
 		}
 
-		console.error( "Server Storage", 'Error reading local storage', readReasult );
-		return false;
+		for( const Key/*string*/in parsedOrError )
+		{
+			const buffer = parsedOrError[Key];
+			await Yieldable( () => this.m_Storage.set( Key, Buffer.from( buffer ) ) );
+		}
+		return true;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

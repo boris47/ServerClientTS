@@ -1,6 +1,6 @@
 
 
-import { UniqueID, ITemplatedObject, CustomCrypto } from "../../../Common/Utils/GenericUtils";
+import { UniqueID, ITemplatedObject, CustomCrypto, Yieldable } from "../../../Common/Utils/GenericUtils";
 
 
 export class UserLoginData
@@ -51,7 +51,12 @@ export class ServerUser implements IServerUserBaseProps
 
 	public static async GetUserByToken(token: string): Promise<ServerUser | null>
 	{
-		return ServerUser.users.find( u => u.loginData?.Token === token ) || null;
+		let userFound = null;
+		for( const user of ServerUser.users )
+		{
+			await Yieldable( () => userFound = user.loginData?.Token === token ? user : null );
+		}
+		return userFound;
 	}
 
 	public static EncryptData( username: string, password: string, id?: string ): IServerUserBaseProps
@@ -83,11 +88,11 @@ export class ServerUser implements IServerUserBaseProps
 	get LoginData(): UserLoginData { return this.loginData };
 
 	//
-	constructor( username?: string, password?: string, id?: string )
+	constructor( encryptedUsername?: string, encryptedPassword?: string, id?: string )
 	{
 		// Encryp user data
-		this.username = username;
-		this.password = password;
+		this.username = encryptedUsername;
+		this.password = encryptedPassword;
 		this.id = id ? id : this.id;
 		ServerUser.users.push(this);
 	}
@@ -101,7 +106,6 @@ export class ServerUser implements IServerUserBaseProps
 	//
 	public IsPassword( password: string )
 	{
-		// TODO impove performance
 		return this.password === password;
 	}
 

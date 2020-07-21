@@ -26,7 +26,7 @@ export default class ServerUserDB
 			return true;
 		}
 
-		const storageAbsolutepath = path.join( process.cwd(), 'Storage', `UserDB.json` );
+		const storageAbsolutepath = path.join( process.cwd(), 'ServerStorage', `UserDB.json` );
 		const folderPath = path.parse( storageAbsolutepath ).dir;
 		await FSUtils.EnsureDirectoryExistence( folderPath );
 		if ( !fs.existsSync( storageAbsolutepath ) )
@@ -81,6 +81,7 @@ export default class ServerUserDB
 		return ServerUserDB.Save();
 	}
 
+
 	//---------------------------------------------------------------
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -103,7 +104,7 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async AddUser( user : ServerUser, bForced : boolean = true ) : Promise<boolean>
+	public static AddUser( user : ServerUser, bForced : boolean = true ) : boolean
 	{
 		const bAlreadyExists = ServerUserDB.m_Storage.has( user.id );
 		if ( !bAlreadyExists || bForced )
@@ -114,21 +115,15 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async UserExists( UserId : string ) : Promise<boolean>
+	public static UserExists( UserId : string ) : boolean
 	{
 		return ServerUserDB.m_Storage.has( UserId );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async ListUserIds() : Promise<string[]>
+	public static GetUser( userId : string ): ServerUser | null
 	{
-		return Array.from(ServerUserDB.m_Storage.keys());
-	}
-	
-	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async GetUser( userId : string ): Promise<ServerUser | null>
-	{
-		if ( await ServerUserDB.UserExists( userId ) )
+		if ( ServerUserDB.UserExists( userId ) )
 		{
 			return ServerUserDB.m_Storage.get( userId ) || null;
 		}
@@ -136,38 +131,53 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async GetUserByUsername( encryptedUsername: string ): Promise<ServerUser | null>
-	{
-		for( const [userId, user] of ServerUserDB.m_Storage )
-		{
-			if ( user.username === encryptedUsername ) return user;
-		}
-		return null;
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async GetUsers( UserIds : string[] ) : Promise<( ServerUser | null )[]>
-	{
-		return ( await Promise.all( UserIds.map( k => ServerUserDB.GetUser(k) ) ) ).filter( s => !!s );
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async RemoveUser( userId : string ) : Promise<boolean>
+	public static RemoveUser( userId : string ) : boolean
 	{
 		return ServerUserDB.m_Storage.delete( userId );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async RemoveUsers( UserIds : string[] ) : Promise<string[]>
+	public static async ListUserIds() : Promise<string[]>
 	{
-		const promises = new Array<Promise<boolean>>();
-		const results = new Array<string>();
-		UserIds.forEach( key =>
+		const result = new Array<string>(ServerUserDB.m_Storage.size);
+		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
-			const promise = ServerUserDB.RemoveUser( key );
-			promise.then( ( bResult: boolean ) => bResult ? results.push( key ) : null );
-			promises.push( promise );
-		});
-		return Promise.all( promises ).then( () => results );
+			await Yieldable( () => result.push(userId));
+		}
+		return result;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async GetUserByUsername( encryptedUsername: string ): Promise<ServerUser | null>
+	{
+		let userFound = null;
+		for( const [userId, user] of ServerUserDB.m_Storage )
+		{
+			if (userFound) break;
+			await Yieldable( () => userFound = user.username === encryptedUsername ? user : null);
+		}
+		return userFound;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async GetUsers( UserIds : string[] ) : Promise<Map<string, ServerUser | null>>
+	{
+		const result = new Map<string, ServerUser | null>();
+		for( const userId in UserIds )
+		{
+			await Yieldable(() => result.set( userId, ServerUserDB.GetUser(userId) ) );
+		}
+		return result;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async RemoveUsers( UserIds : string[] ) : Promise<Map<string, boolean>>
+	{
+		const result = new Map<string, boolean>();
+		for( const userId in UserIds )
+		{
+			await Yieldable( () => result.set( userId, ServerUserDB.RemoveUser(userId) ) );
+		}
+		return result;
 	}
 }

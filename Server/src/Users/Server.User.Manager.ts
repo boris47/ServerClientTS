@@ -1,5 +1,6 @@
 import { ServerUser } from "./Server.User";
 import ServerUserDB from "./Server.User.DB";
+import { Yieldable } from "../../../Common/Utils/GenericUtils";
 
 
 
@@ -10,9 +11,16 @@ export default class ServerUserManager
 
 	public static async RegisterUser( username: string, password: string ): Promise<string | null>
 	{
-		const { username: encryptedUsername, password: encriptedPassword, id } = ServerUser.EncryptData( username, password );
-		const newuser = new ServerUser( encryptedUsername, encriptedPassword, id );
-		const bResult = await ServerUserDB.AddUser( newuser, false );
+		// If aleady registeres or logged return the current instance
+		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
+		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(encryptedUsername) ) || ( await ServerUserDB.GetUserByUsername(encryptedUsername) );
+		if ( serverUser && serverUser.IsPassword(encryptedPassword) )
+		{
+			return serverUser.id;
+		}
+	
+		const newuser = new ServerUser( encryptedUsername, encryptedPassword );
+		const bResult = ServerUserDB.AddUser( newuser, false );
 		await ServerUserDB.Save();
 		return bResult ? newuser.id : null;
 	}
@@ -20,7 +28,7 @@ export default class ServerUserManager
 	///////////////////////////
 	/**
 	 * @param username The username
-	 * @param password The passerwor
+	 * @param password The password
 	 * @returns the access token
 	 */
 	public static async UserLogin( username: string, password: string ) : Promise<string | null>
@@ -50,7 +58,7 @@ export default class ServerUserManager
 	///////////////////////////
 	public static async UserLogout(token: string) : Promise<void>
 	{
-		const serverUser = this.LoggedInUsers.get(token); // Array.from(this.LoggedInUsers.values()).find( u => u.ID === userId );
+		const serverUser = this.LoggedInUsers.get(token);
 		if ( serverUser )
 		{
 			this.LoggedInUsers.delete(serverUser.LoginData.Token);
@@ -58,13 +66,17 @@ export default class ServerUserManager
 		}
 	}
 
-
 	///////////////////////////
 	public static async FindLoggedInUserByUsername(username: string): Promise<ServerUser | null>
 	{
-		return Array.from(this.LoggedInUsers.values()).find( u => u.username === username ) || null;
+		let userFound = null;
+		for( const [userId, user] of this.LoggedInUsers )
+		{
+			if (userFound) break;
+			await Yieldable( () => userFound = user.username === username ? user : null);
+		}
+		return userFound;
 	}
-
 
 	///////////////////////////
 	public static async FindLoggedInUserByToken(token: string) : Promise<ServerUser | null>
