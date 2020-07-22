@@ -6,6 +6,7 @@ export class CustomCrypto
 {
 	public static Encrypt(text: string, passPhrase32Bit: string, iv: string): string
 	{
+		if (text.length === 0) return '';
 		const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(passPhrase32Bit), iv);
 		const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
 		return encrypted.toString('hex');
@@ -14,6 +15,8 @@ export class CustomCrypto
 	public static Decrypt(text: string, passPhrase32Bit: string, iv: string): string
 	{
 		const encryptedText = Buffer.from(text, 'hex');
+		if (encryptedText.byteLength === 0) return text;
+
 		const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(passPhrase32Bit), iv);
 		const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
 		return decrypted.toString();

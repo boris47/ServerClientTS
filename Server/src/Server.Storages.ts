@@ -74,7 +74,7 @@ class ServerStorage_FileSystem implements IServerStorage
 	{
 		// Load storage file
 		const filePath = this.m_StorageName;
-		const parsedOrError = await FSUtils.ReadAndParse<ILocalStorage>( filePath );
+		const parsedOrError = await FSUtils.ReadAndParse<ILocalStorage>( filePath, {bJson: true} );
 		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
 		{
 			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );

@@ -45,8 +45,8 @@ export interface IServerUserBaseProps
 
 export class ServerUser implements IServerUserBaseProps
 {
-	private static passPhrase32Bit : string = `NEhS@qDBXrmq2qyNe4WUS7Lb+Y=5-gC3`;
-	private static iv: string = '7}t;Ca5R&nT{8>RE';
+//	private static passPhrase32Bit : string = `NEhS@qDBXrmq2qyNe4WUS7Lb+Y=5-gC3`;
+//	private static iv: string = '7}t;Ca5R&nT{8>RE';
 	private static users: ServerUser[] = new Array<ServerUser>();
 
 	public static async GetUserByToken(token: string): Promise<ServerUser | null>
@@ -59,7 +59,7 @@ export class ServerUser implements IServerUserBaseProps
 		return userFound;
 	}
 
-	public static EncryptData( username: string, password: string, id?: string ): IServerUserBaseProps
+/*	public static EncryptData( username: string, password: string, id?: string ): IServerUserBaseProps
 	{
 		return {
 			username: CustomCrypto.Encrypt( username, ServerUser.passPhrase32Bit, ServerUser.iv ),
@@ -76,7 +76,7 @@ export class ServerUser implements IServerUserBaseProps
 			id: id ? CustomCrypto.Decrypt( id, ServerUser.passPhrase32Bit, ServerUser.iv ) : undefined,
 		}
 	}
-
+*/
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
 	public	readonly	username: string			= '';

@@ -3,7 +3,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import FSUtils from "../../../Common/Utils/FSUtils";
+import FSUtils, { IEncodeAndWriteOptions, IReadAndParseOptions } from "../../../Common/Utils/FSUtils";
 
 import GenericUtils, { ITemplatedObject, Yieldable } from '../../../Common/Utils/GenericUtils';
 import { ServerUser, IServerUserBaseProps } from './Server.User';
@@ -14,6 +14,10 @@ import { RequireStatics } from '../../../Common/Decorators';
 @RequireStatics<ILifeCycleObject>()
 export default class ServerUserDB
 {
+	private static CustomCryptoEnabled = true;
+	private static passPhrase32Bit : string = `XC3r*Q5JKC?tqBb!6G-7uB@*7c=s?rV6`;
+	private static iv: string = 'R^uexNY&925P@&x-';
+
 	private static m_Storage : Map<string, ServerUser> = new Map<string, ServerUser>();
 	private static m_StorageName : string = '';
 	private static m_IsInitialized : boolean = false;
@@ -48,7 +52,13 @@ export default class ServerUserDB
 			await Yieldable( () => objectToSave[user.id] = user );
 		}
 
-		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, JSON.stringify( objectToSave, null, '\t' /*undefined*/ ) );
+		const content = JSON.stringify( objectToSave, null, '\t' /*undefined*/ );
+		const options: IEncodeAndWriteOptions =
+		{
+			passPhrase32Bit: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.passPhrase32Bit : undefined,
+			iv: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.iv : undefined
+		};
+		const result = await FSUtils.EncodeAndWrite( ServerUserDB.m_StorageName, content, options );
 		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
 		return !result;
 	}
@@ -57,8 +67,13 @@ export default class ServerUserDB
 	public static async Load() : Promise<boolean>
 	{
 		// Load storage file
-		const filePath = ServerUserDB.m_StorageName;
-		const parsedOrError : Error | ITemplatedObject<IServerUserBaseProps> = await FSUtils.ReadAndParse<ITemplatedObject<any>>( filePath );
+		const options: IReadAndParseOptions<ITemplatedObject<IServerUserBaseProps>> =
+		{
+			bJson: true,
+			passPhrase32Bit: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.passPhrase32Bit : undefined,
+			iv: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.iv : undefined
+		};
+		const parsedOrError = await FSUtils.ReadAndParse( ServerUserDB.m_StorageName, options );
 		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
 		{
 			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );

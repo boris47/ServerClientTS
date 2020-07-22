@@ -12,14 +12,14 @@ export default class ServerUserManager
 	public static async RegisterUser( username: string, password: string ): Promise<string | null>
 	{
 		// If aleady registeres or logged return the current instance
-		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
-		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(encryptedUsername) ) || ( await ServerUserDB.GetUserByUsername(encryptedUsername) );
-		if ( serverUser && serverUser.IsPassword(encryptedPassword) )
+	//	const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
+		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(username) ) || ( await ServerUserDB.GetUserByUsername(username) );
+		if ( serverUser && serverUser.IsPassword(password) )
 		{
 			return serverUser.id;
 		}
 	
-		const newuser = new ServerUser( encryptedUsername, encryptedPassword );
+		const newuser = new ServerUser( username, password );
 		const bResult = ServerUserDB.AddUser( newuser, false );
 		await ServerUserDB.Save();
 		return bResult ? newuser.id : null;
@@ -33,9 +33,9 @@ export default class ServerUserManager
 	 */
 	public static async UserLogin( username: string, password: string ) : Promise<string | null>
 	{
-		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
-		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(encryptedUsername) ) || ( await ServerUserDB.GetUserByUsername(encryptedUsername) );
-		if ( serverUser && serverUser.IsPassword(encryptedPassword) )
+//		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
+		const serverUser = ( await ServerUserManager.FindLoggedInUserByUsername(username) ) || ( await ServerUserDB.GetUserByUsername(username) );
+		if ( serverUser && serverUser.IsPassword(password) )
 		{
 			await serverUser.Login(serverUser.LoginData.Token);
 //			console.warn( 'token', serverUser.LoginData.Token );
