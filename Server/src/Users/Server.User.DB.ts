@@ -3,9 +3,9 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import FSUtils, { IEncodeAndWriteOptions, IReadAndParseOptions } from "../../../Common/Utils/FSUtils";
+import FSUtils from "../../../Common/Utils/FSUtils";
 
-import GenericUtils, { ITemplatedObject, Yieldable } from '../../../Common/Utils/GenericUtils';
+import GenericUtils, { ITemplatedObject, Yieldable, CustomCrypto } from '../../../Common/Utils/GenericUtils';
 import { ServerUser, IServerUserBaseProps } from './Server.User';
 import { ILifeCycleObject } from '../../../Common/Interfaces';
 import { RequireStatics } from '../../../Common/Decorators';
@@ -46,19 +46,22 @@ export default class ServerUserDB
 	public static async Save() : Promise<boolean>
 	{
 		console.log(`Storage:Saving storage ${ServerUserDB.m_StorageName}`);
+
+		// Encapsulation
 		const objectToSave : ITemplatedObject<IServerUserBaseProps> = {};
 		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
 			await Yieldable( () => objectToSave[user.id] = user );
 		}
 
-		const content = JSON.stringify( objectToSave, null, '\t' /*undefined*/ );
-		const options: IEncodeAndWriteOptions =
-		{
-			passPhrase32Bit: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.passPhrase32Bit : undefined,
-			iv: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.iv : undefined
-		};
-		const result = await FSUtils.EncodeAndWrite( ServerUserDB.m_StorageName, content, options );
+		// Object -> String
+		let content = JSON.stringify( objectToSave, null, '\t' /*undefined*/ );
+
+		// Encryption
+		content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Encrypt( content, ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : content;
+
+		// Write to File
+		const result = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, content );
 		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
 		return !result;
 	}
@@ -66,26 +69,32 @@ export default class ServerUserDB
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Load() : Promise<boolean>
 	{
-		// Load storage file
-		const options: IReadAndParseOptions<ITemplatedObject<IServerUserBaseProps>> =
+		// Read from File
+		const contentOrError = await FSUtils.ReadFileAsync( this.m_StorageName );
+		if ( GenericUtils.IsTypeOf(contentOrError, Error) )
 		{
-			bJson: true,
-			passPhrase32Bit: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.passPhrase32Bit : undefined,
-			iv: ServerUserDB.CustomCryptoEnabled ? ServerUserDB.iv : undefined
-		};
-		const parsedOrError = await FSUtils.ReadAndParse( ServerUserDB.m_StorageName, options );
-		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
-		{
-			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );
+			console.error( "ServerUserDB", 'Error reading userDB', contentOrError );
 			return false;
 		}
 
-		for( const [userId, { id, username, password }] of Object.entries(parsedOrError) )
+		// Buffer -> String
+		let content = contentOrError.toString();
+
+		// Decryption
+		content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Decrypt( content, ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : content
+
+		// Parsing
+		let parsed = GenericUtils.TryParse<ITemplatedObject<IServerUserBaseProps>>( content );
+		if ( GenericUtils.IsTypeOf(parsed, Error) )
 		{
-			await Yieldable( () =>
-			{
-				ServerUserDB.m_Storage.set( userId, new ServerUser( username, password, id ) );
-			});
+			console.error( "ServerUserDB", 'Error parsing userDB', parsed );
+			return false;
+		}
+
+		// Usage
+		for( const [userId, { id, username, password }] of Object.entries(parsed) )
+		{
+			await Yieldable( () => ServerUserDB.m_Storage.set( userId, new ServerUser( username, password, id ) ) );
 		}
 		return true;
 	}

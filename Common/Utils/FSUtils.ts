@@ -10,22 +10,6 @@ export interface IMappedFolderData
 	folders: string[];
 }
 
-interface ICommonFSOptions
-{
-	bJson?: boolean;
-	passPhrase32Bit?: string;
-	iv?: string;
-}
-
-export interface IEncodeAndWriteOptions extends ICommonFSOptions
-{
-}
-
-export interface IReadAndParseOptions<T> extends ICommonFSOptions
-{
-	ctor?: (arg: string|object) => T;
-}
-
 export default class FSUtils
 {
 	/**  */
@@ -97,40 +81,6 @@ export default class FSUtils
 	}
 
 	/**  */
-	public static async EncodeAndWrite(filePath: string, data: object | string | Buffer, options?: IEncodeAndWriteOptions) : Promise<Error | null>
-	{
-		if (!data)
-		{
-			return new Error( `FSUtils.EncodeAndWrite: Received null data` );
-		}
-
-		let result : Buffer = null;
-		if ( typeof data === 'object' && !Buffer.isBuffer(data) )
-		{
-			let newResult = JSON.stringify(data);
-			if (typeof options?.passPhrase32Bit === 'string' && typeof options?.iv === 'string')
-			{
-				newResult = CustomCrypto.Encrypt(newResult, options.passPhrase32Bit, options.iv);
-			}
-		}
-		if ( Buffer.isBuffer(data) )
-		{
-			result = data;
-		}
-		if ( typeof data === 'string' )
-		{
-			let newResult = data;
-			if (typeof options?.passPhrase32Bit === 'string' && typeof options?.iv === 'string')
-			{
-				newResult = CustomCrypto.Encrypt(data, options.passPhrase32Bit, options.iv)
-			}
-			result = Buffer.from(newResult);
-		}
-
-		return FSUtils.WriteFileAsync( filePath, result );
-	}
-
-	/**  */
 	public static async MakeDirectoryAsync(dirPath: string): Promise<boolean>
 	{
 		if ((FSUtils.IsDirectorySafe(dirPath))) return true;
@@ -147,38 +97,6 @@ export default class FSUtils
 		{
 			fs.readFile(filePath, null, (err: NodeJS.ErrnoException, data: Buffer) => resolve(err ? err : data));
 		});
-	}
-
-	/** */
-	public static async ReadAndParse<T extends (string|object)>(filePath: string, options?: IReadAndParseOptions<T>): Promise<T | Error>
-	{
-		const contentOrError: NodeJS.ErrnoException | Buffer = await FSUtils.ReadFileAsync(filePath);
-		if (!Buffer.isBuffer(contentOrError))
-		{
-			return contentOrError; // Error
-		}
-
-		let content = contentOrError.toString();
-		if (typeof options?.passPhrase32Bit === 'string' && typeof options?.iv === 'string')
-		{
-			content = CustomCrypto.Decrypt(content, options.passPhrase32Bit, options.iv);
-		}
-
-		let parsed: string | object = content;
-		try
-		{
-			parsed = options?.bJson ? JSON.parse(content) : content;
-		}
-		catch (ex)
-		{
-			return new Error(`FSUtils:ReadAndParse: Cannot parse content of file "${ filePath }" as a json object`);
-		}
-
-		if (typeof options?.ctor === 'function')
-		{
-			return options.ctor(parsed);
-		}
-		return parsed as T;
 	}
 
 	/**  */

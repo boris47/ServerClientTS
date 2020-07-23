@@ -72,18 +72,29 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async LoadStorage() : Promise<boolean>
 	{
-		// Load storage file
-		const filePath = this.m_StorageName;
-		const parsedOrError = await FSUtils.ReadAndParse<ILocalStorage>( filePath, {bJson: true} );
-		if ( GenericUtils.IsTypeOf(parsedOrError, Error) )
+		// Read from File
+		const contentOrError = await FSUtils.ReadFileAsync( this.m_StorageName );
+		if ( GenericUtils.IsTypeOf(contentOrError, Error) )
 		{
-			console.error( "ServerUserDB", 'Error reading local storage', parsedOrError );
+			console.error( "ServerStorage[FileSystem]", 'Error reading local storage', contentOrError );
 			return false;
 		}
 
-		for( const Key/*string*/in parsedOrError )
+		// Buffer -> String
+		const content = contentOrError.toString();
+
+		// Parsing
+		const parsed = GenericUtils.TryParse<ILocalStorage>( content );
+		if ( GenericUtils.IsTypeOf(parsed, Error) )
 		{
-			const buffer = parsedOrError[Key];
+			console.error( "ServerStorage[FileSystem]", 'Error parsing local storage', parsed );
+			return false;
+		}
+
+		// Usage
+		for( const Key/*string*/in parsed )
+		{
+			const buffer = parsed[Key];
 			await Yieldable( () => this.m_Storage.set( Key, Buffer.from( buffer ) ) );
 		}
 		return true;
@@ -92,14 +103,16 @@ class ServerStorage_FileSystem implements IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public async SaveStorage() : Promise<boolean>
 	{
+		// Encapsulation
 		let objectToSave : IIndexableObject = {};
 		for( const [Key, value] of this.m_Storage )
 		{
 			await Yieldable( () => objectToSave[Key] = value.toJSON().data );
 		}
-
+		
+		// Write to File
 		const result : NodeJS.ErrnoException | null = await FSUtils.WriteFileAsync( this.m_StorageName, JSON.stringify( objectToSave, null, /*'\t'*/ undefined ) );
-		console.log(`Storage:Storage ${this.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
+		console.log(`ServerStorage[FileSystem]:Storage ${this.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
 		return !result;
 	}
 

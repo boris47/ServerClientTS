@@ -68,6 +68,28 @@ export default class GenericUtils
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
+	public static TryParse<T = any>( content: string, ctor?: (arg: object) => T ) : T | Error
+	{
+		if (typeof content !== 'string' || content.length === 0)
+		{
+			return new Error(`GenericUtils.TryParse: Content is invalid`);
+		}
+
+		let result : T | object = null;
+		try {
+			result = JSON.parse(content);
+		} catch (error) {
+			return new Error(`GenericUtils.TryParse: Unable to parsed content, ${error}`);
+		}
+
+		if (ctor)
+		{
+			return ctor(result as object);
+		}
+		return result as T;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
 	public static IsTypeOf<T = any>(value: any, type: string | { new(...args: any[]): T; }): value is T
 	{
 		return (typeof type === 'string' ? (e: any) => typeof e === type : (e: any) => e instanceof type)(value);
