@@ -12,7 +12,7 @@ const isDevelopmentEnvironment = process.env.NODE_ENV == "development";
  */
 module.exports = function(config)
 {
-	config.devtool = isDevelopmentEnvironment ? "inline-source-map" : false;
+	config.devtool = false;// isDevelopmentEnvironment ? "inline-source-map" : false;
 	config.performance = false;
 //	config.entry['preload'] = path.join(__dirname, 'src', 'main', 'preload.js');
 
