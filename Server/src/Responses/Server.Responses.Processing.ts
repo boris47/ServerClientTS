@@ -1,6 +1,6 @@
 
 import * as http from 'http';
-import * as fs from 'fs'
+import * as stream from 'stream'
 
 import { HTTPCodes } from '../HTTP.Codes';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
@@ -11,8 +11,9 @@ export interface IServerRequestInternalOptions
 	Key? : string;
 	Value? : Buffer | null;
 	Headers? : http.OutgoingHttpHeaders;
-	ReadStream? : fs.ReadStream;
-	WriteStream? : fs.WriteStream;
+	FilePath?: string;
+	ReadStream? : stream.Readable;
+	WriteStream? : stream.Writable;
 	OnSuccess? : Function;
 	OnFailure? : Function;
 }
@@ -46,21 +47,21 @@ export default class ServerResponsesProcessing
 	}
 
 
-	/** Resource: Server -> Client' */
+	/** Server -> Client' */
 	public static async ServetToClient( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
-			request.on('error', function( err : Error )
-			{
-				ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
-			});
+		//	request.on('error', function( err : Error )
+		//	{
+		//		ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
+		//		ComUtils.ResolveWithError( "ServerResponses:ServetToClient", err, resolve );
+		//	});
 
 			response.on( 'error', ( err : Error ) =>
 			{
-				ServerResponsesProcessing.EndResponseWithError( response, err, 400 );
-				ComUtils.ResolveWithError( "ServerResponses:Request_GET", err, resolve );
+				ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
+				ComUtils.ResolveWithError( "ServerResponses:ServetToClient", err, resolve );
 			})
 			response.on( 'finish', () =>
 			{
@@ -91,16 +92,16 @@ export default class ServerResponsesProcessing
 	}
 
 	
-	/** Resource: Client -> Server */
+	/** Client -> Server */
 	public static async ClientToServer( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
-			request.on('error', function( err : Error )
-			{
-				ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
-				ComUtils.ResolveWithError( "ServerResponses:Request_PUT", err, resolve );
-			});
+		//	request.on('error', function( err : Error )
+		//	{
+		//		ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
+		//		ComUtils.ResolveWithError( "ServerResponses:ClientToServer", err, resolve );
+		//	});
 
 			// If for this request a writestream is provived, then the content will be written on this stream
 			if ( serverRequestInternalOptions.WriteStream )
@@ -110,12 +111,12 @@ export default class ServerResponsesProcessing
 				serverRequestInternalOptions.WriteStream.on( 'error', ( err: Error ) =>
 				{
 					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
-					ComUtils.ResolveWithError( "ServerResponses:Request_PUT[WriteStream]", err, resolve );
+					ComUtils.ResolveWithError( "ServerResponses:ClientToServer[WriteStream]", err, resolve );
 				});
 				
 				serverRequestInternalOptions.WriteStream.on( 'finish', () =>
 				{
-					const result = Buffer.from( 'ServerResponsesProcessing:Request_PUT: Data received correcly' );
+					const result = Buffer.from( 'ServerResponsesProcessing:ClientToServer: Data received correcly' );
 					ServerResponsesProcessing.EndResponseWithGoodResult( response );
 					ComUtils.ResolveWithGoodResult( result, resolve );
 				})
@@ -123,8 +124,9 @@ export default class ServerResponsesProcessing
 			// Otherwise the content will be stored into a buffer
 			else
 			{
-				const body : Buffer[] = [];
-				let contentLength = 0;
+				let contentLength: number = Number(request.headers['content-length'] || 0);
+				const body = new Array<Buffer>(contentLength);
+				contentLength = 0;
 				request.on( 'data', function( chunk : Buffer )
 				{
 					body.push( chunk );

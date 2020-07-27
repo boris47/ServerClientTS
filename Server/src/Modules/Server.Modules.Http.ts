@@ -3,9 +3,11 @@ import * as http from 'http';
 import * as net from 'net';
 
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import { ResponsesMap, MethodNotAllowed, NotExistingPath, IResponsesMapItem } from '../Responses/Server.Responses.Mapping';
+import { ResponsesMap, IResponsesMapItem } from '../Responses/Server.Responses.Mapping.Base';
 import { ServerInfo } from '../Server.Globals';
 import ServerUserRequestHandler from '../Users/Server.User.RequestHandler';
+import ServerResponsesProcessing, { IServerRequestInternalOptions } from '../Responses/Server.Responses.Processing';
+import { HTTPCodes } from '../HTTP.Codes';
 
 
 export default class HttpModule
@@ -108,6 +110,32 @@ export default class HttpModule
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
+	private static async NotExistingPath(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	{
+		const options: IServerRequestInternalOptions =
+		{
+			Value: Buffer.from(HTTPCodes[404]) // Not Found
+		};
+		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
+		result.bHasGoodResult = false; // bacause on server we want register as failure
+		return result;
+	};
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	private static async MethodNotAllowed(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	{
+		const options: IServerRequestInternalOptions =
+		{
+			Value: Buffer.from(HTTPCodes[405]) // Method Not Allowed
+		};
+		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
+		result.bHasGoodResult = false; // bacause on server we want register as failure
+		return result;
+	};
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////
 	private async HandleRequest( request : http.IncomingMessage, response : http.ServerResponse )
 	{
 		const startTime = Date.now();
@@ -121,7 +149,7 @@ export default class HttpModule
 			return HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
 		}
 
-		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( MethodNotAllowed )) : NotExistingPath;
+		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( HttpModule.MethodNotAllowed )) : ( HttpModule.NotExistingPath );
 		method( request, response ).then( ( value: ComUtils.IServerResponseResult ) =>
 		{
 			HttpModule.ReportResponseResult( request, value, startTime );

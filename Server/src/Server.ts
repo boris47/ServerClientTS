@@ -11,7 +11,7 @@ import { MongoDatabase } from '../Utils/MongoDatabase';
 import HttpModule from './Modules/Server.Modules.Http';
 import WebSocketModule from './Modules/Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
-import { StorageManager, EStorageType } from './Server.Storages';
+import { CustomStorageManager, EStorageType } from './Server.Storages';
 import ServerUserDB from './Users/Server.User.DB';
 import { ProcessManager } from '../../Common/ProcessManager';
 
@@ -214,8 +214,8 @@ class Server
 		this.finalizers.Add(MongoDatabase, db );
 	
 		// STORAGES
-		const localStorage = await StorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
-		const remoteStorage = await StorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
+		const localStorage = await CustomStorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
+		const remoteStorage = await CustomStorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
 		const bResultServerUserDBInitialization = await ServerUserDB.Initialize();
 		if ( !localStorage || !await localStorage.LoadStorage() )
 		{

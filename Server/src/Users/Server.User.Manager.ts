@@ -56,7 +56,7 @@ export default class ServerUserManager
 	}
 
 	///////////////////////////
-	public static async UserLogout(token: string) : Promise<void>
+	public static async UserLogout(token: string) : Promise<boolean>
 	{
 		const serverUser = this.LoggedInUsers.get(token);
 		if ( serverUser )
@@ -64,6 +64,7 @@ export default class ServerUserManager
 			this.LoggedInUsers.delete(serverUser.LoginData.Token);
 			await serverUser.Logout();
 		}
+		return !!serverUser;
 	}
 
 	///////////////////////////

@@ -7,7 +7,7 @@ import GenericUtils, { GenericConstructor, Yieldable } from '../../Common/Utils/
 import { AWSUtils } from '../Utils/AWSUtils';
 import { IIndexableObject } from '../../Common/Interfaces';
 
-export async function StorageFactory<T extends IServerStorage>( Class : GenericConstructor<T>, ...Args: any[] ) : Promise<T>
+export async function StorageFactory<T extends ICustomServerStorage>( Class : GenericConstructor<T>, ...Args: any[] ) : Promise<T>
 {
 	return GenericUtils.Instanciate( Class, Args );
 }
@@ -24,7 +24,7 @@ interface ILocalStorage
 	[Key:string] : number[]
 }
 
-export interface IServerStorage
+export interface ICustomServerStorage
 {
 	Initialize( StorageName : string ) : Promise<boolean>;
 	LoadStorage() : Promise<boolean>;
@@ -45,7 +45,7 @@ export interface IServerStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 
 
-class ServerStorage_FileSystem implements IServerStorage
+class ServerStorage_FileSystem implements ICustomServerStorage
 {
 	private m_Storage : Map<string, Buffer> = new Map<string, Buffer>();
 	private m_StorageName : string = '';
@@ -206,7 +206,7 @@ class ServerStorage_FileSystem implements IServerStorage
 ///////////////////////////////////////    AWS    ///////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-class ServerStorage_AWS implements IServerStorage
+class ServerStorage_AWS implements ICustomServerStorage
 {
 	private s3Instance : AWS.S3 = null;
 	private bucketName : string = null;
@@ -299,14 +299,14 @@ class ServerStorage_AWS implements IServerStorage
 }
 
 
-export class StorageManager
+export class CustomStorageManager
 {
-	private static m_Storages = new Map<string, IServerStorage>();
+	private static m_Storages = new Map<string, ICustomServerStorage>();
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async CreateNewStorage( type: EStorageType, StorageName : string ) : Promise<IServerStorage | null>
+	public static async CreateNewStorage( type: EStorageType, StorageName : string ) : Promise<ICustomServerStorage | null>
 	{
-		let storage : IServerStorage | null = null;
+		let storage : ICustomServerStorage | null = null;
 		switch (type)
 		{
 			case EStorageType.LOCAL:
@@ -326,7 +326,7 @@ export class StorageManager
 		{
 			if( binitialized = await storage.Initialize( StorageName ) )
 			{
-				StorageManager.m_Storages.set( StorageName, storage );
+				CustomStorageManager.m_Storages.set( StorageName, storage );
 			}
 		}
 
@@ -335,21 +335,21 @@ export class StorageManager
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static GetStorage( StorageName : string ) : IServerStorage | undefined
+	public static GetStorage( StorageName : string ) : ICustomServerStorage | undefined
 	{
-		return StorageManager.m_Storages.get( StorageName );
+		return CustomStorageManager.m_Storages.get( StorageName );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async CloseStorage( StorageName : string ) : Promise<boolean>
 	{
-		const storage : IServerStorage = StorageManager.m_Storages.get( StorageName );
+		const storage : ICustomServerStorage = CustomStorageManager.m_Storages.get( StorageName );
 		if ( storage )
 		{
 			await storage.SaveStorage();
 			if ( await storage.ClearStorage() )
 			{
-				StorageManager.m_Storages.delete( StorageName );
+				CustomStorageManager.m_Storages.delete( StorageName );
 				return true;
 			}
 		}
