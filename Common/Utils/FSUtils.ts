@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import GenericUtils, { Yieldable, CustomCrypto } from './GenericUtils';
+import GenericUtils, { Yieldable } from './GenericUtils';
+import { ComProgress } from './ComUtils';
 
 
 ///////////////////////////////////////////
@@ -72,12 +73,41 @@ export default class FSUtils
 	}
 
 	/**  */
-	public static WriteFileAsync(filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null>
+	public static async WriteFileAsync(filePath: string, data: string | Buffer, progress?: ComProgress): Promise<NodeJS.ErrnoException | null>
 	{
+		const dataBuffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+		
 		return new Promise((resolve) =>
 		{
-			fs.writeFile(filePath, data, (err: NodeJS.ErrnoException) => resolve(err));
+			if ( progress )
+			{
+				const dataSize = dataBuffer.length;
+				const readStream = GenericUtils.BufferToStream(dataBuffer);
+				const writeStream: fs.WriteStream = fs.createWriteStream(filePath);
+				let bytesCopied: number = 0;
+
+				readStream.on('data', function(buffer: Buffer)
+				{
+					bytesCopied += buffer.length;
+					progress.SetProgress( dataSize, bytesCopied );
+				});
+
+				readStream.on( 'error', ( err: Error ) =>
+				{
+					resolve(err);
+				});
+				readStream.pipe(writeStream);
+			}
+			else
+			{
+				fs.writeFile(filePath, dataBuffer, (err: NodeJS.ErrnoException) => resolve(err));
+			}
 		});
+
+//		return new Promise((resolve) =>
+//		{
+//			fs.writeFile(filePath, data, (err: NodeJS.ErrnoException) => resolve(err));
+//		});
 	}
 
 	/**  */
@@ -91,11 +121,44 @@ export default class FSUtils
 	}
 
 	/**  */
-	public static ReadFileAsync(filePath: string): Promise<NodeJS.ErrnoException | Buffer>
+	public static async ReadFileAsync(filePath: string, progress?: ComProgress): Promise<NodeJS.ErrnoException | Buffer>
 	{
+		const statOrError = await FSUtils.ReadFileStat(filePath);
+		if (GenericUtils.IsTypeOf(statOrError, Error))
+		{
+			return statOrError;
+		}
+		const dataSize: number = statOrError.size;
+
 		return new Promise((resolve) =>
 		{
-			fs.readFile(filePath, null, (err: NodeJS.ErrnoException, data: Buffer) => resolve(err ? err : data));
+			if ( progress )
+			{
+				const readStream: fs.ReadStream = fs.createReadStream(filePath);
+				const buffers = new Array<Buffer>();
+				let bytesCopied: number = 0;
+				
+				readStream.on('data', function(buffer: Buffer)
+				{
+					bytesCopied += buffer.length;
+					buffers.push(buffer);
+					progress.SetProgress( dataSize, bytesCopied );
+				});
+
+				readStream.on( 'error', ( err: Error ) =>
+				{
+					resolve(err);
+				});
+
+				readStream.on('close', () =>
+				{
+					resolve(Buffer.concat(buffers, bytesCopied));
+				});
+			}
+			else
+			{
+				fs.readFile(filePath, null, (err: NodeJS.ErrnoException, data: Buffer) => resolve(err ? err : data));
+			}
 		});
 	}
 
