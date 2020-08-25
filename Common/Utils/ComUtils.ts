@@ -198,15 +198,16 @@ export async function ResolveWithGoodResult<T extends ICommonResult>( body?: Buf
 
 function CallerFilePath()
 {
-	/* DEBUG PURPOSE
+	/* DEBUG PURPOSE */
+//	/*
 	const stack =  new Error().stack;
 	const splitted = stack.split('\n');
 	const filtered = splitted.filter( s => s.includes('.ts:') )
 	.slice(1); // remove this function call
 	const joined = filtered.join('\n');
 	return joined;
-	*/
-	return new Error().stack.split('\n').filter( s => s.includes('.ts:') ).slice(1).join('\n');
+//	*/
+//	return new Error().stack.split('\n').filter( s => s.includes('.ts:') ).slice(1).join('\n');
 }
 
 
@@ -215,7 +216,7 @@ export async function ResolveWithError<T extends ICommonResult>( errName : strin
 {
 	const issuer = CallerFilePath();
 
-	//debugger;
+//	debugger;
 	let msg = '';
 	if ( typeof errMessage === 'string' )
 	{

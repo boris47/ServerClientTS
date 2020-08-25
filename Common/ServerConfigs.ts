@@ -1,7 +1,14 @@
 
 import * as fs from 'fs';
 
-import { IServerConfigs } from '../Common/Interfaces';
+interface IServerConfigs
+{
+	readonly PublicIP : string | null;
+	
+	readonly WebSocketPort : number;
+
+	readonly RequestsListenerPort : number;
+}
 
 export default class ServerConfigs
 {
