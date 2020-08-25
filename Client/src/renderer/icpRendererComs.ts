@@ -53,10 +53,12 @@ export class ICP_RendererComs
 	 * @param key A string or array of string containing the path to the resource required, Ex: 'exe' OR ['dialog', 'showOpenDialogSync']
 	 * @param args Arguments to pass to the caller 
 	 */
-	public static async Invoke<T extends keyof IComunications>(channel: T, comFlowManager?: ComFlowManager, key?: string | string[], ...args: any | any[]): Promise<IComunications[T] | null>
+	public static async Invoke<T extends keyof IComunications>(channel: T, comFlowManager: ComFlowManager, ...args: IComunications[T]['args']): Promise<IComunications[T]['return'] | null>
 	{
 		ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
-		const result: any = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager?.Id, key, args));
+		{
+			var result = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager?.Id, ...args));
+		}
 		ICP_RendererComs.UnregisterComFlowManagerCallbacks(comFlowManager);
 		
 		const typeString = Object.prototype.toString.call(result);
@@ -68,7 +70,7 @@ export class ICP_RendererComs
 		{
 			return ctor(result);
 		}
-		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${key}, ${args}), type is ${type}` );
+		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${args}), type is ${type}` );
 		return null;
 	}
 

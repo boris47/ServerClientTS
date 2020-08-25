@@ -5,8 +5,7 @@ import * as electron from 'electron';
 import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
 import { IPackageJSON } from '../../../Common/IPackageJSON';
-//import CustomFSStorage from './CustomFSStorage';
-//import GenericUtils from '../../../Common/Utils/GenericUtils';
+import FS_Storage from '../../../Common/FS_Storage';
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
@@ -47,7 +46,7 @@ electron.protocol.registerSchemesAsPrivileged([{
 function SetupSession()
 {
 	// https://electronjs.org/docs/tutorial/security#4-handle-session-permission-requests-from-remote-content
-	electron.session.fromPartition( 'dafault' ).setPermissionRequestHandler( ( webContents: electron.WebContents, permission: string, callback: (permissionGranted: boolean ) => void) =>
+	electron.session.defaultSession.setPermissionRequestHandler( ( webContents: electron.WebContents, permission: string, callback: (permissionGranted: boolean ) => void) =>
 	{
 		const allowedPermissions = new Array<string>(); // Full list here: https://developer.chrome.com/extensions/declare_permissions#manifest
 		if (allowedPermissions.includes(permission))
@@ -61,7 +60,6 @@ function SetupSession()
 		}
 	});
 }
-
 
 async function createMainWindow()
 {
@@ -135,12 +133,13 @@ async function main()
 	// Some APIs can only be used after this event occurs.
 	await electron.app.whenReady();
 
-//	const bResult = await CustomFSStorage.Initialize(name, 'cookies');
-//	if (!bResult)
+	const bResult = await FS_Storage.Initialize(name, 'cookies');
+	if (!bResult)
 	{
 		// TODO Handle this case
-//		return;
+		return;
 	}
+	await FS_Storage.LoadStorage();
 
 	// Second instance is not allowed
 	const isSecondInstance = electron.app.requestSingleInstanceLock();

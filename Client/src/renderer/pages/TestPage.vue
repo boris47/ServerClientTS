@@ -109,8 +109,8 @@ export default class TestPage extends Vue
 				content: [ { id: '5', value: '' }, { id: '2', value: undefined }, { id: '3', value: 'Melissa Ti Amo' }, ]
 			}
 		);
-		
-		ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, '$static/TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
+
+		ICP_RendererComs.Invoke(EComunicationsChannels.FILE_READ, null, 'TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
 		{
 			if ( Buffer.isBuffer(arg) )
 			{
@@ -132,14 +132,14 @@ export default class TestPage extends Vue
 	{
 		console.log("onDownloadFolderSelected", folderPath)
 		this.downloadFileLocation = folderPath;
-		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_LIST );
-		if ( Buffer.isBuffer(result) )
+//		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_LIST, null, null );
+//		if ( Buffer.isBuffer(result) )
 		{
-			console.log("onDownloadFolderSelected", result.toString())
+//			console.log("onDownloadFolderSelected", result.toString())
 		}
-		else
+//		else
 		{
-			console.error( result, /*`"${result.name}:${result.message}"`*/ );
+//			console.error( result, /*`"${result.name}:${result.message}"`*/ );
 		}
 	}
 
@@ -151,7 +151,7 @@ export default class TestPage extends Vue
 			test.push( `Test Array ${index}` );
 		}
 
-		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_PUT, null, this.valueToSet, JSON.stringify(test));
+		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_STORAGE_PUT, null, this.valueToSet, JSON.stringify(test));
 		if( !Buffer.isBuffer( result ))
 		{
 			console.error( `"${result.name}:${result.message}"` );
@@ -164,7 +164,7 @@ export default class TestPage extends Vue
 
 	protected async GetValue()
 	{
-		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_GET, null, this.valueToGet );
+		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_STORAGE_GET, null, this.valueToGet );
 		if( Buffer.isBuffer( result ) )
 		{
 			this.valueGot = result.toString();
@@ -183,7 +183,7 @@ export default class TestPage extends Vue
 	{
 		for (const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_UPLOAD, this.uploadComFlowManager, filePath );
+			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_UPLOAD, this.uploadComFlowManager, filePath );
 			if( !Buffer.isBuffer( result ))
 			{
 				console.error( `"${result.name}:${result.message}"` );
@@ -195,10 +195,10 @@ export default class TestPage extends Vue
 			}
 		}
 	}
-
+	
 	protected async DownloadFile()
 	{
-		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
+		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
 		if( !Buffer.isBuffer( result ))
 		{
 			console.error( `"${result.name}:${result.message}"` );

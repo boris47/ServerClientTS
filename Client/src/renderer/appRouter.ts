@@ -6,12 +6,24 @@ import VueRouter, { Route, RouterOptions, RawLocation } from 'vue-router';
 //import HomePage from "./Pages/HomePage.vue";
 import TestPage from "./Pages/TestPage.vue";
 import RegistrationPage from "./Pages/RegistrationPage.vue";
-import LoginPage from "./Pages/LoginPage.vue";
+//import LoginPage from "./Pages/LoginPage.vue";
 import AboutPage from "./Pages/AboutPage.vue";
 
 // requiresAuth
 import MainPage from "./Pages/RequiresAuth/MainPage.vue";
 import EntrancePage from "./Pages/RequiresAuth/EntrancePage.vue";
+
+
+export const RouterMap =
+{
+	'loginPage': {},
+	'registrationPage': {},
+	'testPage' : {},
+	'mainPage' : {
+		'entrancePage': {}
+	},
+	'aboutPage': {}
+}
 
 
 export default class AppRouter
@@ -30,7 +42,7 @@ export default class AppRouter
 						{
 							path: '/loginPage',
 							name: 'loginPage',
-							component: LoginPage
+							component: () => import('./Pages/LoginPage.vue')
 						},
 						{
 							path: '/RegistrationPage',
@@ -97,7 +109,7 @@ export default class AppRouter
 			{
 				let result: RawLocation | undefined = undefined;  // green light
 				const authenticationRequired: boolean = to.matched.some(route => route.meta && route.meta.requiresAuth);
-				if (authenticationRequired && !LoginManager.IsLogged) // Login required, red light
+				if (authenticationRequired && !LoginManager.IsLoggedIn) // Login required, red light
 				{
 					result = <RawLocation> { path: '/loginPage', query: { redirect: to.fullPath } };
 					console.log(`AppRouter:beforeEach: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }`);
@@ -121,6 +133,9 @@ export default class AppRouter
 	public static NavigateTo(name: string)
 	{
 		console.log(`AppRouter:NavigateTo: Going to ${ name }`);
-		AppRouter.instance.push({ name: name });
+		if ( AppRouter.instance.currentRoute.name !== name )
+		{
+			AppRouter.instance.push({ name: name });
+		}
 	}
 }

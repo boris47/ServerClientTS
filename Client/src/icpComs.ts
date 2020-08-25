@@ -6,72 +6,116 @@ export enum EComunicationsChannels
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
-	/** string[], any -> string | number | object */
 	ELECTRON_PROPERTY = 'ELECTRON_PROPERTY',
-	/** string[] -> string | number | object  */
 	ELECTRON_CALL = 'ELECTRON_CALL',
-	/** 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin' -> string | Error */
 	ELECTRON_PATH = 'ELECTRON_PATH',
-	/** electron.OpenDialogOptions -> electron.OpenDialogReturnValue */
 	ELECTRON_MODAL_OPEN = 'ELECTRON_MODAL_OPEN',
 
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
-	/** none -> string*/
 	RESOURCE_PATH = 'RESOURCE_PATH',
-	/** string -> NodeJS.ErrnoException | Buffer */
-	READ_FILE = 'READ_FILE',
-	/** string, Buffer -> NodeJS.ErrnoException | null */
-	WRITE_FILE = 'WRITE_FILE',
+	FILE_READ = 'READ_FILE',
+	FILE_WRITE = 'WRITE_FILE',
+	STORAGE_GET = 'STORAGE_GET',
+	STORAGE_SET = 'STORAGE_SET',
 
 
 	/////////////////////////////////////////////////
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
-	
-	/** string, string -> Buffer | Error */ 
-	REQ_REGISTER = 'REQ_REGISTER',
-	/** string, string -> Buffer | Error */ 
-	REQ_LOGIN = 'REQ_LOGIN',
-	/** string -> Buffer | Error */ 
-	REQ_LOGIN_TOKEN = 'REQ_LOGIN_TOKEN',
-	/** string -> Buffer | Error */ 
-	REQ_LOGOUT = 'REQ_LOGOUT',
+	REQ_USER_REGISTER = 'REQ_REGISTER',
+	REQ_USER_LOGIN = 'REQ_USER_LOGIN',
+	REQ_USER_LOGIN_TOKEN = 'REQ_USER_LOGIN_TOKEN',
+	REQ_USER_LOGOUT = 'REQ_USER_LOGOUT',
 
-	/** string -> Buffer | null | Error */
-	REQ_GET = 'REQ_GET',
-	/** string, string | Buffer -> Buffer | Error */
-	REQ_PUT = 'REQ_PUT',
+	REQ_STORAGE_GET = 'REQ_STORAGE_GET',
+	REQ_STORAGE_PUT = 'REQ_STORAGE_PUT',
 
-	/** none -> Buffer | Error */
-	REQ_LIST = 'REQ_LIST',
-	/** string -> Buffer | Error */
-	REQ_UPLOAD = 'REQ_UPLOAD',
-	/** string -> Buffer | Error */
-	REQ_DOWNLOAD = 'REQ_DOWNLOAD',
+	REQ_RESOURCE_UPLOAD = 'REQ_RESOURCE_UPLOAD',
+	REQ_RESOURCE_DOWNLOAD = 'REQ_RESOURCE_DOWNLOAD',
 }
 
-export interface IComunications
+type ComunicationInterfaceDefinition =
 {
-	[EComunicationsChannels.ELECTRON_PROPERTY] : string | number | object;
-	[EComunicationsChannels.ELECTRON_CALL] : string | number | object;
-	[EComunicationsChannels.ELECTRON_PATH] : string | Error;
-	[EComunicationsChannels.ELECTRON_MODAL_OPEN]: electron.OpenDialogReturnValue;
+	[key in EComunicationsChannels]: { args: any[], return: any; };
+};
 
-	[EComunicationsChannels.RESOURCE_PATH] : string;
-	[EComunicationsChannels.READ_FILE]: NodeJS.ErrnoException | Buffer;
-	[EComunicationsChannels.WRITE_FILE]: NodeJS.ErrnoException | null;
 
-	[EComunicationsChannels.REQ_REGISTER]: Buffer | Error;
-	[EComunicationsChannels.REQ_LOGIN]: Buffer | Error;	
-	[EComunicationsChannels.REQ_LOGIN_TOKEN]: Buffer | Error;
-	[EComunicationsChannels.REQ_LOGOUT]: Buffer | Error;
-	[EComunicationsChannels.REQ_GET]: Buffer | null | Error;
-	[EComunicationsChannels.REQ_PUT]: Buffer | Error;
-	[EComunicationsChannels.REQ_LIST]: Buffer | Error;
-	[EComunicationsChannels.REQ_UPLOAD]: Buffer | Error;
-	[EComunicationsChannels.REQ_DOWNLOAD]: Buffer | Error;
+//	const UNNECESSARY = 'UNNECESSARY';
+type ElectronPath = 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin';
+export interface IComunications extends ComunicationInterfaceDefinition
+{
+	[EComunicationsChannels.ELECTRON_PROPERTY]: {
+		args: [string[]],
+		return: string | number | object;
+	};
+	[EComunicationsChannels.ELECTRON_CALL]: {
+		args: [string[]],
+		return: string | number | object;
+	};
+	[EComunicationsChannels.ELECTRON_PATH]: {
+		args: [ElectronPath],
+		return: string | Error;
+	};
+	[EComunicationsChannels.ELECTRON_MODAL_OPEN]: {
+		args: [electron.OpenDialogOptions],
+		return: electron.OpenDialogReturnValue;
+	};
+
+	[EComunicationsChannels.RESOURCE_PATH]: {
+		args: [null],
+		return: string;
+	};
+	[EComunicationsChannels.FILE_READ]: {
+		args: [string],
+		return: NodeJS.ErrnoException | Buffer;
+	};
+	[EComunicationsChannels.FILE_WRITE]: {
+		args: [string, Buffer],
+		return: NodeJS.ErrnoException | null;
+	};
+	[EComunicationsChannels.STORAGE_GET]: {
+		args: [string],
+		return: null | Buffer;
+	};
+	[EComunicationsChannels.STORAGE_SET]: {
+		args: [string, Buffer],
+		return: boolean;
+	};
+
+	[EComunicationsChannels.REQ_USER_REGISTER]: {
+		args: [string, string],
+		return: [Buffer | Error];
+	};
+	[EComunicationsChannels.REQ_USER_LOGIN]: {
+		args: [string, string],
+		return: [Buffer | Error];
+	};
+	[EComunicationsChannels.REQ_USER_LOGIN_TOKEN]: {
+		args: [string],
+		return: [Buffer | Error];
+	};
+	[EComunicationsChannels.REQ_USER_LOGOUT]: {
+		args: [string],
+		return: Buffer | Error;
+	};
+	[EComunicationsChannels.REQ_STORAGE_GET]: {
+		args: [string],
+		return: Buffer | null | Error;
+	};
+	[EComunicationsChannels.REQ_STORAGE_PUT]: {
+		args: [string, string | Buffer],
+		return: Buffer | Error;
+	};
+	[EComunicationsChannels.REQ_RESOURCE_UPLOAD]: {
+		args: [string],
+		return: Buffer | Error;
+	};
+	[EComunicationsChannels.REQ_RESOURCE_DOWNLOAD]: {
+		args: [string, string],
+		return: Buffer | Error;
+	};
 }
 
 export enum EMessageContent

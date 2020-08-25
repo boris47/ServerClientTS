@@ -103,7 +103,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 				defaultPath: defaultPath,
 				properties: [property, multiple],
 			};
-			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.ELECTRON_MODAL_OPEN, null, undefined, modalOptions );
+			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.ELECTRON_MODAL_OPEN, null, modalOptions );
 			if ( !result.canceled && result.filePaths.length)
 			{
 				this.$emit("select", this.SelectedAbsolutePaths = result.filePaths);

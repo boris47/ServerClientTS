@@ -7,6 +7,7 @@ import { EComunicationsChannels } from '../icpComs';
 import FSUtils from '../../../Common/Utils/FSUtils';
 import * as RequestProcessor from './client/client.Bridge';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
+import FS_Storage from '../../../Common/FS_Storage';
 
 const bIsDev = process.env.NODE_ENV === 'development';
 
@@ -46,7 +47,7 @@ export function SetupMainHandlers()
 	//
 	const DirectoryAdjustment = (resourcePath: string): string =>
 	{
-		return path.join( bIsDev ? 'static' : global.__static, resourcePath );
+		return path.join( ( bIsDev ? 'static' : global.__static ), resourcePath );
 	}
 
 	/////////////////////////////////////////////////
@@ -106,18 +107,28 @@ export function SetupMainHandlers()
 //		;
 	});
 
-	electron.ipcMain.handle(EComunicationsChannels.READ_FILE, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
+	electron.ipcMain.handle(EComunicationsChannels.FILE_READ, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string): Promise<NodeJS.ErrnoException | Buffer> =>
 	{
 	//	console.log( EComunicationsChannels.READ_FILE, filePath );
-	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
-		return FSUtils.ReadFileAsync(DirectoryAdjustment(filePath));
+		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
+		return FSUtils.ReadFileAsync(DirectoryAdjustment(filePath), ComFlowManager.Progress);
 	});
 
-	electron.ipcMain.handle(EComunicationsChannels.WRITE_FILE, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>
+	electron.ipcMain.handle(EComunicationsChannels.FILE_WRITE, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, filePath: string, data: string | Buffer): Promise<NodeJS.ErrnoException | null> =>
 	{
 	//	console.log( EComunicationsChannels.WRITE_FILE, filePath, data );
-	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
-		return FSUtils.WriteFileAsync(filePath, data);
+		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
+		return FSUtils.WriteFileAsync(filePath, data, ComFlowManager.Progress);
+	});
+
+	electron.ipcMain.handle(EComunicationsChannels.STORAGE_GET, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string ): Promise<Buffer | null> =>
+	{
+		return FS_Storage.GetResource(key);
+	});
+
+	electron.ipcMain.handle(EComunicationsChannels.STORAGE_SET, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string, data: Buffer): Promise<boolean> =>
+	{
+		return FS_Storage.AddResource( key, data );
 	});
 
 
@@ -125,58 +136,59 @@ export function SetupMainHandlers()
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
 
-	electron.ipcMain.handle( EComunicationsChannels.REQ_REGISTER, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, username: string, password: string ): Promise<Buffer | Error> =>
+	electron.ipcMain.handle( EComunicationsChannels.REQ_USER_REGISTER, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, username: string, password: string ): Promise<Buffer | Error> =>
 	{
 	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_UserRegister(username, password);
 	});
 
-	electron.ipcMain.handle( EComunicationsChannels.REQ_LOGIN, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, username: string, password: string ): Promise<Buffer | Error> =>
+	electron.ipcMain.handle( EComunicationsChannels.REQ_USER_LOGIN, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, username: string, password: string ): Promise<Buffer | Error> =>
 	{
 	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_UserLogin(username, password);
 	});
-	electron.ipcMain.handle( EComunicationsChannels.REQ_LOGIN_TOKEN, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, token: string ): Promise<Buffer | Error> =>
+	
+	electron.ipcMain.handle( EComunicationsChannels.REQ_USER_LOGIN_TOKEN, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, token: string ): Promise<Buffer | Error> =>
 	{
 	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_UserLoginByToken(token);
 	});
-
-	electron.ipcMain.handle( EComunicationsChannels.REQ_LOGOUT, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, token: string): Promise<Buffer | Error> =>
+	
+	electron.ipcMain.handle( EComunicationsChannels.REQ_USER_LOGOUT, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, token: string): Promise<Buffer | Error> =>
 	{
 	//	const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_UserLogout(token);
 	});
 
-	electron.ipcMain.handle(EComunicationsChannels.REQ_GET, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunicationsChannels.REQ_STORAGE_GET, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_GET, key );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_StorageGetData(ComFlowManager, key);
 	});
 
-	electron.ipcMain.handle(EComunicationsChannels.REQ_PUT, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string, [value]: (string | Buffer)[]): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunicationsChannels.REQ_STORAGE_PUT, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, key: string, [value]: (string | Buffer)[]): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_PUT, key, value );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_StoragePutData(ComFlowManager, key, value);
 	});
-
+/*
 	electron.ipcMain.handle(EComunicationsChannels.REQ_LIST, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_LIST );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_StorageList(ComFlowManager);
 	});
-
-	electron.ipcMain.handle(EComunicationsChannels.REQ_UPLOAD, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, absoluteFilePath: string): Promise<Buffer | Error> =>
+*/
+	electron.ipcMain.handle(EComunicationsChannels.REQ_RESOURCE_UPLOAD, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, absoluteFilePath: string): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_UPLOAD, absoluteFilePath );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);
 		return RequestProcessor.Request_ResourceUpload(ComFlowManager, absoluteFilePath);
 	});
 
-	electron.ipcMain.handle(EComunicationsChannels.REQ_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, identifier: string, [downloadLocation]: string[]): Promise<Buffer | Error> =>
+	electron.ipcMain.handle(EComunicationsChannels.REQ_RESOURCE_DOWNLOAD, async (event: Electron.IpcMainInvokeEvent, flowManagerId: string, identifier: string, [downloadLocation]: string[]): Promise<Buffer | Error> =>
 	{
 	//	console.log( EComunicationsChannels.REQ_DOWNLOAD, identifier, downloadLocation );
 		const ComFlowManager = RegisterComFlowManager(event.sender, flowManagerId);

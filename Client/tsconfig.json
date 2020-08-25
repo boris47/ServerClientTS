@@ -23,7 +23,7 @@
 		* I set this to node because I am used to how node resolves modules.
 		* Node is now Typescript’s default mode of module resolution, i.e. classic is mostly present for backwards compatibility.
 		*/
-		"moduleResolution": "Node",
+		"moduleResolution": "node",
 		/*
 		* Also related to the output of your code, this tells the compiler which language features are available when the compiled code is run.
 		* In most cases this would be the same as “target”, except if you polyfilled the runtime environment.
@@ -32,12 +32,13 @@
 		"lib": [
 			"DOM", "ES2018", "ESNext"
 		],
+		
 		/*
 		* Specify list of directories for type definition files to be included. Requires TypeScript version 2.0 or later.
 		*/
 		"typeRoots": [
 			"./src/types",
-			"./node_modules/@types",
+			"./node_modules/@types"
 		],
 		"strict": true,
 		/*

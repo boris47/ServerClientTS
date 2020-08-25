@@ -25,7 +25,6 @@
 
 	import Vue from 'vue';
 	import AppRouter from '../appRouter';
-	import LoginManager from '../plugins/loginManager';
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunicationsChannels } from '../../icpComs';
 
@@ -44,7 +43,6 @@
 		created()
 		{
 			console.log('RegistrationPage');
-			LoginManager.IsLogged = false;
 		},
 
 		methods:
@@ -54,10 +52,9 @@
 				this.submitted = true;
 				if (this.username && this.password)
 				{ // TODO
-					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_REGISTER, null, this.username, this.password);
+					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
 					if (Buffer.isBuffer(result))
 					{
-						LoginManager.IsLogged = true;
 						console.log('TOKEN', result.toString());
 						AppRouter.NavigateTo('loginPage');
 					}

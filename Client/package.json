@@ -4,7 +4,7 @@
 	"author": "r.leogrande<leogranderoberto@gmailcom>",
 	"description": "My client side electron app",
 	"config": {
-		"name": "Client TS"
+		"name": "ClientTS"
 	},
 	"license": "",
 	"main": "./dist/electron/main.js",

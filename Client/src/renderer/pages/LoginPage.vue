@@ -1,7 +1,7 @@
 <template>
 	<global-layout>
 		<div slot="header">
-			<!-- <div class="logo"/> -->
+			<!--div class="logo"/--> 
 			<!--img :src="GetStatic('me.jpg')" alt=""-->
 			<h3>Login</h3>
 			<form v-on:submit.prevent="handleSubmit">
@@ -29,8 +29,9 @@
 	import Vue from 'vue';
 	import AppRouter from '../appRouter';
 	import LoginManager from '../plugins/loginManager';
-	import { ICP_RendererComs } from '../icpRendererComs';
-	import { EComunicationsChannels } from '../../icpComs';
+import { Route, NavigationGuardNext } from 'vue-router/types/router';
+//	import { ICP_RendererComs } from '../icpRendererComs';
+//	import { EComunicationsChannels } from '../../icpComs';
 
 	export default Vue.extend({
 
@@ -44,12 +45,23 @@
 			};
 		},
 
+		async beforeRouteEnter( to: Route, from: Route, next: NavigationGuardNext<Vue> )
+		{
+			next( async (vn: Vue) =>
+			{
+				});
+		},
+
 		async created()
 		{
 			console.log('LoginPage');
-			LoginManager.IsLogged = false;
-			
-			const result = await ICP_RendererComs.Invoke(EComunicationsChannels.READ_FILE, null, 'TestStatic.txt' );
+			const bResult = await LoginManager.TryAutoLogin();
+			if (bResult)
+			{
+				AppRouter.NavigateTo('testPage');
+			}
+
+	/*		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.FILE_READ, null, 'TestStatic.txt' );
 			if ( Buffer.isBuffer(result) )
 			{
 				console.log('Static: Content,', result.toString());
@@ -58,26 +70,16 @@
 			{
 				console.error('Static: Error,', result);
 			}
-		},
+	*/	},
 
 		methods:
 		{
-			async handleSubmit()
+			handleSubmit()
 			{
 				this.submitted = true;
 				if (this.username && this.password)
-				{ // TODO
-					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_LOGIN, null, this.username, this.password);
-					if (Buffer.isBuffer(result))
-					{
-						LoginManager.IsLogged = true;
-						console.log('TOKEN', result.toString());
-						AppRouter.NavigateTo('testPage');
-					}
-					else
-					{
-						console.error("Login Failed", result);
-					}
+				{
+					LoginManager.Trylogin( this.username, this.password );
 				}
 			},
 

@@ -74,7 +74,7 @@ export class ClientRequestsProcessing
 
 			compressonHandledResponse.on('end', () =>
 			{
-				const result = Buffer.from('ClientRequests:ServetToClient: Data received correcly');
+				const result: Buffer = Buffer.from('ClientRequests:ServetToClient: Data received correcly');
 				ComUtils.ResolveWithGoodResult(result, resolve);
 			});
 		}
@@ -87,13 +87,13 @@ export class ClientRequestsProcessing
 				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
 				ComUtils.ResolveWithError('ClientRequests:ServetToClient:[ResponseError]', `${ err.name }:${ err.message }`, resolve);
 			});
-			compressonHandledResponse.on('data', function(chunk: Buffer)
+			compressonHandledResponse.on('data', (chunk: Buffer) =>
 			{
 				contentLength += chunk.length;
 				buffers.push(chunk);
 
 			});
-			compressonHandledResponse.on('end', function()
+			compressonHandledResponse.on('end', () =>
 			{
 				const result: Buffer = Buffer.concat(buffers, contentLength);
 				ComUtils.ResolveWithGoodResult(result, resolve);
@@ -129,7 +129,6 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	/** Server -> Client */
 	public static async MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<IClientRequestResult>
 	{
 		return new Promise<IClientRequestResult>((resolve) =>

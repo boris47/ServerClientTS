@@ -7,7 +7,17 @@ window.require = <any>((requiredModule: string) =>
 {
 	console.log(`Required module "${ requiredModule }" (${ typeof (requiredModule) })`);
 	
-	switch(requiredModule)
+	const allowedModules = ['module', 'source-map-support/source-map-support.js', 'vue-router', 'electron' ];
+	if (!allowedModules.includes(requiredModule))
+	{
+		new Error(`Tried to require unknown module: ${ requiredModule }`);
+	}
+	else
+	{
+		return nodeRequire(requiredModule);
+	}
+
+/*	switch(requiredModule)
 	{
 		case 'module': return nodeRequire('module');
 		case "source-map-support/source-map-support.js": return nodeRequire("source-map-support/source-map-support.js");
@@ -15,6 +25,7 @@ window.require = <any>((requiredModule: string) =>
 		case 'electron': return nodeRequire('electron');
 		default: new Error(`Tried to require unknown module: ${ requiredModule }`);
 	}
+*/
 });
 
 // Make a module available
