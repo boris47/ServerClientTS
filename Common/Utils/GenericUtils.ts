@@ -1,6 +1,6 @@
 
 import * as crypto from 'crypto';
-
+import * as stream from 'stream';
 
 export class CustomCrypto
 {
@@ -58,17 +58,19 @@ export function Yieldable<T>(fn: () => T): Promise<T>
 }
 
 
-export type GenericConstructor<T> = { new(...Args: any[]): T; };
+export type GenericConstructor<T> = { new(...args: any[]): T; };
+export type Constructor<T> = Function & { prototype: T };
+
 export default class GenericUtils
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static Instanciate<T>(Constructor: GenericConstructor<T>, ...Args: any[]): T
+	public static Instanciate<T>(constructor: GenericConstructor<T>, ...args: any[]): T
 	{
-		return new Constructor(Args);
+		return new constructor(args);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static TryParse<T = any>( content: string, ctor?: (arg: object) => T ) : T | Error
+	public static Parse<T = Object>( content: string, ctor?: (arg: object) => T ) : Error | T
 	{
 		if (typeof content !== 'string' || content.length === 0)
 		{
@@ -90,7 +92,23 @@ export default class GenericUtils
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static IsTypeOf<T = any>(value: any, type: string | { new(...args: any[]): T; }): value is T
+	public static BufferToStream(buffer: Buffer): stream.Readable
+	{ 
+		const readable = new stream.Readable();
+		readable.push(buffer);
+		readable.push(null);
+		return readable;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	/**
+	 * @param value Value to examinate
+	 * @param type -
+	 * - A type `string` ('string', 'number', ...),
+	 * - a `class` (Error, Buffer, ...)
+	 * - an `abstract class`
+	 */
+	public static IsTypeOf<T = any>(value: any, type: string | { new(...args: any[]): T; } | Constructor<T>): value is T
 	{
 		return (typeof type === 'string' ? (e: any) => typeof e === type : (e: any) => e instanceof type)(value);
 	}
@@ -99,7 +117,7 @@ export default class GenericUtils
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static IsPromise<TResult = any>(obj: any): obj is Promise<TResult>
 	{
-		return obj !== null && typeof(obj.then) === 'function' && typeof(obj.finally) === 'function';
+		return obj && typeof(obj.then) === 'function' && typeof(obj.finally) === 'function';
 	}
 
 
@@ -114,5 +132,37 @@ export default class GenericUtils
 	public static async WaitFrames(frameCount: number): Promise<void>
 	{
 		for (let index = 0; index < frameCount; index++) await GenericUtils.DelayMS(1);
+	}
+}
+
+
+
+
+/**
+ * Provides a mechanism for releasing resources.
+ */
+export interface IDisposable
+{
+	dispose(): void  | Promise<void>;
+}
+
+/**
+ * Provides a convenient syntax that ensures the correct use of IDisposable objects
+ * @example
+ *   await using(ioc.get<IUdpClient>(types.IUdpClient), async (client) =>
+ *   {
+ *	     await Task.delay(1000);
+ *	 });
+ *	 console.log("end");
+ */
+export async function using<T extends IDisposable>(resource: T, func: (resource: T) => void | Promise<void>)
+{
+	try
+	{
+		await Promise.resolve(func(resource));
+	}
+	finally
+	{
+		await Promise.resolve( resource.dispose() );
 	}
 }
