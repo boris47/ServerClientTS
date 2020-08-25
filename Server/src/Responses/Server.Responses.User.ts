@@ -1,24 +1,25 @@
 
 import * as http from 'http';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import ServerUserManager from '../Users/Server.User.Manager';
+import ServerUserRuntimeManager from '../Users/Server.User.RuntimeManager';
 import ServerResponsesProcessing from './Server.Responses.Processing';
 import { HTTPCodes } from '../HTTP.Codes';
+import { EHeaders } from '../../../Common/Interfaces';
 
 export default class ServerResponseUser
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserRegister(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
-		const username = request.headers.username as string;
-		const password = request.headers.password as string;
+		const username = request.headers[EHeaders.USERNAME] as string;
+		const password = request.headers[EHeaders.PASSWORD] as string;
 		if ( typeof username !== 'string' || typeof password !== 'string')
 		{
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[400], 400); // Bad Request
 			return ComUtils.ResolveWithError('[REGISTER]', 'User registration failed because malformed username or password');
 		}
 
-		const token = await ServerUserManager.RegisterUser(username, password);
+		const token = await ServerUserRuntimeManager.RegisterUser(username.toLowerCase(), password);
 		if (!token)
 		{
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401); // Unauthorized
@@ -32,20 +33,36 @@ export default class ServerResponseUser
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserLogin(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
-		const username = request.headers.username as string;
-		const password = request.headers.password as string;
+		// Access requested by token
+		if (request.headers[EHeaders.TOKEN])
+		{
+			const token = request.headers[EHeaders.TOKEN] as string;
+			const bResult = await ServerUserRuntimeManager.UserLoginByToken(token);
+			if (!bResult)
+			{
+				ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[404], 404); // Not Found
+				return ComUtils.ResolveWithError('[LOGIN]', `token ${token} refused`);
+			}
+			ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
+			return ComUtils.ResolveWithGoodResult();
+		}
+
+		// Normal access
+		const username = request.headers[EHeaders.USERNAME] as string;
+		const password = request.headers[EHeaders.PASSWORD] as string;
 		if ( typeof username !== 'string' || typeof password !== 'string')
 		{
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[400], 400); // Bad Request
 			return ComUtils.ResolveWithError('[LOGIN]', 'User login failed because malformed username or password');
 		}
 
-		const token = await ServerUserManager.UserLogin(username, password);
+		const token = await ServerUserRuntimeManager.UserLogin(username.toLowerCase(), password);
 		if ( !token )
 		{
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[404], 404); // Not Found
 			return ComUtils.ResolveWithError('[LOGIN]', 'User not exists');
 		}
+//		console.error(`User created with token ${token}`)
 		ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
 		return ComUtils.ResolveWithGoodResult();
 	};
@@ -53,7 +70,7 @@ export default class ServerResponseUser
 	/////////////////////////////////////////////////////////////////////////////////////////
 /*	public static async UserLoginByToken(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
-		const token = request.headers.token as string;
+		const token = request.headers[EHeaders.TOKEN] as string;
 		const bLoggedIn = await ServerUserManager.UserLoginByToken(token);
 		if ( !bLoggedIn )
 		{
@@ -69,8 +86,8 @@ export default class ServerResponseUser
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserLogout(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
-		const token = request.headers.token as string;
-		const result = await ServerUserManager.UserLogout(token);
+		const token = request.headers[EHeaders.TOKEN] as string;
+		const result = await ServerUserRuntimeManager.UserLogout(token);
 		if (!result)
 		{
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401); // Unauthorized

@@ -7,6 +7,7 @@ import * as ComUtils from '../../../Common/Utils/ComUtils';
 import { DOWNLOAD_LOCATION } from '../Server.Globals';
 import FSUtils from '../../../Common/Utils/FSUtils';
 import ServerResponsesProcessing, { IServerRequestInternalOptions } from './Server.Responses.Processing';
+import { EHeaders } from '../../../Common/Interfaces';
 
 export default class ServerResponseResources
 {
@@ -15,8 +16,8 @@ export default class ServerResponseResources
 	public static async ClientToServer(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
 		// Execute file upload to client
-		const identifier = request.headers.identifier as string;
-		const token = request.headers.token as string;
+		const identifier = request.headers[EHeaders.IDENTIFIER] as string;
+		const token = request.headers[EHeaders.TOKEN] as string;
 		const filePath = path.join(DOWNLOAD_LOCATION, token, identifier);
 		await FSUtils.EnsureDirectoryExistence(path.dirname(filePath));
 
@@ -38,8 +39,8 @@ export default class ServerResponseResources
 	public static async ServerToClient(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
 		// Execute file download server side
-		const identifier = request.headers.identifier as string;
-		const token = request.headers.token as string;
+		const identifier = request.headers[EHeaders.IDENTIFIER] as string;
+		const token = request.headers[EHeaders.TOKEN] as string;
 		const options: IServerRequestInternalOptions = {};
 		const filePath = path.join(DOWNLOAD_LOCATION, token, identifier);
 

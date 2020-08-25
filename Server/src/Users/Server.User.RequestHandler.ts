@@ -1,19 +1,19 @@
 
 import * as http from 'http';
 
-import * as ComUtils from '../../../Common/Utils/ComUtils';
 import ServerResponsesProcessing from '../Responses/Server.Responses.Processing';
+import ServerUserRuntimeManager from './Server.User.RuntimeManager';
+import * as ComUtils from '../../../Common/Utils/ComUtils';
+import { EHeaders } from '../../../Common/Interfaces';
 import { HTTPCodes } from '../HTTP.Codes';
-import ServerUserManager from './Server.User.Manager';
-
 
 export default class ServerUserRequestHandler
 {
 	public static async CheckUserAuths(path: string, requiresAuth: boolean, request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
 	{
 		// Login is OK?
-		const token = request.headers.token as string;
-		if (requiresAuth && (!token || !ServerUserManager.FindLoggedInUserByToken(token)))
+		const token = request.headers[EHeaders.TOKEN] as string;
+		if (requiresAuth && (!token || !await ServerUserRuntimeManager.FindLoggedInUserByToken(token)))
 		{
 			response.setHeader('WWW-Authenticate', 'Basic');
 			ServerResponsesProcessing.EndResponseWithError(response, 'Login required', 401);
@@ -21,7 +21,7 @@ export default class ServerUserRequestHandler
 		}
 
 		// Auth is OK?
-		if (token && !ServerUserManager.HasAuthorizationFor(token, path))
+		if (token && !await ServerUserRuntimeManager.HasAuthorizationFor(token, path))
 		{
 			response.setHeader('WWW-Authenticate', 'Basic');
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[401], 401);

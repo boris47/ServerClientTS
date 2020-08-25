@@ -52,12 +52,6 @@ export default class ServerResponsesProcessing
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
-		//	request.on('error', function( err : Error )
-		//	{
-		//		ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
-		//		ComUtils.ResolveWithError( "ServerResponses:ServetToClient", err, resolve );
-		//	});
-
 			response.on( 'error', ( err : Error ) =>
 			{
 				ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
@@ -97,12 +91,6 @@ export default class ServerResponsesProcessing
 	{
 		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
 		{
-		//	request.on('error', function( err : Error )
-		//	{
-		//		ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
-		//		ComUtils.ResolveWithError( "ServerResponses:ClientToServer", err, resolve );
-		//	});
-
 			// If for this request a writestream is provived, then the content will be written on this stream
 			if ( serverRequestInternalOptions.WriteStream )
 			{
@@ -124,9 +112,8 @@ export default class ServerResponsesProcessing
 			// Otherwise the content will be stored into a buffer
 			else
 			{
-				let contentLength: number = Number(request.headers['content-length'] || 0);
-				const body = new Array<Buffer>(contentLength);
-				contentLength = 0;
+				const body = new Array<Buffer>();
+				let contentLength = 0;
 				request.on( 'data', function( chunk : Buffer )
 				{
 					body.push( chunk );

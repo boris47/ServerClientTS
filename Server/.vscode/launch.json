@@ -21,6 +21,12 @@
 			"request": "launch",
 			"name": "Launch Container",
 			"program": "${workspaceFolder}\\src\\ServerMonitor.js"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "Test Coroutines",
+			"program": "${workspaceFolder}\\Coroutines.js"
 		}
 	]
 }

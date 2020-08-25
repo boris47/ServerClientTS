@@ -3,7 +3,7 @@ import * as http from 'http';
 import * as net from 'net';
 
 import * as ComUtils from '../../../Common/Utils/ComUtils';
-import { ResponsesMap, IResponsesMapItem } from '../Responses/Server.Responses.Mapping.Base';
+import { ResponsesMap, IResponsesMapItem } from '../Responses/Server.Responses.Map';
 import { ServerInfo } from '../Server.Globals';
 import ServerUserRequestHandler from '../Users/Server.User.RequestHandler';
 import ServerResponsesProcessing, { IServerRequestInternalOptions } from '../Responses/Server.Responses.Processing';
@@ -58,7 +58,7 @@ export default class HttpModule
 
 		this.server = server;
 
-		await new Promise( (resolve) =>
+		await new Promise<void>( (resolve) =>
 		{
 			server.listen( listenOptions, () =>
 			{
@@ -100,9 +100,7 @@ export default class HttpModule
 	{
 		console[(value.bHasGoodResult ? 'log':'warn')](
 			[
-				`Incoming: "${request.url}"`,
-				`Result: ${value.bHasGoodResult}`,
-				`Duration: ${(Date.now()- startTime).toString()}ms`,
+				`Incoming: "${request.url}", Method: "${request.method}", Result: ${value.bHasGoodResult}, Duration: ${(Date.now() - startTime).toString()}ms`,
 				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 			].join('\n\t')
 		);

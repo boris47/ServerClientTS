@@ -11,9 +11,11 @@
 		"noFallthroughCasesInSwitch": true,
 		"noImplicitReturns" : true,
 		"removeComments": true,
-		"experimentalDecorators":true
+		"experimentalDecorators":true,
+		"resolveJsonModule": true
 	},
 	"exclude": [
-		"node_modules"
+		"node_modules",
+		"excluded"
 	]
 }

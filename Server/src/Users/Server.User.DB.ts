@@ -6,15 +6,19 @@ import * as fs from 'fs';
 import FSUtils from "../../../Common/Utils/FSUtils";
 
 import GenericUtils, { ITemplatedObject, Yieldable, CustomCrypto } from '../../../Common/Utils/GenericUtils';
+import StringUtils from '../../../Common/Utils/StringUtils';
 import { ServerUser, IServerUserBaseProps } from './Server.User';
 import { ILifeCycleObject } from '../../../Common/Interfaces';
 import { RequireStatics } from '../../../Common/Decorators';
+import { IPackageJSON } from '../../../Common/IPackageJSON';
+const { config: { name } }: IPackageJSON = require('../../package.json');
+
 
 /** Main process side storage */
 @RequireStatics<ILifeCycleObject>()
 export default class ServerUserDB
 {
-	private static CustomCryptoEnabled = true;
+	private static CustomCryptoEnabled = false;
 	private static passPhrase32Bit : string = `XC3r*Q5JKC?tqBb!6G-7uB@*7c=s?rV6`;
 	private static iv: string = 'R^uexNY&925P@&x-';
 
@@ -29,16 +33,17 @@ export default class ServerUserDB
 		{
 			return true;
 		}
-
-		const storageAbsolutepath = path.join( process.cwd(), 'ServerStorage', `UserDB.json` );
-		const folderPath = path.parse( storageAbsolutepath ).dir;
+		const userDataFolder = FSUtils.GetUserDataFolder();
+		const storageAbsolutePath = path.join( userDataFolder, name, 'Storage', `UserDB.json` );
+	//	const storageAbsolutePath = path.join( process.cwd(), 'ServerStorage', `UserDB.json` );
+		const folderPath = path.parse( storageAbsolutePath ).dir;
 		await FSUtils.EnsureDirectoryExistence( folderPath );
-		if ( !fs.existsSync( storageAbsolutepath ) )
-		{
-			fs.writeFileSync( storageAbsolutepath, "{}", 'utf8' );
-		}
-		ServerUserDB.m_StorageName = storageAbsolutepath;
-		console.log( `ServerUserDB: Location: ${storageAbsolutepath}` );
+		
+//		const content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Encrypt( '{}', ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : '{}';
+//		fs.writeFileSync( storageAbsolutePath, content, 'utf8' );
+		
+		ServerUserDB.m_StorageName = storageAbsolutePath;
+		console.log( `ServerUserDB: Location: ${storageAbsolutePath}` );
 		return true;
 	}
 
@@ -46,7 +51,7 @@ export default class ServerUserDB
 	public static async Save() : Promise<boolean>
 	{
 		console.log(`Storage:Saving storage ${ServerUserDB.m_StorageName}`);
-
+		
 		// Encapsulation
 		const objectToSave : ITemplatedObject<IServerUserBaseProps> = {};
 		for( const [userId, user] of ServerUserDB.m_Storage )
@@ -61,9 +66,9 @@ export default class ServerUserDB
 		content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Encrypt( content, ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : content;
 
 		// Write to File
-		const result = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, content );
-		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!result ? 'saved':`not saved cause ${result}`)}`);
-		return !result;
+		const error = await FSUtils.WriteFileAsync( ServerUserDB.m_StorageName, content );
+		console.log(`Storage:Storage ${ServerUserDB.m_StorageName} ${(!error ? 'saved':`not saved cause ${error}`)}`);
+		return !error;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +89,7 @@ export default class ServerUserDB
 		content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Decrypt( content, ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : content
 
 		// Parsing
-		let parsed = GenericUtils.TryParse<ITemplatedObject<IServerUserBaseProps>>( content );
+		const parsed = GenericUtils.Parse<ITemplatedObject<Object>>( content );
 		if ( GenericUtils.IsTypeOf(parsed, Error) )
 		{
 			console.error( "ServerUserDB", 'Error parsing userDB', parsed );
@@ -92,9 +97,10 @@ export default class ServerUserDB
 		}
 
 		// Usage
-		for( const [userId, { id, username, password }] of Object.entries(parsed) )
+		for( const [userId, userData] of Object.entries(parsed) )
 		{
-			await Yieldable( () => ServerUserDB.m_Storage.set( userId, new ServerUser( username, password, id ) ) );
+			const user = ServerUser.Load(userData);
+			ServerUserDB.m_Storage.set( userId, user );
 		}
 		return true;
 	}
@@ -155,12 +161,6 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static RemoveUser( userId : string ) : boolean
-	{
-		return ServerUserDB.m_Storage.delete( userId );
-	}
-
-	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async ListUserIds() : Promise<string[]>
 	{
 		const result = new Array<string>(ServerUserDB.m_Storage.size);
@@ -172,13 +172,25 @@ export default class ServerUserDB
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async GetUserByUsername( encryptedUsername: string ): Promise<ServerUser | null>
+	public static async GetUserByUsername( username: string ): Promise<ServerUser | null>
 	{
 		let userFound = null;
 		for( const [userId, user] of ServerUserDB.m_Storage )
 		{
 			if (userFound) break;
-			await Yieldable( () => userFound = user.username === encryptedUsername ? user : null);
+			await Yieldable( () => userFound = user.username === username ? user : null);
+		}
+		return userFound;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static async GetUserByToken(token: string): Promise<ServerUser | null>
+	{
+		let userFound = null;
+		for( const [userId, user] of ServerUserDB.m_Storage )
+		{
+			if (userFound) break;
+			await Yieldable( () => userFound = ( user.LoginToken === token ) ? user : null);
 		}
 		return userFound;
 	}
@@ -192,6 +204,12 @@ export default class ServerUserDB
 			await Yieldable(() => result.set( userId, ServerUserDB.GetUser(userId) ) );
 		}
 		return result;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////
+	public static RemoveUser( userId : string ) : boolean
+	{
+		return ServerUserDB.m_Storage.delete( userId );
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////

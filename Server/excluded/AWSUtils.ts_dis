@@ -4,7 +4,7 @@ import * as AWS from 'aws-sdk';
 import { RetryDelayOptions } from 'aws-sdk/lib/config';
 
 import GenericUtils from '../../Common/Utils/GenericUtils';
-import { IIndexableObject } from '../../Common/Interfaces';
+import { ITemplatedObject } from '../../Common/Utils/GenericUtils';
 
 
 export namespace AWSUtils {
@@ -709,7 +709,7 @@ export namespace AWSUtils {
 		{
 			return new Promise<AWS.AWSError | null>( (resolve) =>
 			{
-				const params : AWS.EC2.ModifyInstanceAttributeRequest & IIndexableObject =
+				const params : AWS.EC2.ModifyInstanceAttributeRequest & ITemplatedObject =
 				{
 					// The ID of the instance.
 					InstanceId : InstanceID

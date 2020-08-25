@@ -4,6 +4,7 @@ import * as fs from 'fs';
 
 import ServerConfigs from '../../Common/ServerConfigs'
 import GenericUtils from '../../Common/Utils/GenericUtils';
+import EventsScheduler from '../../Common/EventsScheduler';
 import FSUtils from '../../Common/Utils/FSUtils';
 
 import { MongoDatabase } from '../Utils/MongoDatabase';
@@ -11,13 +12,15 @@ import { MongoDatabase } from '../Utils/MongoDatabase';
 import HttpModule from './Modules/Server.Modules.Http';
 import WebSocketModule from './Modules/Server.Modules.WebSocket';
 import { ServerInfo } from './Server.Globals';
-import { CustomStorageManager, EStorageType } from './Server.Storages';
 import ServerUserDB from './Users/Server.User.DB';
 import { ProcessManager } from '../../Common/ProcessManager';
-
+import { IPackageJSON } from '../../Common/IPackageJSON';
 import { install } from 'source-map-support';
+import FS_Storage from '../../Common/FS_Storage';
 install({environment: 'node', handleUncaughtExceptions: true});
 
+
+const { config: { name } }: IPackageJSON = require('../package.json');
 
 // Very simple answer
 process.on( 'message', ( message : any ) =>
@@ -33,9 +36,6 @@ process.on( 'message', ( message : any ) =>
 		process.send(answer);
 	}
 });
-
-
-
 
 /*
 process.on( 'uncaughtException', ( error: Error ) =>
@@ -214,21 +214,22 @@ class Server
 		this.finalizers.Add(MongoDatabase, db );
 	
 		// STORAGES
-		const localStorage = await CustomStorageManager.CreateNewStorage( EStorageType.LOCAL, 'local' );
-		const remoteStorage = await CustomStorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
-		const bResultServerUserDBInitialization = await ServerUserDB.Initialize();
-		if ( !localStorage || !await localStorage.LoadStorage() )
+		if ( !await FS_Storage.Initialize(name, 'localStorage') || !await FS_Storage.LoadStorage() )
 		{
 			console.error( "Local Storage Unavailable" );
 			debugger; return this.FinalizationAndExit(1);
 		}
-		this.finalizers.Add( localStorage );
+		this.finalizers.Add( FS_Storage );
+
+/*		const remoteStorage = await CustomStorageManager.CreateNewStorage( EStorageType.REMOTE, 'remote' );
 		if ( !remoteStorage || !await remoteStorage.LoadStorage() )
 		{
 			console.error( "Remote Storage Unavailable" );
 			debugger; return this.FinalizationAndExit(1);
 		}
 		this.finalizers.Add( remoteStorage );
+*/		
+		const bResultServerUserDBInitialization = await ServerUserDB.Initialize();
 		if ( !bResultServerUserDBInitialization || !await ServerUserDB.Load() )
 		{
 			console.error( !bResultServerUserDBInitialization ? 'Server User DB Initialization Failed' : 'Server User DB Unavailable' );
@@ -259,26 +260,19 @@ class Server
 
 		console.log("---- SERVER IS RUNNING ----");
 		{
-			this.ScheduleEvent( 60 * 1000, localStorage, localStorage.SaveStorage );
-			this.ScheduleEvent( 60 * 1000, remoteStorage, remoteStorage.SaveStorage );
-			this.ScheduleEvent( 60 * 1000, ServerUserDB, ServerUserDB.Save );
+			const scheduler = new EventsScheduler();
+			scheduler.SetEvent( 60 * 1000, FS_Storage.SaveStorage, FS_Storage );
+	//		scheduler.SetEvent( 60 * 1000, remoteStorage.SaveStorage, remoteStorage );
+			scheduler.SetEvent( 60 * 1000, ServerUserDB.Save, ServerUserDB );
 
 			let bRunning = true;
 			this.finalizers.Add( { Finalize:() => bRunning = false } );
+			this.finalizers.Add( { Finalize:() => scheduler.Stop() } );
 
 			// Server Loop
 			while( bRunning ) await GenericUtils.WaitFrames( 1 );
 			this.FinalizationAndExit(0);
 		}
-	}
-
-
-	/////////////////////////////////////////////////////////////////////////////////////////
-	private async ScheduleEvent( delay: number, context: object, fn: (...args:any[]) => Promise<any>, ...args: any[] ): Promise<void>
-	{
-		let bContinuse = true;
-		this.finalizers.Add( { Finalize:() => bContinuse = false } );
-		while(bContinuse) await GenericUtils.DelayMS(delay).then(() => fn.apply(context, [args]));
 	}
 }
 

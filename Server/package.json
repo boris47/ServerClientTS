@@ -4,14 +4,15 @@
 	"description": "",
 	"main": "src\\Server.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"reinstll": "call clear.bat && npm install"
+	},
+	"config": {
+		"name": "ServerTS"
 	},
 	"keywords": [],
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@types/source-map-support": "0.5.2",
-		"aws-sdk": "2.677.0",
 		"mime-types": "2.1.27",
 		"mongodb": "3.5.7",
 		"nodemailer": "6.4.6",
@@ -19,10 +20,11 @@
 	},
 	"devDependencies": {
 		"@types/node": "14.0.24",
-		"@types/mime-types": "2.1.0",
-		"@types/websocket": "1.0.1",
-		"@types/mongodb": "3.5.17",
 		"@types/nodemailer": "6.4.0",
+		"@types/mime-types": "2.1.0",
+		"@types/mongodb": "3.5.17",
+		"@types/source-map-support": "0.5.2",
+		"@types/websocket": "1.0.1",
 		"source-map-support": "0.5.19",
 		"typescript": "3.9.7"
 	}

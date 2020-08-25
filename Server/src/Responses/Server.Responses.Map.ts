@@ -2,10 +2,11 @@
 import * as http from 'http';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
 import { ITemplatedObject } from '../../../Common/Utils/GenericUtils';
+import { EMappedPaths } from '../../../Common/Interfaces';
 
-import ServerResponseStorage from './Server.Responses.Mapping.Storage';
-import ServerResponseUser from './Server.Responses.Mapping.User';
-import ServerResponseResources from './Server.Responses.Mapping.Resources';
+import ServerResponseStorage from './Server.Responses.Storage';
+import ServerResponseUser from './Server.Responses.User';
+import ServerResponseResources from './Server.Responses.Resources';
 
 
 /** https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods */
@@ -71,22 +72,21 @@ export interface IResponsesMapItem
 /////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// TODO Auto registration by modules
 export const ResponsesMap: ITemplatedObject<IResponsesMapItem> =
 {
-	'/user':
+	[EMappedPaths.USER]:
 	{
 		requiresAuth: false,
 		responseMethods: { get: ServerResponseUser.UserLogin, put: ServerResponseUser.UserRegister, post: ServerResponseUser.UserLogout }
 	},
 
-	'/resource':
+	[EMappedPaths.RESOURCE]:
 	{
 		requiresAuth: true,
 		responseMethods: { get: ServerResponseResources.ServerToClient, put:ServerResponseResources.ClientToServer }
 	},
 
-	'/storage':
+	[EMappedPaths.STORAGE]:
 	{
 		requiresAuth: true,
 		responseMethods: { get: ServerResponseStorage.Get, put: ServerResponseStorage.Add, delete: ServerResponseStorage.Delete }

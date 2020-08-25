@@ -5,7 +5,7 @@ import * as path from 'path';
 import FSUtils from '../../Common/Utils/FSUtils';
 import GenericUtils, { GenericConstructor, Yieldable } from '../../Common/Utils/GenericUtils';
 import { AWSUtils } from '../Utils/AWSUtils';
-import { IIndexableObject } from '../../Common/Interfaces';
+import { ITemplatedObject } from '../../Common/Utils/GenericUtils';
 
 export async function StorageFactory<T extends ICustomServerStorage>( Class : GenericConstructor<T>, ...Args: any[] ) : Promise<T>
 {
@@ -84,7 +84,7 @@ class ServerStorage_FileSystem implements ICustomServerStorage
 		const content = contentOrError.toString();
 
 		// Parsing
-		const parsed = GenericUtils.TryParse<ILocalStorage>( content );
+		const parsed = GenericUtils.Parse<ILocalStorage>( content );
 		if ( GenericUtils.IsTypeOf(parsed, Error) )
 		{
 			console.error( "ServerStorage[FileSystem]", 'Error parsing local storage', parsed );
@@ -104,7 +104,7 @@ class ServerStorage_FileSystem implements ICustomServerStorage
 	public async SaveStorage() : Promise<boolean>
 	{
 		// Encapsulation
-		let objectToSave : IIndexableObject = {};
+		let objectToSave : ITemplatedObject = {};
 		for( const [Key, value] of this.m_Storage )
 		{
 			await Yieldable( () => objectToSave[Key] = value.toJSON().data );
