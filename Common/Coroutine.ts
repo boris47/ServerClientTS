@@ -1,6 +1,7 @@
 
 import GenericUtils, { UniqueID } from './Utils/GenericUtils';
 import { Interface } from 'readline';
+import { resolve } from 'path';
 
 export namespace Coroutines
 {
@@ -186,6 +187,25 @@ export namespace Coroutines
 				}
 			}
 		}
+	}
+}
+
+export namespace AsyncCoroutines
+{
+	export function WaitForMilliseconds(timeMS: number)
+	{
+		return new Promise( resolve => setTimeout(resolve, timeMS) );
+	}
+
+	export async function WaitUntil(predicate: () => boolean)
+	{
+		while(!predicate()) { await GenericUtils.DelayMS(0); };
+		return Promise.resolve();
+	}
+	
+	export async function StartCoroutine<TReturn>(coroutine: Promise<TReturn>) : Promise<TReturn>
+	{
+		return await coroutine;
 	}
 }
 
