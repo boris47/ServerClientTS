@@ -37,13 +37,14 @@ export class ComFlowManager
 //
 export class ComProgress
 {
-	private static bumpCallback = () => {};
-	private callback : (maxValue: number, currentValue: number) => void = ComProgress.bumpCallback;
+	private callback : (maxValue: number, currentValue: number, label: string) => void = () => {};
 
 	// Default NormalizedValue = ndefined
 	private maxValue: number = 0.0;
 	private currentValue: number = 0.0;
+	private label: string | null = null;
 
+	get Label(): string | null { return this.label; }
 	get MaxValue(): number { return this.maxValue; }
 	get CurrentValue(): number { return this.currentValue; }
 	get NormalizedValue(): number | undefined
@@ -59,16 +60,22 @@ export class ComProgress
 
 	public Reset()
 	{
+		this.callback = () => {};
+		this.label = null;
 		this.currentValue = 0.0;
 		this.maxValue = 0.0;
-		this.callback = ComProgress.bumpCallback;
 	}
 
 	public SetProgress( maxValue: number, currentValue: number )
 	{
 		this.maxValue = maxValue;
 		this.currentValue = currentValue;
-		this.callback( maxValue, currentValue );
+		this.callback( maxValue, currentValue, this.label );
+	}
+
+	public SetLabel(newLabel: string)
+	{
+		this.label = newLabel;
 	}
 
 }

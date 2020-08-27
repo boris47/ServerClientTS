@@ -37,7 +37,7 @@ export function SetupMainHandlers()
 				if ( previousTruncValue !== newTruncValue )
 				{
 					previousTruncValue = newTruncValue;
-					sender.send( progressId, maxValue, currentValue );
+					sender.send( progressId, maxValue, currentValue, comFlowManager.Progress.Label );
 				}
 			});
 		}
