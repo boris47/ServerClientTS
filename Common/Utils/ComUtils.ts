@@ -8,14 +8,17 @@ import { UniqueID } from './GenericUtils';
 /////////////////////////////////////////////////////////////////////////////////////////
 enum EComFlowTags
 {
-	PROGRESS = 'PROGRESS',
+	// Progress
+	PROGRESS_VALUE = 'PROGRESS_VALUE',
+	PROGRESS_LABEL = 'PROGRESS_LABEL',
 }
 
 //
 export class ComFlowManager
 {
 	/** Add tag for channel used for progress data transmission */
-	public static readonly ToProgressId = ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS}`;
+	public static readonly ToProgressValueId = ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS_VALUE}`;
+	public static readonly ToProgressLabelId = ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS_LABEL}`;
 
 	//
 	private readonly id: string = UniqueID.Generate();
@@ -34,10 +37,14 @@ export class ComFlowManager
 	}
 }
 
+type newValueCallbackType = (maxValue: number, currentValue: number) => void;
+type newLabelCallbackType = (label: string) => void;
+
 //
 export class ComProgress
 {
-	private callback : (maxValue: number, currentValue: number, label: string) => void = () => {};
+	private newValueCallback : newValueCallbackType = () => {};
+	private newLabelCallback : newLabelCallbackType = () => {};
 
 	// Default NormalizedValue = ndefined
 	private maxValue: number = 0.0;
@@ -53,14 +60,15 @@ export class ComProgress
 		return isNaN(result) ? undefined : result;
 	}
 
-	public SetCallback( callback: (maxValue: number, currentValue: number) => void )
+	public SetCallback( newValueCallback: newValueCallbackType, newLabelCallback: newLabelCallbackType )
 	{
-		this.callback = callback;
+		this.newValueCallback = newValueCallback;
+		this.newLabelCallback = newLabelCallback
 	}
 
 	public Reset()
 	{
-		this.callback = () => {};
+		this.newValueCallback = () => {};
 		this.label = null;
 		this.currentValue = 0.0;
 		this.maxValue = 0.0;
@@ -70,12 +78,13 @@ export class ComProgress
 	{
 		this.maxValue = maxValue;
 		this.currentValue = currentValue;
-		this.callback( maxValue, currentValue, this.label );
+		this.newValueCallback( maxValue, currentValue );
 	}
 
 	public SetLabel(newLabel: string)
 	{
 		this.label = newLabel;
+		this.newLabelCallback( this.label );
 	}
 
 }

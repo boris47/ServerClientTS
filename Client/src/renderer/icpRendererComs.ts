@@ -1,11 +1,11 @@
 
 
 import { ipcRenderer } from 'electron';
-import { EMessageContent, IComunications } from '../icpComs';
+import { EMessageContent, IComunications, IMessageContentReturnMap } from '../icpComs';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 
-const MappedOps : {[key:string]: Function} =
+const MappedOps : { [key in EMessageContent]: IMessageContentReturnMap[key]; } =
 {
 	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> typeof value === 'boolean'		? value						: null,
 	[EMessageContent.NUMBER]		: ( value: Number )			=> typeof value === 'number'		? value						: null,
@@ -27,11 +27,17 @@ export class ICP_RendererComs
 	{
 		if ( comFlowManager )
 		{
-			ipcRenderer.on(ComFlowManager.ToProgressId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, label: string ) =>
+			ipcRenderer.on(ComFlowManager.ToProgressValueId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, label: string ) =>
 			{
 				comFlowManager.Progress.SetProgress( maxValue, currentValue );
 				comFlowManager.Progress.SetLabel(label);
-			//	console.log( `ICP_RendererComs:ComFlowManager:Progress:[${comFlowManager.Id}]:${maxValue}:${currentValue}` );
+			//	console.log( `ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Id}]:${maxValue}:${currentValue}` );
+			});
+
+			ipcRenderer.on(ComFlowManager.ToProgressLabelId(comFlowManager.Id), (event: Electron.IpcRendererEvent, label: string ) =>
+			{
+				comFlowManager.Progress.SetLabel(label);
+			//	console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Id}]:${label}` );
 			});
 		}
 	}
@@ -43,7 +49,8 @@ export class ICP_RendererComs
 	{
 		if ( comFlowManager )
 		{
-			ipcRenderer.removeAllListeners( ComFlowManager.ToProgressId(comFlowManager.Id) );
+			ipcRenderer.removeAllListeners( ComFlowManager.ToProgressValueId(comFlowManager.Id) );
+			ipcRenderer.removeAllListeners( ComFlowManager.ToProgressLabelId(comFlowManager.Id) );
 		}
 	}
 

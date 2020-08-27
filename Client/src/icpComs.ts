@@ -120,7 +120,6 @@ export interface IComunications extends ComunicationInterfaceDefinition
 
 export enum EMessageContent
 {
-	UNMODIFIED,
 	BOOLEAN = 'Boolean',
 	NUMBER = 'Number',
 	STRING = 'String',
@@ -130,4 +129,23 @@ export enum EMessageContent
 	ERROR = 'Error',
 	NULL = 'Null',
 	UNDEFINED = 'Undefined',
+}
+
+type MessageContentReturnMapDefinition =
+{
+	[key in EComunicationsChannels]: any | null;
+};
+
+
+export interface IMessageContentReturnMap extends MessageContentReturnMapDefinition
+{
+	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> boolean;
+	[EMessageContent.NUMBER]		: ( value: Number )			=> number;
+	[EMessageContent.STRING]		: ( value: String )			=> string;
+	[EMessageContent.BUFFER]		: ( value: Uint8Array )		=> Buffer;
+	[EMessageContent.OBJECT]		: ( value: Object )			=> Object;
+	[EMessageContent.ARRAY]			: ( value: Array<any> )		=> Array<any>;
+	[EMessageContent.ERROR]			: ( value: Error )			=> Error;
+	[EMessageContent.NULL]			: ( value: null )			=> null;
+	[EMessageContent.UNDEFINED]		: ( value: undefined )		=> undefined;
 }

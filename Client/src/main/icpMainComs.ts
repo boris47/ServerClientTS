@@ -29,17 +29,23 @@ export function SetupMainHandlers()
 	{
 		const comFlowManager =  new ComFlowManager()
 		{	// Progress
-			const progressId = ComFlowManager.ToProgressId(flowManagerId)
+			const progressValueId = ComFlowManager.ToProgressValueId(flowManagerId);
+			const progressLabelId = ComFlowManager.ToProgressLabelId(flowManagerId);
 			let previousTruncValue = 0;
-			comFlowManager.Progress.SetCallback( (maxValue: number, currentValue: number) =>
+			const newValueCallback = (maxValue: number, currentValue: number) =>
 			{
 				const newTruncValue = ( ( currentValue / maxValue ) * 100 ) << 0;
 				if ( previousTruncValue !== newTruncValue )
 				{
 					previousTruncValue = newTruncValue;
-					sender.send( progressId, maxValue, currentValue, comFlowManager.Progress.Label );
+					sender.send( progressValueId, maxValue, currentValue, null );
 				}
-			});
+			};
+			const newLabelCallback = (label: string) =>
+			{
+				sender.send( progressLabelId, comFlowManager.Progress.MaxValue, comFlowManager.Progress.CurrentValue, label );
+			};
+			comFlowManager.Progress.SetCallback( newValueCallback, newLabelCallback );
 		}
 		return comFlowManager;
 	};
