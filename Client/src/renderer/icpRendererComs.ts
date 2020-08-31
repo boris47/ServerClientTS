@@ -73,7 +73,7 @@ export class ICP_RendererComs
 		const type = typeString.substring('[object '.length, typeString.length - 1);
 	//	console.log( ''ICP_RendererComs:Invoke, channel, key, args, typeString, type, result )
 		
-		const ctor = MappedOps[type];
+		const ctor = MappedOps[type as EMessageContentType];
 		if ( ctor )
 		{
 			return ctor(result);
