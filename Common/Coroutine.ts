@@ -205,7 +205,7 @@ export namespace AsyncCoroutines
 	
 	export async function StartCoroutine<TReturn>(coroutine: Promise<TReturn>) : Promise<TReturn>
 	{
-		return await coroutine;
+		return coroutine;
 	}
 }
 
