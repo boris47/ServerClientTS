@@ -118,7 +118,7 @@ export interface IComunications extends ComunicationInterfaceDefinition
 	};
 }
 
-export enum EMessageContent
+export enum EMessageContentType
 {
 	BOOLEAN = 'Boolean',
 	NUMBER = 'Number',
@@ -137,15 +137,15 @@ type MessageContentReturnMapDefinition =
 };
 
 
-export interface IMessageContentReturnMap extends MessageContentReturnMapDefinition
+export interface IMessageContentReturnTypeMap extends MessageContentReturnMapDefinition
 {
-	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> boolean;
-	[EMessageContent.NUMBER]		: ( value: Number )			=> number;
-	[EMessageContent.STRING]		: ( value: String )			=> string;
-	[EMessageContent.BUFFER]		: ( value: Uint8Array )		=> Buffer;
-	[EMessageContent.OBJECT]		: ( value: Object )			=> Object;
-	[EMessageContent.ARRAY]			: ( value: Array<any> )		=> Array<any>;
-	[EMessageContent.ERROR]			: ( value: Error )			=> Error;
-	[EMessageContent.NULL]			: ( value: null )			=> null;
-	[EMessageContent.UNDEFINED]		: ( value: undefined )		=> undefined;
+	[EMessageContentType.BOOLEAN] 		: ( value: Boolean )		=> boolean;
+	[EMessageContentType.NUMBER]		: ( value: Number )			=> number;
+	[EMessageContentType.STRING]		: ( value: String )			=> string;
+	[EMessageContentType.BUFFER]		: ( value: Uint8Array )		=> Buffer;
+	[EMessageContentType.OBJECT]		: ( value: Object )			=> Object;
+	[EMessageContentType.ARRAY]			: ( value: Array<any> )		=> Array<any>;
+	[EMessageContentType.ERROR]			: ( value: Error )			=> Error;
+	[EMessageContentType.NULL]			: ( value: null )			=> null;
+	[EMessageContentType.UNDEFINED]		: ( value: undefined )		=> undefined;
 }

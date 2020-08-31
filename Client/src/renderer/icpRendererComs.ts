@@ -1,21 +1,21 @@
 
 
 import { ipcRenderer } from 'electron';
-import { EMessageContent, IComunications, IMessageContentReturnMap } from '../icpComs';
+import { EMessageContentType, IComunications, IMessageContentReturnTypeMap } from '../icpComs';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 
 
-const MappedOps : { [key in EMessageContent]: IMessageContentReturnMap[key]; } =
+const MappedOps : { [key in EMessageContentType]: IMessageContentReturnTypeMap[key]; } =
 {
-	[EMessageContent.BOOLEAN] 		: ( value: Boolean )		=> typeof value === 'boolean'		? value						: null,
-	[EMessageContent.NUMBER]		: ( value: Number )			=> typeof value === 'number'		? value						: null,
-	[EMessageContent.STRING]		: ( value: String )			=> typeof value === 'string'		? value						: null,
-	[EMessageContent.BUFFER]		: ( value: Uint8Array )		=> value && value.length > 0 		? Buffer.from(value)				: null,
-	[EMessageContent.OBJECT]		: ( value: Object )			=> typeof value === 'object' 		? value			: null,
-	[EMessageContent.ARRAY]			: ( value: Array<any> )		=> Array.isArray(value)			? value					: null,
-	[EMessageContent.ERROR]			: ( value: Error )			=> value instanceof Error 			? value								: null,
-	[EMessageContent.NULL]			: ( value: null )			=> value,
-	[EMessageContent.UNDEFINED]		: ( value: undefined )		=> value,
+	[EMessageContentType.BOOLEAN] 		: ( value: Boolean )		=> typeof value === 'boolean'		? value						: null,
+	[EMessageContentType.NUMBER]		: ( value: Number )			=> typeof value === 'number'		? value						: null,
+	[EMessageContentType.STRING]		: ( value: String )			=> typeof value === 'string'		? value						: null,
+	[EMessageContentType.BUFFER]		: ( value: Uint8Array )		=> value && value.length > 0 		? Buffer.from(value)				: null,
+	[EMessageContentType.OBJECT]		: ( value: Object )			=> typeof value === 'object' 		? value			: null,
+	[EMessageContentType.ARRAY]			: ( value: Array<any> )		=> Array.isArray(value)			? value					: null,
+	[EMessageContentType.ERROR]			: ( value: Error )			=> value instanceof Error 			? value								: null,
+	[EMessageContentType.NULL]			: ( value: null )			=> value,
+	[EMessageContentType.UNDEFINED]		: ( value: undefined )		=> value,
 };
 
 export class ICP_RendererComs

@@ -61,24 +61,24 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 }
 
 /** Register Request */
-export async function Request_UserRegister( Username: string, Password: string ) : Promise<Buffer|Error>
+export async function Request_UserRegister( Username: string, Password: string, ComFlowManager?: ComFlowManager ) : Promise<Buffer|Error>
 {	
 	const Headers : http.IncomingHttpHeaders =
 	{
 		[EHeaders.USERNAME] : Username,
 		[EHeaders.PASSWORD] : Password
 	};
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'put', reqArgs: { Headers } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'put', reqArgs: { Headers, ComFlowManager } } );
 }
 /** Login Request */
-export async function Request_UserLogin( Username: string, Password: string ) : Promise<Buffer|Error>
+export async function Request_UserLogin( Username: string, Password: string, ComFlowManager?: ComFlowManager ) : Promise<Buffer|Error>
 {
 	const Headers : http.IncomingHttpHeaders =
 	{
 		[EHeaders.USERNAME] : Username,
 		[EHeaders.PASSWORD] : Password
 	};
-	const result = await ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers } } );
+	const result = await ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers, ComFlowManager } } );
 	if (Buffer.isBuffer(result))
 	{
 		await FS_Storage.AddResource( 'accessToken', result );
@@ -87,16 +87,16 @@ export async function Request_UserLogin( Username: string, Password: string ) : 
 	return result;
 }
 /** Login by token request */
-export async function Request_UserLoginByToken( Token: string ): Promise<Buffer|Error>
+export async function Request_UserLoginByToken( Token: string, ComFlowManager?: ComFlowManager ): Promise<Buffer|Error>
 {
 	const Headers : http.IncomingHttpHeaders =
 	{
 		[EHeaders.TOKEN]: Token,
 	};
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers, ComFlowManager } } );
 }
 /** Logout Request */
-export async function Request_UserLogout( Token: string ): Promise<Buffer|Error>
+export async function Request_UserLogout( Token: string, ComFlowManager?: ComFlowManager ): Promise<Buffer|Error>
 {
 	const Headers : http.IncomingHttpHeaders =
 	{
@@ -104,7 +104,7 @@ export async function Request_UserLogout( Token: string ): Promise<Buffer|Error>
 	};
 	await FS_Storage.RemoveResource( 'accessToken' );
 	await FS_Storage.SaveStorage();
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'post', reqArgs: { Headers } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'post', reqArgs: { Headers, ComFlowManager } } );
 }
 
 const RetrieveToken = async () => (await FS_Storage.GetResource('accessToken')).toString() 
