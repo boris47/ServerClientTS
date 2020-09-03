@@ -56,7 +56,7 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleDownload(response: http.IncomingMessage, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: IClientRequestResult) => void )
+	private static HandleDownload(response: http.IncomingMessage, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: IClientRequestResult) => void ): void
 	{
 		const compressonHandledResponse = ClientRequestsProcessing.HandleCompression(response, resolve);
 		const contentLength: number = Number(response.headers['content-length']);
@@ -103,7 +103,7 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleUpload(request: http.ClientRequest, clientRequestInternalOptions: IClientRequestInternalOptions)
+	private static HandleUpload(request: http.ClientRequest, clientRequestInternalOptions: IClientRequestInternalOptions): void
 	{
 		// If upload of file is requested
 		if (clientRequestInternalOptions.ReadStream)
