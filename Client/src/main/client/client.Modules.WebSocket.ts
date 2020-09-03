@@ -1,16 +1,17 @@
 
-
-import { client as WebSocketClient, IClientConfig, connection as WebSocketConnection, IMessage } from 'websocket';
-
 import * as https from 'https';
 
+import { client as WebSocketClient, IClientConfig, connection as WebSocketConnection, IMessage } from 'websocket';
 import ServerConfigs from '../../../../Common/ServerConfigs';
 
 
-export function Client_SetupWebSocket() : Promise<null | Error>
+export default class WebSocketManager
 {
-	const serverConfigs = ServerConfigs.instance;
-	return new Promise<null | Error>( ( resolve : (value?: null | Error) => void ) =>
+	private static instance: WebSocketManager = null;
+//	private static client: WebSocketClient = null;
+	private static connection: WebSocketConnection = null;
+
+	public static Initialize(): boolean
 	{
 		const config = <IClientConfig>
 		{
@@ -31,49 +32,74 @@ export function Client_SetupWebSocket() : Promise<null | Error>
 		}
 
 		const webSocketClient = new WebSocketClient( config );
-		webSocketClient.on( 'connectFailed', function( err : Error )
-		{
-			console.log( 'Connect Error: ' + err.toString() );
-			resolve( err );
-		});
+		webSocketClient.on( 'connectFailed', ( err : Error ) => console.error( `Connect Error: ${err.toString()}`));
+		webSocketClient.on( 'connect', ( connection: WebSocketConnection ) => WebSocketManager.OnConnect(connection) );
+
+		const { PublicIPv4, WebSocketPort } = ServerConfigs.instance;
+		webSocketClient.connect( `ws://${PublicIPv4}:${WebSocketPort}/websocket`, 'echo-protocol' );
+//		WebSocketManager.client = webSocketClient;
 		
-		webSocketClient.on( 'connect', ( connection: WebSocketConnection ) =>
+return true;
+	}
+
+
+	private static OnConnect(connection: WebSocketConnection)
+	{
+		console.log( 'WebSocket Client Connected' );
+
+		connection.on('error', ( err: Error ) =>
 		{
-			console.log( 'WebSocket Client Connected' );
-
-			connection.on('error', ( err: Error ) =>
-			{
-				console.error( `Connection Error: "${err.name}:${err.message}"` );
-			});
-
-			connection.on( 'close', ( code: number, desc: string ) =>
-			{
-				console.log('echo-protocol Connection Closed');
-			});
-
-			connection.on( 'message', ( data: IMessage ) =>
-			{
-			/*	let buffered : Buffer | null = null;
-				switch( data.type )
-				{
-					case 'utf8' :
-					{
-						buffered = Buffer.from( data.utf8Data || '' );
-						console.log( "Received: '" + data.utf8Data + "'" );
-						break;
-					}
-					case 'binary' :
-					{
-						buffered = data.binaryData ? Buffer.from( data.binaryData ) : Buffer.from( '' );
-						break;
-					}
-				}*/
-			});
-
-			connection.send( "Ciao, sono un client" );
+			console.error( `Connection Error: "${err.name}:${err.message}"` );
 		});
 
-		webSocketClient.connect( `ws://${serverConfigs.PublicIPv4}:${serverConfigs.WebSocketPort}/websocket`, 'echo-protocol' );
-		resolve( null );
-	});
+		connection.on( 'close', ( code: number, desc: string ) =>
+		{
+			console.log('echo-protocol Connection Closed');
+		});
+
+		connection.on( 'message', (data: IMessage) => WebSocketManager.OnMessage(data));
+	}
+
+
+	private static OnMessage( data: IMessage )
+	{
+	/*	let buffered : Buffer | null = null;
+		switch( data.type )
+		{
+			case 'utf8' :
+			{
+				buffered = Buffer.from( data.utf8Data || '' );
+				console.log( "Received: '" + data.utf8Data + "'" );
+				break;
+			}
+			case 'binary' :
+			{
+				buffered = data.binaryData ? Buffer.from( data.binaryData ) : Buffer.from( '' );
+				break;
+			}
+		}*/
+	}
+
+
+	public static SendMessage(message: Buffer): Promise<Error | null>
+	{
+		if (!WebSocketManager.instance)
+		{
+			return null;
+		}
+
+		return new Promise<Error | null>( (resolve: (value: Error | null) => void) =>
+		{
+			WebSocketManager.connection.sendBytes(message, ( err: Error ) =>
+			{
+				if (err)
+				{
+					console.error(`WebSocketManager::SendMessage: Error ${err.toString()}`);
+				}
+				resolve(err || null);
+			});
+
+		});
+
+	}
 }
