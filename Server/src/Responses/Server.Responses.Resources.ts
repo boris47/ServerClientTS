@@ -26,7 +26,7 @@ export default class ServerResponseResources
 			WriteStream: fs.createWriteStream(filePath),
 			FilePath: filePath
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ClientToServer(request, response, options);
+		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		if (!result.bHasGoodResult)
 		{
 			fs.unlink(filePath, () => {});
@@ -70,6 +70,6 @@ export default class ServerResponseResources
 		}
 
 		options.ReadStream = fs.createReadStream(filePath);
-		return ServerResponsesProcessing.ServetToClient(request, response, options);
+		return ServerResponsesProcessing.ProcessRequest(request, response, options);
 	};
 }

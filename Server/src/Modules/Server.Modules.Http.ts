@@ -96,12 +96,12 @@ export default class HttpModule
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static ReportResponseResult( request : http.IncomingMessage, value : ComUtils.IServerResponseResult, startTime : number ) : void
+	private static ReportResponseResult( request : http.IncomingMessage, value : ComUtils.IServerResponseResult, durationMS : number ) : void
 	{
 		console[(value.bHasGoodResult ? 'log':'warn')](
 			[
-				`Incoming: "${request.url}", Method: "${request.method}", Result: ${value.bHasGoodResult}, Duration: ${(Date.now() - startTime).toString()}ms`,
-				`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
+				`Incoming: "${request.url}", Method: "${request.method}", Result: ${value.bHasGoodResult}, Duration: ${(durationMS).toString()}ms`,
+			//	`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 			].join('\n\t')
 		);
 	};
@@ -114,8 +114,7 @@ export default class HttpModule
 		{
 			Value: Buffer.from(HTTPCodes[404]) // Not Found
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
-		result.bHasGoodResult = false; // bacause on server we want register as failure
+		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		return result;
 	};
 
@@ -127,8 +126,7 @@ export default class HttpModule
 		{
 			Value: Buffer.from(HTTPCodes[405]) // Method Not Allowed
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ServetToClient(request, response, options);
-		result.bHasGoodResult = false; // bacause on server we want register as failure
+		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		return result;
 	};
 
@@ -144,13 +142,13 @@ export default class HttpModule
 		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(path, responseMapItem?.requiresAuth, request, response);
 		if ( !userRequestApprovation.bHasGoodResult )
 		{
-			return HttpModule.ReportResponseResult( request, userRequestApprovation, startTime );
+			return HttpModule.ReportResponseResult( request, userRequestApprovation, Date.now() - startTime );
 		}
 
 		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( HttpModule.MethodNotAllowed )) : ( HttpModule.NotExistingPath );
 		method( request, response ).then( ( value: ComUtils.IServerResponseResult ) =>
 		{
-			HttpModule.ReportResponseResult( request, value, startTime );
+			HttpModule.ReportResponseResult( request, value, Date.now() - startTime );
 		});
 	};
 

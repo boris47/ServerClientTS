@@ -24,7 +24,7 @@ export default class ServerResponseStorage
 			Key: key,
 			Value: await FS_Storage.GetResource(key)
 		};
-		return ServerResponsesProcessing.ServetToClient(request, response, options);
+		return ServerResponsesProcessing.ProcessRequest(request, response, options);
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ export default class ServerResponseStorage
 		{
 			Key: key
 		};
-		const result = await ServerResponsesProcessing.ClientToServer(request, response, options);
+		const result = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		if (result.bHasGoodResult)
 		{
 			await FS_Storage.AddResource(key, result.body, true);
