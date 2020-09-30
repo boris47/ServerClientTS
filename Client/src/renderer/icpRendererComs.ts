@@ -27,24 +27,24 @@ export class ICP_RendererComs
 	{
 		if ( comFlowManager )
 		{
-			console.log("ICP_RendererComs:Registering ComFlowManager", comFlowManager.Tag, comFlowManager.Id);
+	//		console.log("ICP_RendererComs:Registering ComFlowManager", comFlowManager.Tag);
 			ipcRenderer.on(ComFlowManager.ToProgressValueId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, label: string ) =>
 			{
 				comFlowManager.Progress.SetProgress( maxValue, currentValue );
 				comFlowManager.Progress.SetLabel(label);
-			//	console.log( `ICP_RendererComs:ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Tag}]:${maxValue}:${currentValue}` );
+	//			console.log( `ICP_RendererComs:ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Tag}]:${maxValue}:${currentValue}` );
 			});
 
 			ipcRenderer.on(ComFlowManager.ToProgressLabelId(comFlowManager.Id), (event: Electron.IpcRendererEvent, label: string ) =>
 			{
 				comFlowManager.Progress.SetLabel(label);
-			//	console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Tag}]:${label}` );
+	//			console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Tag}]:${label}` );
 			});
 
 			// Dispose
 			ipcRenderer.on(comFlowManager.Id, (event: Electron.IpcRendererEvent, ...args: any[]) =>
 			{
-				console.log("ICP_RendererComs:Unregistering ComFlowManager on dispose", comFlowManager.Tag);
+	//			console.log("ICP_RendererComs:Unregistering ComFlowManager on dispose", comFlowManager.Tag);
 				ipcRenderer.removeAllListeners( comFlowManager.Id );
 				ipcRenderer.removeAllListeners( ComFlowManager.ToProgressValueId(comFlowManager.Id) );
 				ipcRenderer.removeAllListeners( ComFlowManager.ToProgressLabelId(comFlowManager.Id) );

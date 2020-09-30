@@ -11,20 +11,17 @@ export default class ServerResponseStorage
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async Get(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
-		const key = request.headers[EHeaders.KEY] as string;
+		const key = request.headers[EHeaders.KEY];
 		if (typeof key !== 'string' || key.length === 0)
 		{
 			const err = `Storage Get: Invalid Key`;
 			ServerResponsesProcessing.EndResponseWithError(response, err, 404); // Not Found
 			return ComUtils.ResolveWithError("/storage:get", err);
 		}
-
-		const options: IServerRequestInternalOptions =
-		{
-			Key: key,
-			Value: await FS_Storage.GetResource(key)
-		};
-		return ServerResponsesProcessing.ProcessRequest(request, response, options);
+		
+		const value = await FS_Storage.GetResource(key);
+		ServerResponsesProcessing.EndResponseWithGoodResult(response, value );
+		return ComUtils.ResolveWithGoodResult(Buffer.from(HTTPCodes[200]));
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////

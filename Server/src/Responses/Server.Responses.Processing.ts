@@ -23,11 +23,12 @@ export interface IServerRequestInternalOptions
 
 export default class ServerResponsesProcessing
 {
-	
+	private static readonly Buffer_OK: Buffer = Buffer.from('OK');
+
 	public static EndResponseWithGoodResult( response : http.ServerResponse, chunk?: string | Buffer ) : void
 	{
 		response.statusCode = 200;
-		response.end(chunk);
+		response.end(chunk || ServerResponsesProcessing.Buffer_OK);
 	}
 
 
@@ -48,6 +49,7 @@ export default class ServerResponsesProcessing
 	}
 
 
+	/** Client -> Server */
 	private static HandleDownload( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions, resolve : ( value: Buffer | Error ) => void ): void
 	{
 		// If for this request a writestream is provived, then the content will be written on this stream
@@ -68,15 +70,17 @@ export default class ServerResponsesProcessing
 				ComUtils.ResolveWithGoodResult( result, resolve );
 			})
 		}
+
 		// Otherwise the content will be stored into a buffer
-		else
+		if (serverRequestInternalOptions.Key || request.headers['content-length'] !== undefined)
 		{
+	//		const bHasContentLength = !!request.headers['content-length'];
+			let contentLength: number = 0; //Number(request.headers['content-length'] || 0);
 			const body = new Array<Buffer>();
-			let contentLength = 0;
 			request.on( 'data', function( chunk : Buffer )
 			{
+	//			if (!bHasContentLength) contentLength += chunk.length;
 				body.push( chunk );
-				contentLength += chunk.length;
 			});
 			
 			request.on( 'end', function()
@@ -88,6 +92,8 @@ export default class ServerResponsesProcessing
 		}
 	}
 
+
+	/** Server -> Client */
 	private static HandleUpload( response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ): void
 	{
 		// If upload of resource is requested
@@ -95,15 +101,16 @@ export default class ServerResponsesProcessing
 		{
 			serverRequestInternalOptions.ReadStream.pipe( response );
 		}
-	//	else // direct value sent
-		if ( serverRequestInternalOptions.Value )
+		
+		// direct value sent
+		if ( !( serverRequestInternalOptions.Value === undefined) )
 		{
-			response.end( serverRequestInternalOptions.Value );
+			response.end(serverRequestInternalOptions.Value);
 		}
 	}
 
 
-	public static async ProcessRequest( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<Buffer | Error>
+	public static ProcessRequest( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<Buffer | Error>
 	{
 		return new Promise<Buffer | Error>( ( resolve : ( value: Buffer | Error ) => void ) =>
 		{

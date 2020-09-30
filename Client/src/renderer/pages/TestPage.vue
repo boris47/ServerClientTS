@@ -152,30 +152,32 @@ export default class TestPage extends Vue
 		}
 
 		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_STORAGE_PUT, null, this.valueToSet, JSON.stringify(test));
-		if( !Buffer.isBuffer( result ))
+		if ( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}
 		else
 		{
-			console.log( "Test Page: SetValue()", result.toString());
+			console.log( "Test Page: SetValue() received", result.toString());
 		}
 	}
 
 	protected async GetValue()
 	{
 		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_STORAGE_GET, null, this.valueToGet );
-		if( Buffer.isBuffer( result ) )
-		{
-			this.valueGot = result.toString();
-		}
-		else if ( GenericUtils.IsTypeOf(result, Error) )
+		if ( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}
+		else if ( GenericUtils.IsTypeOf(result, Buffer))
+		{
+			this.valueGot = result.toString();
+			console.log( `Test Page: GetValue() received`, this.valueGot );
+		}
 		else
 		{
-			console.error( `GetValue received null value` );
+			this.valueGot = JSON.stringify(result);
+			console.log( `Test Page: GetValue() received`, this.valueGot );
 		}
 	}
 
@@ -184,7 +186,7 @@ export default class TestPage extends Vue
 		for (const filePath of this.inputFilePaths)
 		{
 			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_UPLOAD, this.uploadComFlowManager, filePath );
-			if( GenericUtils.IsTypeOf(result, Error))
+			if ( GenericUtils.IsTypeOf(result, Error))
 			{
 				console.error( `"${result.name}:${result.message}"` );
 				break;
@@ -192,6 +194,7 @@ export default class TestPage extends Vue
 			else
 			{
 				console.log(`TestPage:UploadFiles: Upload completed for ${filePath}`);
+				console.log( `Test Page: UploadFiles() received`, result.toString() );
 			}
 		}
 	}
@@ -199,13 +202,14 @@ export default class TestPage extends Vue
 	protected async DownloadFile()
 	{
 		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
-		if( !Buffer.isBuffer( result ))
+		if( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );
 		}
 		else
 		{
 			console.log(`TestPage:DownloadFile: Download completed, ${result.toString()}` );
+			console.log( `Test Page: DownloadFile() received`, result.toString() );
 		}
 	}
 }

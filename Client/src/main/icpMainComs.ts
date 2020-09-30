@@ -140,7 +140,7 @@ export function SetupMainHandlers()
 	//
 	const RegisterComFlowManager = ( sender: electron.WebContents, channel: string, comFlowManagerId: string ) : ComFlowManager =>
 	{
-		console.log("Registering ComFlowManager", comFlowManagerId);
+	//	console.log("Registering ComFlowManager", comFlowManagerId);
 		const comFlowManager =  new ComFlowManager(channel );// `${sender.id}_${comFlowManagerId}`);
 		{	// Progress
 			const progressValueId = ComFlowManager.ToProgressValueId(comFlowManagerId);
@@ -166,7 +166,7 @@ export function SetupMainHandlers()
 
 	const UnregisterComFlowManager = ( sender: electron.WebContents, tag: string, comFlowManagerId: string ) : void =>
 	{
-		console.log("Unregistering ComFlowManager on dispose", tag);
+	//	console.log("Unregistering ComFlowManager on dispose", tag);
 		sender.send(comFlowManagerId);
 	}
 

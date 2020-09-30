@@ -80,8 +80,8 @@ export class ClientRequestsProcessing
 		}
 		else
 		{
-			const buffers = new Array<Buffer>();// ...(response.statusMessage ? [Buffer.from(response.statusMessage)] : [undefined] ) );
-			let contentLength = 0;//response.statusMessage?.length || 0;
+			const buffers = new Array<Buffer>();
+			let contentLength = 0;
 			compressonHandledResponse.on('error', (err: Error) =>
 			{
 				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
@@ -95,7 +95,15 @@ export class ClientRequestsProcessing
 			compressonHandledResponse.on('end', () =>
 			{
 				const result: Buffer = Buffer.concat(buffers, contentLength);
-				ComUtils.ResolveWithGoodResult(result, resolve);
+				if (response.statusCode >= 300)
+				{
+					const errMessage = `${response.statusCode}:${result.toString()}`;
+					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[StatusCode]', errMessage, resolve );
+				}
+				else
+				{
+					ComUtils.ResolveWithGoodResult(result, resolve);
+				}
 			});
 		}
 	}
@@ -108,7 +116,7 @@ export class ClientRequestsProcessing
 		if (clientRequestInternalOptions.ReadStream)
 		{
 			clientRequestInternalOptions.ReadStream.pipe(request);
-			if (clientRequestInternalOptions.Headers['content-length'])
+			if (clientRequestInternalOptions.Headers['content-length'] !== undefined)
 			{
 				let currentLength: number = 0;
 				const totalLength: number = Number(clientRequestInternalOptions.Headers['content-length']);
@@ -159,7 +167,7 @@ export class ClientRequestsProcessing
 			request.on('timeout', () =>
 			{
 				request.abort();
-				ComUtils.ResolveWithError('ClientRequests:ServetToClient:[TIMEOUT]', `Request for path ${ options.path }`, resolve);
+				ComUtils.ResolveWithError('ClientRequests:MakeRequest:[TIMEOUT]', `Request for path ${options.path}`, resolve);
 			});
 
 			request.on('error', function(err: Error)
@@ -168,17 +176,11 @@ export class ClientRequestsProcessing
 				clientRequestInternalOptions.ReadStream?.unpipe();
 				clientRequestInternalOptions.ReadStream?.close();
 				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
-				ComUtils.ResolveWithError('ClientRequests:ServetToClient:[RequestError]', `${ err.name }:${ err.message }`, resolve);
+				ComUtils.ResolveWithError('ClientRequests:MakeRequest:[RequestError]', `${err.name}:${err.message}`, resolve);
 			});
 
 			request.on('response', (response: http.IncomingMessage): void =>
 			{
-				const statusCode: number = response.statusCode;
-				if (statusCode !== 200)
-				{
-					ComUtils.ResolveWithError('ClientRequests:ServetToClient:[StatusCode]', `${ statusCode }:${ response.statusMessage }`, resolve);
-					return;
-				}
 				ClientRequestsProcessing.HandleDownload(response, clientRequestInternalOptions, resolve )
 			});
 			ClientRequestsProcessing.HandleUpload(request, clientRequestInternalOptions);
