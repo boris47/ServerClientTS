@@ -26,7 +26,7 @@ export default class Logger
 			const logFileName = Logger.CreateLogName();
 			const programFolder = path.join(FSutils.GetUserDataFolder(), programName, 'logs');
 			const finalFilePath = path.join(programFolder, logFileName);
-			FSutils.EnsureDirectoryExistence(programFolder);
+			await FSutils.EnsureDirectoryExistence(programFolder);
 
 			const fileDescriptor = await new Promise<number | null>((resolve) =>
 			{
@@ -34,7 +34,7 @@ export default class Logger
 				{
 					if (err)
 					{
-						console.error(`Logger::Initialize: Cannot open logger file at path ${programFolder}.\n${err.name}:${err.message}`);
+						console.error(`Logger::Initialize: Cannot open logger file at path "${programFolder}"\n${err.name}:${err.message}`);
 						resolve(null);
 					}
 					resolve(fileDescriptor);
