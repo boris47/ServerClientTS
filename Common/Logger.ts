@@ -1,17 +1,24 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as util from 'util';
 
 import FSutils from './Utils/FSUtils';
 
-export class Logger
+export default class Logger
 {
 	private static instance: Logger = null;
 
 	private fileDescriptor: number = null;
+	private oldConsoleLog: (message?: any, ...optionalParams: any[]) => void = null;
+	private oldConsoleError: (message?: any, ...optionalParams: any[]) => void = null;
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
+	/** Initialize the logger
+	 * @param programName the folder name created and used in userdata folder
+	 * @param bUseNodeConsole if true will override the log and error functions of node console with 
+	 */
 	public static async Initialize(programName: string, bUseNodeConsole: boolean = false): Promise<boolean>
 	{
 		if (!this.instance)
@@ -23,14 +30,14 @@ export class Logger
 
 			const fileDescriptor = await new Promise<number | null>((resolve) =>
 			{
-				fs.open(finalFilePath, 'w', (err: NodeJS.ErrnoException, fd: number) =>
+				fs.open(finalFilePath, 'w', (err: NodeJS.ErrnoException, fileDescriptor: number) =>
 				{
 					if (err)
 					{
-						console.error(`Logger::Initialize: Cannot open logger file at path ${ programFolder }.\n${ err.name }:${ err.message }`);
+						console.error(`Logger::Initialize: Cannot open logger file at path ${programFolder}.\n${err.name}:${err.message}`);
 						resolve(null);
 					}
-					resolve(fd);
+					resolve(fileDescriptor);
 				});
 			});
 
@@ -41,18 +48,18 @@ export class Logger
 
 				if (bUseNodeConsole)
 				{
-					const oldConsoleLog = console.log;
+					this.instance.oldConsoleLog = console.log;
 					console.log = function(message?: any, ...optionalParams: any[])
 					{
 						Logger.instance.Log(message, ...optionalParams);
-						oldConsoleLog.apply(console, [message, ...optionalParams]);
+						Logger.instance.oldConsoleLog.apply(console, [message, ...optionalParams]);
 					};
 
-					const oldConsoleError = console.error;
+					this.instance.oldConsoleError = console.error;
 					console.error = function(message?: any, ...optionalParams: any[])
 					{
 						Logger.instance.Error(message, ...optionalParams);
-						oldConsoleError.apply(console, [message, ...optionalParams]);
+						Logger.instance.oldConsoleError.apply(console, [message, ...optionalParams]);
 					};
 				}
 
@@ -90,8 +97,8 @@ export class Logger
 		const seconds = date.getSeconds().toString().padStart(2, '0');
 		const milliseocnds = date.getMilliseconds().toString().padStart(3, '0');
 
-		const dateNow = `${ year }.${ month }.${ day }-${ hours }.${ minutes }.${ seconds }.${ milliseocnds }`;
-		const fileName = `${ dateNow }.log`;
+		const dateNow = `${year}.${month}.${day}-${hours}.${minutes}.${seconds}.${milliseocnds}`;
+		const fileName = `${dateNow}.log`;
 		return fileName;
 	}
 
@@ -105,9 +112,14 @@ export class Logger
 			return;
 		}
 
-		const msg = `${ messages.join(' ') }\n`;
-		fs.writeSync(this.fileDescriptor, msg);
-		fs.fdatasyncSync(this.fileDescriptor);
+		const msg = `${messages.join(' ')}\n`;
+		fs.write(this.fileDescriptor, msg, (err: NodeJS.ErrnoException, written: number, str: string) =>
+		{
+			fs.fdatasync(this.fileDescriptor, (err: NodeJS.ErrnoException) =>
+			{
+				
+			});
+		});
 	}
 
 
@@ -120,7 +132,7 @@ export class Logger
 			return;
 		}
 
-		const msg = `${ messages.join(' ') }\n`;
+		const msg = `${messages.join(' ')}\n`;
 		fs.writeSync(this.fileDescriptor, msg);
 		fs.fdatasyncSync(this.fileDescriptor);
 	}
@@ -135,7 +147,7 @@ export class Logger
 			return;
 		}
 
-		const msg = `Exit Code: ${ code }`;
+		const msg = `Exit Code: ${code}`;
 		fs.writeSync(this.fileDescriptor, msg);
 		fs.closeSync(this.fileDescriptor);
 	}

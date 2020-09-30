@@ -2,7 +2,7 @@
 import * as path from 'path';
 import * as child_process from 'child_process';
 
-import { Logger } from './Logger';
+import Logger from './Logger';
 
 
 export namespace ProcessManager
