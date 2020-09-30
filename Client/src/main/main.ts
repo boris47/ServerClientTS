@@ -6,6 +6,7 @@ import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
 import { IPackageJSON } from '../../../Common/IPackageJSON';
 import FS_Storage from '../../../Common/FS_Storage';
+import WebSocketManager from './client/client.Modules.WebSocket';
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
@@ -20,7 +21,7 @@ const bIsDev = process.env.NODE_ENV === 'development';
 	const cookiePath = path.join(electron.app.getPath('userData'), 'UserData', 'Cookies');
 	electron.app.setPath('userData', cookiePath);
 }
- 
+
 /**
  * Set `__static` path to static files in production
  * https://simulatedgreg.gitbooks.io/electron-vue/content/en/using-static-assets.html
@@ -30,6 +31,11 @@ if (!bIsDev)
 	global.__static = path.join(__dirname, '/static').replace(/\\/g, /*'/'*/'\\\\');
 }
 
+
+process.on('beforeExit', (code: number) =>
+{
+	WebSocketManager.Finalize();
+});
 
 // Needs to be called before app is ready;
 // gives our scheme access to load relative files,

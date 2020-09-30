@@ -8,12 +8,12 @@ import ServerConfigs from '../../../../Common/ServerConfigs';
 export default class WebSocketManager
 {
 	private static instance: WebSocketManager = null;
-//	private static client: WebSocketClient = null;
+	private static webSocketClient: WebSocketClient = null;
 	private static connection: WebSocketConnection = null;
 
 	public static Initialize(): boolean
 	{
-		const config = <IClientConfig>
+		const config: IClientConfig = 
 		{
 		//	assembleFragments : false 					// Default
 		//	closeTimeout : 5000, 						// Default 5000
@@ -31,15 +31,21 @@ export default class WebSocketManager
 		//	webSocketVersion : 13						/// Default 13
 		}
 
-		const webSocketClient = new WebSocketClient( config );
-		webSocketClient.on( 'connectFailed', ( err : Error ) => console.error( `Connect Error: ${err.toString()}`));
-		webSocketClient.on( 'connect', ( connection: WebSocketConnection ) => WebSocketManager.OnConnect(connection) );
+		WebSocketManager.webSocketClient = new WebSocketClient( config );
+		WebSocketManager.webSocketClient.on( 'connectFailed', ( err : Error ) => console.error( `Connect Error: ${err.toString()}` ));
+		WebSocketManager.webSocketClient.on( 'connect', ( connection: WebSocketConnection ) => WebSocketManager.OnConnect(connection) );
 
 		const { PublicIPv4, WebSocketPort } = ServerConfigs.instance;
-		webSocketClient.connect( `ws://${PublicIPv4}:${WebSocketPort}/websocket`, 'echo-protocol' );
+		WebSocketManager.webSocketClient.connect( `ws://${PublicIPv4}:${WebSocketPort}/websocket`, 'echo-protocol' );
 //		WebSocketManager.client = webSocketClient;
 		
-return true;
+		return true;
+	}
+
+
+	public static Finalize(): void
+	{
+		WebSocketManager.connection?.close();
 	}
 
 
@@ -58,6 +64,8 @@ return true;
 		});
 
 		connection.on( 'message', (data: IMessage) => WebSocketManager.OnMessage(data));
+
+		WebSocketManager.connection = connection;
 	}
 
 
