@@ -149,20 +149,22 @@ export interface IDisposable
 /**
  * Provides a convenient syntax that ensures the correct use of IDisposable objects
  * @example
- *   await using(ioc.get<IUdpClient>(types.IUdpClient), async (client) =>
+ *   await Using( new Object, async (object: object) =>
  *   {
  *	     await Task.delay(1000);
  *	 });
  *	 console.log("end");
  */
-export async function using<T extends IDisposable>(resource: T, func: (resource: T) => void | Promise<void>)
+export async function Using<T extends IDisposable, K>(resource: T, func: (resource: T) => K | Promise<K>)
 {
+	let result = undefined;
 	try
 	{
-		await Promise.resolve(func(resource));
+		result = await Promise.resolve(func(resource));
 	}
 	finally
 	{
 		await Promise.resolve( resource.dispose() );
 	}
+	return result;
 }
