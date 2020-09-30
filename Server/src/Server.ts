@@ -17,6 +17,7 @@ import { ProcessManager } from '../../Common/ProcessManager';
 import { IPackageJSON } from '../../Common/IPackageJSON';
 import { install } from 'source-map-support';
 import FS_Storage from '../../Common/FS_Storage';
+import Logger from '../../Common/Logger';
 install({environment: 'node', handleUncaughtExceptions: true});
 
 
@@ -64,7 +65,8 @@ process.on( 'multipleResolves', ( type: NodeJS.MultipleResolveType, promise: Pro
  * 
  * The 'beforeExit' event is not emitted for conditions causing explicit termination, such as calling process.exit() or uncaught exceptions.
  * The 'beforeExit' should not be used as an alternative to the 'exit' event unless the intention is to schedule additional work.
- *//*
+ */
+/*
 process.on('beforeExit', ( code:number ) =>
 {
 	console.error( 'beforeExit' );
@@ -80,7 +82,8 @@ process.on('beforeExit', ( code:number ) =>
  * The listener callback function is invoked with the exit code specified either by the process.exitCode property, or the exitCode argument passed to the process.exit() method.
  * Listener functions must only perform synchronous operations.
  * The Node.js process will exit immediately after calling the 'exit' event listeners causing any additional work still queued in the event loop to be abandoned.
- *//*
+ */
+/*
 process.on( 'exit', ( code: number ) =>
 {
 	console.error( 'exit' );
@@ -191,10 +194,10 @@ class Server
 	public async Run(): Promise<void>
 	{
 		// LOGGER
-	//	const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
-	//	if ( !bLoggerCreated )
+		const bLoggerCreated = await Logger.Initialize( 'ServerTS', true );
+		if ( !bLoggerCreated )
 		{
-		//	debugger; process.exit(1);
+			debugger; process.exit(1);
 		}
 	
 		// Machine public ip

@@ -64,17 +64,17 @@ export default class TestPage extends Vue
 	protected onSelected_Datalist = ( index: number, value: string ) => console.log(index, value);
 
 	protected valueToSet = '';
-	protected setValueComFlowManager  = new ComFlowManager;
+	protected setValueComFlowManager  = new ComFlowManager('TestPage:Set Value');
 
 	protected valueToGet = '';
 	protected valueGot = ''
-	protected getValueComFlowManager  = new ComFlowManager;
+	protected getValueComFlowManager  = new ComFlowManager('TestPage:Get Value');
 
 	protected inputFilePaths = new Array<string>();
-	protected uploadComFlowManager  = new ComFlowManager;
+	protected uploadComFlowManager  = new ComFlowManager('TestPage:Upload File');
 
 	protected downloadFileLocation = '';
-	protected downloadComFlowManager  = new ComFlowManager;
+	protected downloadComFlowManager  = new ComFlowManager('TestPage:Download File');
 
 	protected headers = Array<ITableHeader>();
 	protected tableRows = Array<ITableRow>();
@@ -184,7 +184,7 @@ export default class TestPage extends Vue
 		for (const filePath of this.inputFilePaths)
 		{
 			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_UPLOAD, this.uploadComFlowManager, filePath );
-			if( !Buffer.isBuffer( result ))
+			if( GenericUtils.IsTypeOf(result, Error))
 			{
 				console.error( `"${result.name}:${result.message}"` );
 				break;

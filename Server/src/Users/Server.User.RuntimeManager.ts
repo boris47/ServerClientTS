@@ -101,14 +101,14 @@ export default class ServerUserRuntimeManager
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async FindLoggedInUserByUsername(username: string): Promise<ServerUser | null>
+	public static FindLoggedInUserByUsername(username: string): ServerUser | null
 	{
 		return this.LoggedInUserMappedByUserName.get(username) || null;
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async FindLoggedInUserByToken(token: string): Promise<ServerUser | null>
+	public static FindLoggedInUserByToken(token: string): ServerUser | null
 	{
 		return this.LoggedInUsersMappedByAccessToken.get(token) || null;
 	}

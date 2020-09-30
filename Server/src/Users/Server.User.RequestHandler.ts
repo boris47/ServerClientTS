@@ -9,11 +9,12 @@ import { HTTPCodes } from '../HTTP.Codes';
 
 export default class ServerUserRequestHandler
 {
-	public static async CheckUserAuths(path: string, requiresAuth: boolean, request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async CheckUserAuths(path: string, requiresAuth: boolean, request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Login is OK?
 		const token = request.headers[EHeaders.TOKEN] as string;
-		if (requiresAuth && (!token || !await ServerUserRuntimeManager.FindLoggedInUserByToken(token)))
+		const found = ServerUserRuntimeManager.FindLoggedInUserByToken(token)
+		if (requiresAuth && token && !found)
 		{
 			response.setHeader('WWW-Authenticate', 'Basic');
 			ServerResponsesProcessing.EndResponseWithError(response, 'Login required', 401);

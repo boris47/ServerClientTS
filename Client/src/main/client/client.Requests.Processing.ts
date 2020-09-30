@@ -1,10 +1,10 @@
 
 import * as http from 'http';
+import * as followRedirects from 'follow-redirects';
 import * as fs from 'fs';
 import * as zlib from 'zlib';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
-import { IClientRequestResult } from '../../../../Common/Interfaces';
 import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 
 
@@ -30,7 +30,7 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleCompression(response: http.IncomingMessage, resolve: (value: IClientRequestResult) => void) : http.IncomingMessage | zlib.Unzip
+	private static HandleCompression(response: http.IncomingMessage, resolve: (value: Buffer | Error) => void) : http.IncomingMessage | zlib.Unzip
 	{
 		let stream: (zlib.Unzip | http.IncomingMessage) = response;
 		switch (response.headers['content-encoding']?.trim().toLowerCase())
@@ -56,7 +56,7 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleDownload(response: http.IncomingMessage, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: IClientRequestResult) => void ): void
+	private static HandleDownload(response: http.IncomingMessage, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: Buffer | Error) => void ): void
 	{
 		const compressonHandledResponse = ClientRequestsProcessing.HandleCompression(response, resolve);
 		const contentLength: number = Number(response.headers['content-length']);
@@ -80,8 +80,8 @@ export class ClientRequestsProcessing
 		}
 		else
 		{
-			const buffers = new Array<Buffer>();
-			let contentLength = 0;
+			const buffers = new Array<Buffer>();// ...(response.statusMessage ? [Buffer.from(response.statusMessage)] : [undefined] ) );
+			let contentLength = 0;//response.statusMessage?.length || 0;
 			compressonHandledResponse.on('error', (err: Error) =>
 			{
 				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
@@ -91,7 +91,6 @@ export class ClientRequestsProcessing
 			{
 				contentLength += chunk.length;
 				buffers.push(chunk);
-
 			});
 			compressonHandledResponse.on('end', () =>
 			{
@@ -103,7 +102,7 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleUpload(request: http.ClientRequest, clientRequestInternalOptions: IClientRequestInternalOptions): void
+	private static HandleUpload(request: followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage>, clientRequestInternalOptions: IClientRequestInternalOptions): void
 	{
 		// If upload of file is requested
 		if (clientRequestInternalOptions.ReadStream)
@@ -117,7 +116,7 @@ export class ClientRequestsProcessing
 				{
 					currentLength += chunk.length;
 					clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(totalLength, currentLength);
-					//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", totalLength, currentLength, currentLength / totalLength );
+				//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", clientRequestInternalOptions.ComFlowManager.Tag, totalLength, currentLength, currentLength / totalLength );
 				});
 			}
 		}
@@ -129,13 +128,29 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<IClientRequestResult>
+	public static async MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
 	{
-		return new Promise<IClientRequestResult>((resolve) =>
+		return new Promise<Buffer | Error>((resolve) =>
 		{
 			options.headers = clientRequestInternalOptions.Headers;
 
-			const request: http.ClientRequest = http.request(options);
+			const finalOptions : followRedirects.FollowOptions<http.RequestOptions> =
+			{
+				followRedirects: true,
+				maxRedirects: 21, // default
+				maxBodyLength: 2 * 1024 * 1024 * 1024, // 2GB
+		//		beforeRedirect: ( options: http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>, responseDetails: followRedirects.ResponseDetails ) =>
+		//		{
+		//			if (false)
+		//			{
+		//				throw Error("no errors");
+		//			}
+		//		}
+			}
+
+			const request: followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage> = followRedirects.http.request(Object.assign(options, finalOptions));
+
+//			const request: http.ClientRequest = http.request(options);
 			request.on('close', function()
 			{
 				ComUtils.ResolveWithGoodResult(Buffer.from("Done"), resolve);
@@ -158,10 +173,10 @@ export class ClientRequestsProcessing
 
 			request.on('response', (response: http.IncomingMessage): void =>
 			{
-				const statusCode: number = response.statusCode || 200;
+				const statusCode: number = response.statusCode;
 				if (statusCode !== 200)
 				{
-					ComUtils.ResolveWithError('ClientRequests:ServetToClient:[StatusCode]', `${ response.statusCode }:${ response.statusMessage }`, resolve);
+					ComUtils.ResolveWithError('ClientRequests:ServetToClient:[StatusCode]', `${ statusCode }:${ response.statusMessage }`, resolve);
 					return;
 				}
 				ClientRequestsProcessing.HandleDownload(response, clientRequestInternalOptions, resolve )

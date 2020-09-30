@@ -9,7 +9,7 @@ import { EHeaders } from '../../../Common/Interfaces';
 export default class ServerResponseUser
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async UserRegister(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async UserRegister(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const username = request.headers[EHeaders.USERNAME] as string;
 		const password = request.headers[EHeaders.PASSWORD] as string;
@@ -31,7 +31,7 @@ export default class ServerResponseUser
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async UserLogin(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async UserLogin(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Access requested by token
 		if (request.headers[EHeaders.TOKEN])
@@ -68,7 +68,7 @@ export default class ServerResponseUser
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-/*	public static async UserLoginByToken(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+/*	public static async UserLoginByToken(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const token = request.headers[EHeaders.TOKEN] as string;
 		const bLoggedIn = await ServerUserManager.UserLoginByToken(token);
@@ -84,7 +84,7 @@ export default class ServerResponseUser
 	}*/
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async UserLogout(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async UserLogout(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const token = request.headers[EHeaders.TOKEN] as string;
 		const result = await ServerUserRuntimeManager.UserLogout(token);

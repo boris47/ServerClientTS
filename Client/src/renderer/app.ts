@@ -62,7 +62,7 @@ async function Initialize()
 	{		
 		localStorage.setItem('isDev', String(bIsDev));
 
-		const resourcePath = await ICP_RendererComs.Invoke( EComunicationsChannels.RESOURCE_PATH, null, null );
+		const resourcePath = await ICP_RendererComs.Invoke( EComunicationsChannels.RESOURCE_PATH );
 		localStorage.setItem('staticPath',bIsDev ? window.location.origin : `${resourcePath}/app.asar/static` );
 	}
 

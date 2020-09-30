@@ -9,7 +9,7 @@ import { EHeaders } from '../../../Common/Interfaces';
 export default class ServerResponseStorage
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Get(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async Get(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const key = request.headers[EHeaders.KEY] as string;
 		if (typeof key !== 'string' || key.length === 0)
@@ -28,7 +28,7 @@ export default class ServerResponseStorage
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Add(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async Add(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const key = request.headers[EHeaders.KEY] as string;
 		if (typeof key !== 'string' || key.length === 0)
@@ -42,15 +42,15 @@ export default class ServerResponseStorage
 			Key: key
 		};
 		const result = await ServerResponsesProcessing.ProcessRequest(request, response, options);
-		if (result.bHasGoodResult)
+		if (Buffer.isBuffer(result))
 		{
-			await FS_Storage.AddResource(key, result.body, true);
+			await FS_Storage.AddResource(key, result, true);
 		}
 		return result;
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Delete(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async Delete(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const key = request.headers[EHeaders.KEY] as string;
 		if (typeof key !== 'string' || key.length === 0)
@@ -62,14 +62,14 @@ export default class ServerResponseStorage
 		
 		if (!(await FS_Storage.HasResource(key)))
 		{
-			const err = `Entry "${ key }" not found`;
+			const err = `Entry "${key}" not found`;
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[404], 404); // Not Found
 			return ComUtils.ResolveWithError("/localstorage:delete", err);
 		}
 
 		if (!await FS_Storage.RemoveResource(key))
 		{
-			const err = `Cannot remove "${ key }" from storage`;
+			const err = `Cannot remove "${key}" from storage`;
 			ServerResponsesProcessing.EndResponseWithError(response, err, 500); // Internal Server Error
 			return ComUtils.ResolveWithError("/localstorage:delete", err);
 		}

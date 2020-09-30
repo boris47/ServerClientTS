@@ -42,6 +42,11 @@ export default class ServerUserDB
 //		const content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Encrypt( '{}', ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : '{}';
 //		fs.writeFileSync( storageAbsolutePath, content, 'utf8' );
 		
+		if (!FSUtils.ExistsSync(storageAbsolutePath))
+		{
+			await FSUtils.WriteFileAsync( storageAbsolutePath, ' {}' );
+		}
+
 		ServerUserDB.m_StorageName = storageAbsolutePath;
 		console.log( `ServerUserDB: Location: ${storageAbsolutePath}` );
 		return true;

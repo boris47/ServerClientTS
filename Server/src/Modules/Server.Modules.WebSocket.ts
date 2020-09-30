@@ -109,7 +109,7 @@ export default class WebSocketModule
 	/////////////////////////////////////////////////////////////////////////////////////////
 	private OnConnectionClose(code: number, desc: string)
 	{
-		console.log(`${ new Date() } Peer ${ this.connection.remoteAddress } disconnected`);
+		console.log(`${new Date()} Peer ${this.connection.remoteAddress} disconnected`);
 		ConnectedClients.splice(ConnectedClients.indexOf(this.connection), 1);
 	}
 
@@ -140,12 +140,12 @@ export default class WebSocketModule
 	private OnRequest(request: WebSocketRequest): void
 	{
 		// A client is trying to connect to server
-		console.log(`${new Date()} Connection requested from origin ${ request.origin }.`);
+		console.log(`${new Date()} Connection requested from origin ${request.origin}.`);
 
 		if (!this.IsOriginAllowed(request.origin))
 		{
 			request.reject( /* httpStatus */ 401, /* reason */ HTTPCodes[401]); // Unauthorized
-			console.log(`${ new Date() } Connection from origin "${ request.origin }" rejected because unauthorized.`);
+			console.log(`${new Date()} Connection from origin "${request.origin}" rejected because unauthorized.`);
 			return;
 		}
 
@@ -154,7 +154,7 @@ export default class WebSocketModule
 
 		connection.on('error', (err: Error) =>
 		{
-			console.error(`Connection Error: "${ err.name }:${ err.message }"`);
+			console.error(`Connection Error: "${err.name}:${err.message}"`);
 		});
 
 		connection.on('close', (code: number, desc: string) => this.OnConnectionClose(code, desc));

@@ -16,22 +16,6 @@ export enum EMappedPaths
 	STORAGE = '/storage',
 };
 
-export interface ICommonResult
-{
-	bHasGoodResult : boolean;
-	
-	body : Buffer | null;
-}
-
-export interface IClientRequestResult extends ICommonResult
-{
-
-}
-
-export interface IServerResponseResult extends ICommonResult
-{
-
-}
 
 export interface ILifeCycleObject<I = any, S = boolean, L = boolean, F = any>
 {

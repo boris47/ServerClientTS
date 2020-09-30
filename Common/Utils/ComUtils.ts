@@ -2,7 +2,7 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
-import { UniqueID } from './GenericUtils';
+import { IDisposable, UniqueID } from './GenericUtils';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -14,7 +14,7 @@ enum EComFlowTags
 }
 
 //
-export class ComFlowManager
+export class ComFlowManager implements IDisposable
 {
 	/** Add tag for channel used for progress data transmission */
 	public static readonly ToProgressValueId = ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS_VALUE}`;
@@ -23,7 +23,9 @@ export class ComFlowManager
 	//
 	private readonly id: string = UniqueID.Generate();
 
-	private progress : ComProgress = new ComProgress();
+	private readonly progress : ComProgress = new ComProgress();
+
+	private tag: string = '';
 
 	//
 	get Id(): string
@@ -35,6 +37,21 @@ export class ComFlowManager
 	{
 		return this.progress;
 	}
+
+	get Tag(): string
+	{
+		return this.tag;
+	}
+
+	constructor(tag: string)
+	{
+		this.tag = tag;
+	}
+	dispose(): void | Promise<void>
+	{
+		
+	}
+
 }
 
 type newValueCallbackType = (maxValue: number, currentValue: number) => void;
@@ -89,28 +106,6 @@ export class ComProgress
 
 }
 
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export interface ICommonResult
-{
-	bHasGoodResult : boolean;
-	
-	body : Buffer | null;
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export interface IClientRequestResult extends ICommonResult
-{
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////////////
-export interface IServerResponseResult extends ICommonResult
-{
-
-}
 
 // Check that the port number is not NaN when coerced to a number,
 // is an integer and that it falls within the legal range of port numbers.
@@ -197,13 +192,9 @@ export async function HTTP_Get( URL : string, requestOptions?: https.RequestOpti
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export async function ResolveWithGoodResult<T extends ICommonResult>( body?: Buffer, cb?: ( value: T ) => void  ) : Promise<T>
+export async function ResolveWithGoodResult( body?: Buffer, cb?: ( value: Buffer ) => void  ) : Promise<Buffer>
 {
-	const resultObject = <T>
-	{
-		body : body || Buffer.from('OK'),
-		bHasGoodResult : true
-	}
+	const resultObject = body || Buffer.from('OK');
 	if ( typeof cb === 'function' )
 	{
 		cb( resultObject );
@@ -228,7 +219,7 @@ function CallerFilePath()
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
-export async function ResolveWithError<T extends ICommonResult>( errName : string, errMessage : string | Error, cb? : (value: T) => void ) : Promise<T>
+export async function ResolveWithError( errName : string, errMessage : string | Error, cb? : (value: Error) => void ) : Promise<Error>
 {
 	const issuer = CallerFilePath();
 
@@ -243,14 +234,10 @@ export async function ResolveWithError<T extends ICommonResult>( errName : strin
 		msg = `${errMessage.name}:${errMessage.message}`;
 	}
 
-	const resultObject = <T>
-	{
-		body: Buffer.from( `${errName}. ${msg}\n${issuer}` ),
-		bHasGoodResult : false
-	};
+	const err = new Error( `${errName}. ${msg}\n${issuer}` );
 	if ( typeof cb === 'function' )
 	{
-		cb( resultObject );
+		cb( err );
 	}
-	return resultObject;
+	return err;
 }

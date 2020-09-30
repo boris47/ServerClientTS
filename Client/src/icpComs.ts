@@ -38,84 +38,32 @@ export enum EComunicationsChannels
 
 type ComunicationInterfaceDefinition =
 {
-	[key in EComunicationsChannels]: { args: any[], return: any; };
+	[key in EComunicationsChannels]: { args: object, return: any; };
 };
 
 
 //	const UNNECESSARY = 'UNNECESSARY';
-type ElectronPath = 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin';
+export type ElectronPath = 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin';
+
 export interface IComunications extends ComunicationInterfaceDefinition
 {
-	[EComunicationsChannels.ELECTRON_PROPERTY]: {
-		args: [string[]],
-		return: string | number | object;
-	};
-	[EComunicationsChannels.ELECTRON_CALL]: {
-		args: [string[]],
-		return: string | number | object;
-	};
-	[EComunicationsChannels.ELECTRON_PATH]: {
-		args: [ElectronPath],
-		return: string | Error;
-	};
-	[EComunicationsChannels.ELECTRON_MODAL_OPEN]: {
-		args: [electron.OpenDialogOptions],
-		return: electron.OpenDialogReturnValue;
-	};
-
-	[EComunicationsChannels.RESOURCE_PATH]: {
-		args: [null],
-		return: string;
-	};
-	[EComunicationsChannels.FILE_READ]: {
-		args: [string],
-		return: NodeJS.ErrnoException | Buffer;
-	};
-	[EComunicationsChannels.FILE_WRITE]: {
-		args: [string, Buffer],
-		return: NodeJS.ErrnoException | null;
-	};
-	[EComunicationsChannels.STORAGE_GET]: {
-		args: [string],
-		return: null | Buffer;
-	};
-	[EComunicationsChannels.STORAGE_SET]: {
-		args: [string, Buffer],
-		return: boolean;
-	};
-
-	[EComunicationsChannels.REQ_USER_REGISTER]: {
-		args: [string, string],
-		return: [Buffer | Error];
-	};
-	[EComunicationsChannels.REQ_USER_LOGIN]: {
-		args: [string, string],
-		return: [Buffer | Error];
-	};
-	[EComunicationsChannels.REQ_USER_LOGIN_TOKEN]: {
-		args: [string],
-		return: [Buffer | Error];
-	};
-	[EComunicationsChannels.REQ_USER_LOGOUT]: {
-		args: [string],
-		return: Buffer | Error;
-	};
-	[EComunicationsChannels.REQ_STORAGE_GET]: {
-		args: [string],
-		return: Buffer | null | Error;
-	};
-	[EComunicationsChannels.REQ_STORAGE_PUT]: {
-		args: [string, string | Buffer],
-		return: Buffer | Error;
-	};
-	[EComunicationsChannels.REQ_RESOURCE_UPLOAD]: {
-		args: [string],
-		return: Buffer | Error;
-	};
-	[EComunicationsChannels.REQ_RESOURCE_DOWNLOAD]: {
-		args: [string, string],
-		return: Buffer | Error;
-	};
+	[EComunicationsChannels.ELECTRON_PROPERTY]		: { args: [propertyPath: string[]];								return: string | number | object;			};
+	[EComunicationsChannels.ELECTRON_CALL]			: { args: [functionPath: string[], ...args:any[]];				return: string | number | object; 			};
+	[EComunicationsChannels.ELECTRON_PATH]			: { args: [path: ElectronPath]; 								return: string | Error; 					};
+	[EComunicationsChannels.ELECTRON_MODAL_OPEN]	: {	args: [options: electron.OpenDialogOptions];				return: electron.OpenDialogReturnValue;		};
+	[EComunicationsChannels.RESOURCE_PATH]			: {	args: [];													return: string; 							};
+	[EComunicationsChannels.FILE_READ]				: {	args: [filePath: string];									return: NodeJS.ErrnoException | Buffer;		};
+	[EComunicationsChannels.FILE_WRITE]				: {	args: [filePath: string, data: Buffer];						return: NodeJS.ErrnoException | null;		};
+	[EComunicationsChannels.STORAGE_GET]			: {	args: [key: string];										return: null | Buffer;						};
+	[EComunicationsChannels.STORAGE_SET]			: {	args: [key: string, value: Buffer],							return: boolean;							};
+	[EComunicationsChannels.REQ_USER_REGISTER]		: {	args: [username: string, password: string],					return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_USER_LOGIN]			: {	args: [username: string, password: string];					return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_USER_LOGIN_TOKEN]	: {	args: [token: string];										return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_USER_LOGOUT]		: {	args: [token: string];										return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_STORAGE_GET]		: {	args: [key: string];										return: Buffer | null | Error;				};
+	[EComunicationsChannels.REQ_STORAGE_PUT]		: {	args: [key: string, value: string | Buffer];				return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_RESOURCE_UPLOAD]	: {	args: [absoluteResourcePath: string];						return: Buffer | Error;						};
+	[EComunicationsChannels.REQ_RESOURCE_DOWNLOAD]	: {	args: [identifier: string, downloadLocation: string];		return: Buffer | Error;						};
 }
 
 export enum EMessageContentType

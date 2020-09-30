@@ -96,11 +96,11 @@ export default class HttpModule
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static ReportResponseResult( request : http.IncomingMessage, value : ComUtils.IServerResponseResult, durationMS : number ) : void
+	private static ReportResponseResult( request : http.IncomingMessage, value : Buffer | Error, durationMS : number ) : void
 	{
-		console[(value.bHasGoodResult ? 'log':'warn')](
+		console[(Buffer.isBuffer(value) ? 'log':'warn')](
 			[
-				`Incoming: "${request.url}", Method: "${request.method}", Result: ${value.bHasGoodResult}, Duration: ${(durationMS).toString()}ms`,
+				`Incoming: "${request.url}", Method: "${request.method}", Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
 			//	`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
 			].join('\n\t')
 		);
@@ -108,25 +108,25 @@ export default class HttpModule
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static async NotExistingPath(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	private static async NotExistingPath(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const options: IServerRequestInternalOptions =
 		{
 			Value: Buffer.from(HTTPCodes[404]) // Not Found
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
+		const result: Buffer | Error = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		return result;
 	};
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static async MethodNotAllowed(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	private static async MethodNotAllowed(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const options: IServerRequestInternalOptions =
 		{
 			Value: Buffer.from(HTTPCodes[405]) // Method Not Allowed
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
+		const result: Buffer | Error = await ServerResponsesProcessing.ProcessRequest(request, response, options);
 		return result;
 	};
 
@@ -140,13 +140,13 @@ export default class HttpModule
 
 		// Check Auths
 		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(path, responseMapItem?.requiresAuth, request, response);
-		if ( !userRequestApprovation.bHasGoodResult )
+		if ( !Buffer.isBuffer(userRequestApprovation) )
 		{
 			return HttpModule.ReportResponseResult( request, userRequestApprovation, Date.now() - startTime );
 		}
 
 		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( HttpModule.MethodNotAllowed )) : ( HttpModule.NotExistingPath );
-		method( request, response ).then( ( value: ComUtils.IServerResponseResult ) =>
+		method( request, response ).then( ( value: Buffer | Error ) =>
 		{
 			HttpModule.ReportResponseResult( request, value, Date.now() - startTime );
 		});

@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 
-import { IClientRequestResult, EMappedPaths } from '../../../../Common/Interfaces';
+import { EMappedPaths } from '../../../../Common/Interfaces';
 import { IClientRequestInternalOptions } from './client.Requests.Processing';
 import { ITemplatedObject } from '../../../../Common/Utils/GenericUtils';
 import ClientRequestUser from './client.Requests.User';
@@ -11,12 +11,12 @@ import ClientRequestStorage from './client.Requests.Storage';
 
 export interface IRequestsMethods
 {
-	[key:string] :( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>; 
-	post? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
-	get? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
-	put? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
-	patch? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
-	delete? 	: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult>;
+	[key:string] :( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>; 
+	post? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>;
+	get? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>;
+	put? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>;
+	patch? 		: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>;
+	delete? 	: ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer>;
 }
 
 

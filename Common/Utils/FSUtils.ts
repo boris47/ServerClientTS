@@ -47,7 +47,7 @@ export default class FSUtils
 		if (GenericUtils.IsTypeOf(result, Error))
 		{
 			const { name, message } = result;
-			console.error(`${ name }:${ message }`);
+			console.error(`${name}:${message}`);
 		}
 		return result;
 	}

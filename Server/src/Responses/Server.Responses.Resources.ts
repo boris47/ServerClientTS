@@ -13,7 +13,7 @@ export default class ServerResponseResources
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async ClientToServer(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async ClientToServer(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Execute file upload to client
 		const identifier = request.headers[EHeaders.IDENTIFIER] as string;
@@ -26,8 +26,8 @@ export default class ServerResponseResources
 			WriteStream: fs.createWriteStream(filePath),
 			FilePath: filePath
 		};
-		const result: ComUtils.IServerResponseResult = await ServerResponsesProcessing.ProcessRequest(request, response, options);
-		if (!result.bHasGoodResult)
+		const result: Buffer | Error = await ServerResponsesProcessing.ProcessRequest(request, response, options);
+		if (!Buffer.isBuffer(result))
 		{
 			fs.unlink(filePath, () => {});
 		}
@@ -36,7 +36,7 @@ export default class ServerResponseResources
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
-	public static async ServerToClient(request: http.IncomingMessage, response: http.ServerResponse): Promise<ComUtils.IServerResponseResult>
+	public static async ServerToClient(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Execute file download server side
 		const identifier = request.headers[EHeaders.IDENTIFIER] as string;
@@ -47,7 +47,7 @@ export default class ServerResponseResources
 		// Check if file exists
 		if (!(await FSUtils.FileExistsAsync(filePath)))
 		{
-			const err = `Resource ${ identifier } doesn't exist`;
+			const err = `Resource ${identifier} doesn't exist`;
 			ServerResponsesProcessing.EndResponseWithError(response, err, 404);
 			return ComUtils.ResolveWithError("ServerResponses:UploadResource", err);
 		}
@@ -62,7 +62,7 @@ export default class ServerResponseResources
 			const sizeInBytes: number | null = FSUtils.GetFileSizeInBytesOf(filePath);
 			if (sizeInBytes === null)
 			{
-				const err = `Cannot obtain size of file ${ filePath }`;
+				const err = `Cannot obtain size of file ${filePath}`;
 				ServerResponsesProcessing.EndResponseWithError(response, err, 400);
 				return ComUtils.ResolveWithError("ServerResponses:UploadResource", err);
 			}

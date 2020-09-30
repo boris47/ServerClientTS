@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 
-import { IClientRequestResult, EHeaders, EMappedPaths } from '../../../../Common/Interfaces'
+import { EHeaders, EMappedPaths } from '../../../../Common/Interfaces'
 import ServerConfigs from '../../../../Common/ServerConfigs'
 import WebSocketManager from './client.Modules.WebSocket';
 import { IRequestsMethods, RequestsMap } from './client.Requests.Map';
@@ -37,7 +37,7 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 	}
 
 	// Check if method is defined
-	const method : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<IClientRequestResult> = availableMethods[request.method.toLowerCase()];
+	const method : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer> = availableMethods[request.method.toLowerCase()];
 	if ( !method )
 	{
 		const err = `Request "${request.path}" failed\nMethod: ${request.method} for request ${identifier} is undefined`;
@@ -46,17 +46,17 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 	}
 	
 	// Execute the request
-	const result : IClientRequestResult = await method( Object.assign({}, CommonOptions, request ), request.reqArgs );
-	if ( result.bHasGoodResult )
+	const result: Error | Buffer = await method( Object.assign({}, CommonOptions, request ), request.reqArgs );
+	if ( Buffer.isBuffer(result) )
 	{
-		console.log( `Request "${request.path}", method "${request.method}" satisfied\nResult: ${result.bHasGoodResult}\nBody: "${result.body.toString()}"` );
-		return result.body;
+		console.log( `Request "${request.path}", method "${request.method}" satisfied\nBody: "${result.toString()}"` );
+		return result;
 	}
 	else
 	{
-		const err = `Request "${request.path}" failed\nError:\n${result.body?.toString()}`;
-	//	console.error( err );
-		return new Error( err );
+		const errMsg = `\nRequest "${request.path}" failed\nError:\n${result}`;
+		result.message += errMsg
+		return result;
 	}
 }
 

@@ -48,7 +48,7 @@ export default class ServerResponsesProcessing
 	}
 
 
-	private static HandleDownload( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions, resolve : ( value: ComUtils.IServerResponseResult ) => void ): void
+	private static HandleDownload( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions, resolve : ( value: Buffer | Error ) => void ): void
 	{
 		// If for this request a writestream is provived, then the content will be written on this stream
 		if ( serverRequestInternalOptions.WriteStream )
@@ -95,16 +95,17 @@ export default class ServerResponsesProcessing
 		{
 			serverRequestInternalOptions.ReadStream.pipe( response );
 		}
-		else // direct value sent
+	//	else // direct value sent
+		if ( serverRequestInternalOptions.Value )
 		{
 			response.end( serverRequestInternalOptions.Value );
 		}
 	}
 
 
-	public static async ProcessRequest( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
+	public static async ProcessRequest( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<Buffer | Error>
 	{
-		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
+		return new Promise<Buffer | Error>( ( resolve : ( value: Buffer | Error ) => void ) =>
 		{
 			response.on( 'error', ( err : Error ) =>
 			{
@@ -124,11 +125,11 @@ export default class ServerResponsesProcessing
 			 * been handed off to the operating system for transmission over the network.
 			 * It does not imply that the client has received anything yet.
 			 */
-			response.on( 'finish', () =>
-			{
-				ServerResponsesProcessing.EndResponseWithGoodResult( response );
-				ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ), resolve );
-			});
+	//		response.on( 'finish', () =>
+	//		{
+	//			ServerResponsesProcessing.EndResponseWithGoodResult( response );
+	//			ComUtils.ResolveWithGoodResult( Buffer.from( HTTPCodes[200] ), resolve );
+	//		});
 
 			// Set headers
 			if ( serverRequestInternalOptions.Headers )
@@ -160,9 +161,9 @@ export default class ServerResponsesProcessing
 	
 
 	/** Server -> Client' */ /*
-	public static async ServetToClient( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
+	public static async ServetToClient( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<Buffer | Error>
 	{
-		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
+		return new Promise<Buffer | Error>( ( resolve : ( value: Buffer | Error ) => void ) =>
 		{
 			response.on( 'error', ( err : Error ) =>
 			{
@@ -199,9 +200,9 @@ export default class ServerResponsesProcessing
 */
 	
 	/** Client -> Server */ /*
-	public static async ClientToServer( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<ComUtils.IServerResponseResult>
+	public static async ClientToServer( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions ) : Promise<Buffer | Error>
 	{
-		return new Promise<ComUtils.IServerResponseResult>( ( resolve : ( value: ComUtils.IServerResponseResult ) => void ) =>
+		return new Promise<Buffer | Error>( ( resolve : ( value: Buffer | Error ) => void ) =>
 		{
 			// If for this request a writestream is provived, then the content will be written on this stream
 			if ( serverRequestInternalOptions.WriteStream )
