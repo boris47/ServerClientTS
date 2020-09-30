@@ -3,11 +3,11 @@
 const nodeRequire = require;
 
 // In development mode we need the require function to get hot reload to work
+const allowedModules = ['module', 'source-map-support/source-map-support.js', 'vue-router', 'electron' ];
 window.require = <any>((requiredModule: string) =>
 {
 	console.log(`Required module "${ requiredModule }" (${ typeof (requiredModule) })`);
 	
-	const allowedModules = ['module', 'source-map-support/source-map-support.js', 'vue-router', 'electron' ];
 	if (!allowedModules.includes(requiredModule))
 	{
 		new Error(`Tried to require unknown module: ${ requiredModule }`);
