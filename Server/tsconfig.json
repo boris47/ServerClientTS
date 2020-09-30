@@ -5,7 +5,7 @@
 		"watch": true,
 		"strict": true,
 		"strictNullChecks": false,
-		"sourceMap": true,
+		"inlineSourceMap": true,
 		"inlineSources" : true,
 		"noUnusedLocals": false,
 		"noFallthroughCasesInSwitch": true,
