@@ -47,9 +47,11 @@ process.on('beforeExit', (code: number) =>
 // gives our scheme access to load relative files,
 // as well as local storage, cookies, etc.
 // https://electronjs.org/docs/api/protocol#protocolregisterschemesasprivilegedcustomschemes
-electron.protocol.registerSchemesAsPrivileged([{
-	scheme: SCHEME,	privileges: { standard: true, secure: true }
-}]);
+electron.protocol.registerSchemesAsPrivileged([
+	{
+		scheme: SCHEME,	privileges: { standard: true, secure: true }
+	}
+]);
 
 function SetupSession()
 {
