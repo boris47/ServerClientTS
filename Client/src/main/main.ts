@@ -7,13 +7,17 @@ import { InstallRequestsProcessor } from './client/client.Bridge';
 import { IPackageJSON } from '../../../Common/IPackageJSON';
 import FS_Storage from '../../../Common/FS_Storage';
 import WebSocketManager from './client/client.Modules.WebSocket';
+import GenericUtils from '../../../Common/Utils/GenericUtils';
+import MainProcessProtocols from './protocols';
 
+const bIsDev = process.env.NODE_ENV === 'development';
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
 electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
-electron.app.name = `${ name } - ${ description } v.${ version }`;
+electron.app.name = `${name} - ${description} v.${version}${bIsDev?' - DEVELOPMENT RUN':''}`;
 
-const bIsDev = process.env.NODE_ENV === 'development';
+console.log("BuildDevelopment", bIsDev);
+const SCHEME = 'app';
 
 //Here is where we change the default path of the cookies in order to keep them if we make automatic updates//
 {
@@ -37,16 +41,14 @@ process.on('beforeExit', (code: number) =>
 	WebSocketManager.Finalize();
 });
 
+
+
 // Needs to be called before app is ready;
 // gives our scheme access to load relative files,
 // as well as local storage, cookies, etc.
 // https://electronjs.org/docs/api/protocol#protocolregisterschemesasprivilegedcustomschemes
 electron.protocol.registerSchemesAsPrivileged([{
-	scheme: 'Client',
-	privileges: {
-		standard: true,
-		secure: true
-	}
+	scheme: SCHEME,	privileges: { standard: true, secure: true }
 }]);
 
 function SetupSession()
@@ -71,36 +73,36 @@ async function createMainWindow()
 {
 	// Create the browser window.
 	const window = new electron.BrowserWindow(<Electron.BrowserWindowConstructorOptions>
+	{
+		// Window's height in pixels. Default is 600.
+		height: 600,
+		// Window's width in pixels. Default is 800.
+		width: 800,
+		// The width and height would be used as web page's size, which means the actual window's size will
+		// include window frame's size and be slightly larger. Default is false.
+		//	useContentSize: true,
+		// Settings of web page's features
+		webPreferences: <Electron.WebPreferences>
 		{
-			// Window's height in pixels. Default is 600.
-			height: 600,
-			// Window's width in pixels. Default is 800.
-			width: 800,
-			// The width and height would be used as web page's size, which means the actual window's size will
-			// include window frame's size and be slightly larger. Default is false.
-			//	useContentSize: true,
-			// Settings of web page's features
-			webPreferences: <Electron.WebPreferences>
-			{
-				/** Whether node integration is enabled. Default is false. */
-				nodeIntegration: false,
-				nodeIntegrationInSubFrames: false,
-				nativeWindowOpen: true,
-				preload: path.resolve(__dirname, './preload.js'),
-				webSecurity: true,
-				allowRunningInsecureContent: false,
-				enableRemoteModule: false,
-				contextIsolation : false, // Cannot be set to true cause the error 'module not found'
-				sandbox: false,
-			},
-			// Show window in the center of the screen.
-			center: true,
-			// Whether window should have a shadow. Default is true.
-			hasShadow: false,
-			// Whether window should be shown when created. Default is true.
-			show: false,
-		}
-	);
+			/** Whether node integration is enabled. Default is false. */
+			nodeIntegration: false,
+			nodeIntegrationInSubFrames: false,
+			nativeWindowOpen: true,
+			preload: path.resolve(__dirname, './preload.js'),
+			webSecurity: true,
+			allowRunningInsecureContent: false,
+			worldSafeExecuteJavaScript: true,
+			enableRemoteModule: false,
+			contextIsolation : false, // Cannot be set to true cause the error 'module not found'
+			sandbox: false,
+		},
+		// Show window in the center of the screen.
+		center: true,
+		// Whether window should have a shadow. Default is true.
+		hasShadow: false,
+		// Whether window should be shown when created. Default is true.
+		show: false,
+	});
 
 	await new Promise((resolve, reject) =>
 	{
@@ -110,20 +112,23 @@ async function createMainWindow()
 		// or reject if it was closed before then
 		window.once('closed', () =>
 		{
-			reject(new Error('Window closed prematurely.'));
+			reject( new Error('Window closed prematurely.') );
 		});
 
+		MainProcessProtocols.RegisterProtocols(SCHEME);
+
 		// initiate the loading
-		const winURL = bIsDev ? `http://127.0.0.1:9080` : `file://${ __dirname }/index.html`;
-		window.loadURL(winURL).catch((error: Error) =>
+		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
+		window.loadURL(winURL).catch(( error: Error ) =>
 		{
-			console.error(error);
-			process.exit(1);
+			reject(error);
+		//	console.error(error);
+		//	process.exit(1);
 		})
 		.then(resolve);
 	});
-
-//	await GenericUtils.DelayMS(1000);
+ 
+	await GenericUtils.DelayMS(1000);
 
 	// Open the DevTools if desired
 	window.webContents.openDevTools({ mode: "detach" });

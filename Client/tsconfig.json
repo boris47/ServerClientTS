@@ -58,7 +58,9 @@
 		*/
 		//"sourceMap": true,
 	//	"inlineSourceMap": true,
-		"removeComments": true
+		"removeComments": true,
+
+		"experimentalDecorators": true
 	},
 	/*
 	* Specifies a list of files to be excluded from compilation.
