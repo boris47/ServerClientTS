@@ -224,17 +224,8 @@ export async function ResolveWithError( errName : string, errMessage : string | 
 	const issuer = CallerFilePath();
 
 //	debugger;
-	let msg = '';
-	if ( typeof errMessage === 'string' )
-	{
-		msg = `${errMessage}`;
-	}
-	else
-	{
-		msg = `${errMessage.name}:${errMessage.message}`;
-	}
-
-	const err = new Error( `${errName}. ${msg}\n${issuer}` );
+	const msg = typeof errMessage === 'string' ? `${errMessage}` : `${errMessage.name}:${errMessage.message}`;
+	const err = new Error( `${errName}: ${msg}\n${issuer}` );
 	if ( typeof cb === 'function' )
 	{
 		cb( err );
