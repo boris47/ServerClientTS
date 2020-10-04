@@ -1,12 +1,12 @@
 
 export enum EHeaders
 {
-	USERNAME = 'username',
-	PASSWORD = 'password',
-	TOKEN = 'token',
+	USERNAME = 'x-username',
+	PASSWORD = 'x-password',
+	TOKEN = 'x-token',
 
-	IDENTIFIER = 'identifier',
-	KEY = 'key',
+	IDENTIFIER = 'x-identifier',
+	KEY = 'x-key',
 }
 
 export enum EMappedPaths
