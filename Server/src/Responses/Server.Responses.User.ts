@@ -30,6 +30,7 @@ export default class ServerResponseUser
 		return ComUtils.ResolveWithGoodResult();
 	};
 
+	
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserLogin(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
@@ -62,26 +63,11 @@ export default class ServerResponseUser
 			ServerResponsesProcessing.EndResponseWithError(response, HTTPCodes[404], 404); // Not Found
 			return ComUtils.ResolveWithError('[LOGIN]', 'User not exists');
 		}
-//		console.error(`User created with token ${token}`)
+
 		ServerResponsesProcessing.EndResponseWithGoodResult(response, token);
 		return ComUtils.ResolveWithGoodResult();
 	};
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-/*	public static async UserLoginByToken(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
-	{
-		const token = request.headers[EHeaders.TOKEN] as string;
-		const bLoggedIn = await ServerUserManager.UserLoginByToken(token);
-		if ( !bLoggedIn )
-		{
-			const err = `Login required`;
-			ServerResponsesProcessing.EndResponseWithError(response, err, 401);
-			return ComUtils.ResolveWithError('[LOGIN]', err);
-		}
-
-		ServerResponsesProcessing.EndResponseWithGoodResult(response);
-		return ComUtils.ResolveWithGoodResult();
-	}*/
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async UserLogout(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>

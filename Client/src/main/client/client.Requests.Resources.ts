@@ -23,10 +23,10 @@ export default class ClientRequestResources
 		{
 			return ComUtils.ResolveWithError( "ClientRequests:UploadResource", `File ${identifier} doesn't exist` );
 		}
-
-		const filePathParsed = path.parse( identifier );
+		
 		// Headers
 		{
+			const filePathParsed = path.parse( identifier );
 			clientRequestInternalOptions.Headers[EHeaders.IDENTIFIER] = filePathParsed.base;
 			// Check if content type can be found
 			// Considering https://stackoverflow.com/a/1176031 && https://stackoverflow.com/a/12560996 but appling https://stackoverflow.com/a/28652339
@@ -42,9 +42,8 @@ export default class ClientRequestResources
 			clientRequestInternalOptions.Headers['content-length'] = sizeInBytes.toString();
 		}
 
-		clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier );
-
-		return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+		clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier, { highWaterMark: 1024 } );
+		return ClientRequestsProcessing.HandleUpload( options, clientRequestInternalOptions );
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
@@ -63,6 +62,6 @@ export default class ClientRequestResources
 		}
 
 		clientRequestInternalOptions.WriteStream = fs.createWriteStream( path.join( DownloadLocation, identifier ) );
-		return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+		return ClientRequestsProcessing.HandleDownload( options, clientRequestInternalOptions );
 	};
 }

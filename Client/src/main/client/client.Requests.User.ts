@@ -8,20 +8,20 @@ export default class ClientRequestUser
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async User_Register( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
 	{
-		return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+		return ClientRequestsProcessing.SimpleRequest( options, clientRequestInternalOptions );
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async User_Login( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
 	{
-		return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+		return ClientRequestsProcessing.SimpleRequest( options, clientRequestInternalOptions );
 	};
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async User_Logout( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
 	{
-		return ClientRequestsProcessing.MakeRequest( options, clientRequestInternalOptions );
+		return ClientRequestsProcessing.SimpleRequest( options, clientRequestInternalOptions );
 	};
 }

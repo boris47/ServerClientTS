@@ -25,10 +25,10 @@ interface IClientRequest
 
 async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error>
 {
-	const identifier = request.path;
+	const { path } = request;
 
 	// Check if request is mapped
-	const availableMethods : IRequestsMethods = RequestsMap[identifier];
+	const availableMethods : IRequestsMethods = RequestsMap[path];
 	if ( !availableMethods )
 	{
 		const err = `Request "${request.path}" is not mapped`;
@@ -37,10 +37,10 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 	}
 
 	// Check if method is defined
-	const method : ( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions ) => Promise<Error | Buffer> = availableMethods[request.method.toLowerCase()];
+	const method = availableMethods[request.method.toLowerCase()];
 	if ( !method )
 	{
-		const err = `Request "${request.path}" failed\nMethod: ${request.method} for request ${identifier} is undefined`;
+		const err = `Request "${request.path}":[${request.method}] cannot find method for path ${path} is undefined`;
 		console.error( err );
 		return new Error( err );
 	}
@@ -49,12 +49,12 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 	const result: Error | Buffer = await method( Object.assign({}, CommonOptions, request ), request.reqArgs );
 	if ( Buffer.isBuffer(result) )
 	{
-		console.log( `Request "${request.path}", method "${request.method}" satisfied\nBody: "${result.toString()}"` );
+		console.log( `Request "${request.path}":[${request.method}] satisfied\nBody: "${result.toString()}"` );
 		return result;
 	}
 	else
 	{
-		const errMsg = `\nRequest "${request.path}" failed\nError:\n${result}`;
+		const errMsg = `\nRequest "${request.path}":[${request.method}] failed\nError:\n${result}`;
 		result.message += errMsg
 		return result;
 	}

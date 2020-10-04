@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 import * as followRedirects from 'follow-redirects';
-import * as fs from 'fs';
+import * as stream from 'stream';
 import * as zlib from 'zlib';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
@@ -14,8 +14,8 @@ export interface IClientRequestInternalOptions
 	DownloadLocation?: string;
 	Value?: string | Buffer;
 	Headers?: http.IncomingHttpHeaders;
-	ReadStream?: fs.ReadStream;
-	WriteStream?: fs.WriteStream;
+	ReadStream?: stream.Readable;
+	WriteStream?: stream.Writable;
 	ComFlowManager?: ComFlowManager | undefined;
 }
 
@@ -56,134 +56,169 @@ export class ClientRequestsProcessing
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleDownload(response: http.IncomingMessage, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: Buffer | Error) => void ): void
+	/** Server -> Client */
+	public static HandleDownload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions ): Promise<Buffer | Error>
 	{
-		const compressonHandledResponse = ClientRequestsProcessing.HandleCompression(response, resolve);
-		const contentLength: number = Number(response.headers['content-length']);
-		if (clientRequestInternalOptions.WriteStream)
+		return new Promise<Buffer | Error>( resolve =>
 		{
-			compressonHandledResponse.pipe(clientRequestInternalOptions.WriteStream);
-
-			let currentLength: number = 0;
-			compressonHandledResponse.on('data', (chunk: Buffer) =>
+			const request = ClientRequestsProcessing.MakeRequest(options, clientRequestInternalOptions, resolve);
+			request.on('response', (response: http.IncomingMessage): void =>
 			{
-				currentLength += chunk.length;
-				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, currentLength);
-				//	console.log( "ClientRequestsProcessing.ServetToClient:data: ", contentLength, currentLength, progress );
-			});
-
-			compressonHandledResponse.on('end', () =>
-			{
-				const result: Buffer = Buffer.from('ClientRequests:ServetToClient: Data received correcly');
-				ComUtils.ResolveWithGoodResult(result, resolve);
-			});
-		}
-		else
-		{
-			const buffers = new Array<Buffer>();
-			let contentLength = 0;
-			compressonHandledResponse.on('error', (err: Error) =>
-			{
-				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
-				ComUtils.ResolveWithError('ClientRequests:ServetToClient:[ResponseError]', `${ err.name }:${ err.message }`, resolve);
-			});
-			compressonHandledResponse.on('data', (chunk: Buffer) =>
-			{
-				contentLength += chunk.length;
-				buffers.push(chunk);
-			});
-			compressonHandledResponse.on('end', () =>
-			{
-				const result: Buffer = Buffer.concat(buffers, contentLength);
-				if (response.statusCode >= 300)
+				if (response.statusCode >= 400)
 				{
-					const errMessage = `${response.statusCode}:${result.toString()}`;
-					ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[StatusCode]', errMessage, resolve );
+					const errMessage = `${response.statusCode}:${response.statusMessage}`;
+					ComUtils.ResolveWithError( 'ClientRequestsProcessing:HandleDownload:[StatusCode]', errMessage, resolve );
+					return;
 				}
-				else
+
+				const compressonHandledResponse = ClientRequestsProcessing.HandleCompression(response, resolve);
+				const buffers = new Array<Buffer>();
+				const contentLength: number = parseInt(response.headers['content-length'], 10);
+				let currentLength = 0;
+				if (clientRequestInternalOptions.WriteStream)
 				{
-					ComUtils.ResolveWithGoodResult(result, resolve);
+					compressonHandledResponse.pipe(clientRequestInternalOptions.WriteStream);
+	
+					let currentReachedLength: number = 0;
+					compressonHandledResponse.on('data', (chunk: Buffer) =>
+					{
+						currentReachedLength += chunk.length;
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, currentReachedLength);
+					//	console.log( "ClientRequestsProcessing.ServetToClient:data: ", contentLength, currentLength, progress );
+					});
+
+					clientRequestInternalOptions.WriteStream.on( 'finish', () =>
+					{
+						const result = Buffer.from( 'ClientRequestsProcessing:HandleDownload[WriteStream]: Data received correcly' );
+						ComUtils.ResolveWithGoodResult(result, resolve);
+					});
+				}
+				else // normal way
+				{
+					compressonHandledResponse.on('error', (err: Error) =>
+					{
+						clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
+						ComUtils.ResolveWithError('ClientRequests:ServetToClient:[ResponseError]', `${err.name}:${err.message}`, resolve);
+					});
+
+					compressonHandledResponse.on('data', (chunk: Buffer) =>
+					{
+						currentLength += chunk.length;
+						buffers.push(chunk);
+
+						if (contentLength < currentLength)
+						{
+							const errMessage = `Response "${options.path}:${options.method}" data length exceed(${currentLength}) content length(${contentLength})!`;
+							ComUtils.ResolveWithError( 'ClientRequests:ServetToClient:[ResponseError]', errMessage, resolve );
+						}
+					});
+
+					compressonHandledResponse.on('end', () =>
+					{
+						const result: Buffer = Buffer.concat(buffers, currentLength)
+						ComUtils.ResolveWithGoodResult(result, resolve);
+					});
 				}
 			});
-		}
+			request.end();
+		});
 	}
 
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static HandleUpload(request: followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage>, clientRequestInternalOptions: IClientRequestInternalOptions): void
+	/** Client -> Server */
+	public static HandleUpload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
 	{
-		// If upload of file is requested
-		if (clientRequestInternalOptions.ReadStream)
+		return new Promise<Buffer | Error>( resolve =>
 		{
-			clientRequestInternalOptions.ReadStream.pipe(request);
-			if (clientRequestInternalOptions.Headers['content-length'] !== undefined)
+			const request = ClientRequestsProcessing.MakeRequest(options, clientRequestInternalOptions, resolve);
+			if (clientRequestInternalOptions.ReadStream)
 			{
+				clientRequestInternalOptions.ReadStream.on( 'error', ( err: Error ) =>
+				{
+					ComUtils.ResolveWithError( "ClientRequestsProcessing:HandleUpload[ReadStream]", err );
+				});
+	
+				const totalLength: number = parseInt(clientRequestInternalOptions.Headers['content-length'], 10);
 				let currentLength: number = 0;
-				const totalLength: number = Number(clientRequestInternalOptions.Headers['content-length']);
-				clientRequestInternalOptions.ReadStream.on('data', (chunk: Buffer) =>
+				clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
 				{
 					currentLength += chunk.length;
+					request.write(chunk);
 					clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(totalLength, currentLength);
 				//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", clientRequestInternalOptions.ComFlowManager.Tag, totalLength, currentLength, currentLength / totalLength );
 				});
+	
+				clientRequestInternalOptions.ReadStream.on( 'end', () =>
+				{
+					clientRequestInternalOptions.ReadStream.destroy();
+					ComUtils.ResolveWithGoodResult( Buffer.from( 'ClientRequestsProcessing:HandleUpload[ReadStream]: Data sent correcly' ), resolve );
+				});
 			}
-		}
-		else// direct value sent
-		{
-			request.end(clientRequestInternalOptions.Value);
-		}
+
+			if (clientRequestInternalOptions.Value !== undefined)
+			{
+				request.on( 'response', ( response: http.IncomingMessage ) =>
+				{
+					if (response.statusCode >= 400)
+					{
+						const errMessage = `${response.statusCode}:${response.statusMessage}`;
+						ComUtils.ResolveWithError( 'ClientRequestsProcessing:HandleUpload:[StatusCode]', errMessage, resolve );
+						return;
+					}
+					ComUtils.ResolveWithGoodResult( Buffer.from( 'ClientRequestsProcessing:HandleUpload[Standard]: Data sent correcly' ), resolve );
+				});
+				request.end(clientRequestInternalOptions.Value);
+			}
+		});
 	}
 
+	/** Server -> Client (No Write Stream) */
+	public static SimpleRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
+	{
+		clientRequestInternalOptions.WriteStream?.destroy();
+		clientRequestInternalOptions.WriteStream = undefined;
+		return ClientRequestsProcessing.HandleDownload(options, clientRequestInternalOptions);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
+	private static MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: Error | Buffer) => void): followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage>
 	{
-		return new Promise<Buffer | Error>((resolve) =>
+		options.headers = clientRequestInternalOptions.Headers;
+
+		const followOptions : followRedirects.FollowOptions<http.RequestOptions> =
 		{
-			options.headers = clientRequestInternalOptions.Headers;
-
-			const finalOptions : followRedirects.FollowOptions<http.RequestOptions> =
-			{
-				followRedirects: true,
-				maxRedirects: 21, // default
-				maxBodyLength: 2 * 1024 * 1024 * 1024, // 2GB
-		//		beforeRedirect: ( options: http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>, responseDetails: followRedirects.ResponseDetails ) =>
-		//		{
-		//			if (false)
-		//			{
-		//				throw Error("no errors");
-		//			}
-		//		}
-			}
-
-			const request: followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage> = followRedirects.http.request(Object.assign(options, finalOptions));
-
-//			const request: http.ClientRequest = http.request(options);
-			request.on('close', function()
-			{
-				ComUtils.ResolveWithGoodResult(Buffer.from("Done"), resolve);
-			});
-
-			request.on('timeout', () =>
-			{
-				request.abort();
-				ComUtils.ResolveWithError('ClientRequests:MakeRequest:[TIMEOUT]', `Request for path ${options.path}`, resolve);
-			});
-
-			request.on('error', function(err: Error)
-			{
-				clientRequestInternalOptions.WriteStream?.close();
-				clientRequestInternalOptions.ReadStream?.unpipe();
-				clientRequestInternalOptions.ReadStream?.close();
-				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
-				ComUtils.ResolveWithError('ClientRequests:MakeRequest:[RequestError]', `${err.name}:${err.message}`, resolve);
-			});
-
-			request.on('response', (response: http.IncomingMessage): void =>
-			{
-				ClientRequestsProcessing.HandleDownload(response, clientRequestInternalOptions, resolve )
-			});
-			ClientRequestsProcessing.HandleUpload(request, clientRequestInternalOptions);
+			followRedirects: true,
+			maxRedirects: 21, // default
+			maxBodyLength: 2 * 1024 * 1024 * 1024, // 2GB
+	//		beforeRedirect: ( options: http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>, responseDetails: followRedirects.ResponseDetails ) =>
+	//		{
+	//			if (false)
+	//			{
+	//				throw Error("no errors");
+	//			}
+	//		}
+		};
+		const requestOptions: (http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>) = { ...options, ...followOptions };
+		const request: followRedirects.RedirectableRequest<http.ClientRequest, http.IncomingMessage> = followRedirects.http.request(requestOptions);
+		request.on('timeout', () =>
+		{
+			request.abort();
+			clientRequestInternalOptions.WriteStream?.destroy();
+			clientRequestInternalOptions.ReadStream?.unpipe();
+			clientRequestInternalOptions.ReadStream?.destroy();
+			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
+			ComUtils.ResolveWithError('ClientRequests:MakeRequest:[TIMEOUT]', `Request for path ${options.path}`, resolve);
 		});
+
+		request.on('error', function(err: Error)
+		{
+			clientRequestInternalOptions.WriteStream?.destroy();
+			clientRequestInternalOptions.ReadStream?.unpipe();
+			clientRequestInternalOptions.ReadStream?.destroy();
+			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(-1, 1);
+			ComUtils.ResolveWithError('ClientRequests:MakeRequest:[RequestError]', err, resolve);
+		});
+		return request;
 	}
 }

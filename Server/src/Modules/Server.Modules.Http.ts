@@ -21,12 +21,12 @@ export default class HttpModule
 	{
 		if ( !HttpModule.instance )
 		{
-			const serverOptions = <http.ServerOptions>
+			const serverOptions: http.ServerOptions =
 			{
 				
 			};
 		
-			const listenOptions = <net.ListenOptions>
+			const listenOptions: net.ListenOptions =
 			{
 				port : ServerInfo.HTTP_SERVER_PORT,
 				host : '0.0.0.0',
@@ -101,7 +101,7 @@ export default class HttpModule
 		console[(Buffer.isBuffer(value) ? 'log':'warn')](
 			[
 				`Incoming: "${request.url}", Method: "${request.method}", Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
-			//	`Body: ${!value.bHasGoodResult ? value.body.toString() : 'Unnecessary'}`,
+				`Body: ${value.toString()}`,
 			].join('\n\t')
 		);
 	};
@@ -114,7 +114,7 @@ export default class HttpModule
 		{
 			Value: Buffer.from(HTTPCodes[404]) // Not Found
 		};
-		const result: Buffer | Error = await ServerResponsesProcessing.ProcessRequest(request, response, options);
+		const result: Buffer | Error = await ServerResponsesProcessing.ProcessSimpleResponse(request, response, options);
 		return result;
 	};
 
@@ -126,7 +126,7 @@ export default class HttpModule
 		{
 			Value: Buffer.from(HTTPCodes[405]) // Method Not Allowed
 		};
-		const result: Buffer | Error = await ServerResponsesProcessing.ProcessRequest(request, response, options);
+		const result: Buffer | Error = await ServerResponsesProcessing.ProcessSimpleResponse(request, response, options);
 		return result;
 	};
 

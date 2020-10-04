@@ -89,25 +89,13 @@ export default class WebSocketManager
 	}
 
 
-	public static SendMessage(message: Buffer): Promise<Error | null>
+	public static SendMessage(message: Buffer)
 	{
 		if (!WebSocketManager.instance)
 		{
-			return null;
+			return;
 		}
 
-		return new Promise<Error | null>( (resolve: (value: Error | null) => void) =>
-		{
-			WebSocketManager.connection.sendBytes(message, ( err: Error ) =>
-			{
-				if (err)
-				{
-					console.error(`WebSocketManager::SendMessage: Error ${err.toString()}`);
-				}
-				resolve(err || null);
-			});
-
-		});
-
+		WebSocketManager.connection.sendBytes(message);
 	}
 }
