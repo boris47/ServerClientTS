@@ -1,9 +1,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as util from 'util';
 
-import FSutils from './Utils/FSUtils';
+import FSUtils from './Utils/FSUtils';
 
 export default class Logger
 {
@@ -24,9 +23,9 @@ export default class Logger
 		if (!this.instance)
 		{
 			const logFileName = Logger.CreateLogName();
-			const programFolder = path.join(FSutils.GetUserDataFolder(), programName, 'logs');
+			const programFolder = path.join(FSUtils.GetUserDataFolder(), programName, 'logs');
 			const finalFilePath = path.join(programFolder, logFileName);
-			await FSutils.EnsureDirectoryExistence(programFolder);
+			await FSUtils.EnsureDirectoryExistence(programFolder);
 
 			const fileDescriptor = await new Promise<number | null>((resolve) =>
 			{
