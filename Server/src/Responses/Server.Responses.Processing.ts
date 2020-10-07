@@ -50,7 +50,19 @@ export default class ServerResponsesProcessing
 {
 	public static readonly Buffer_OK: Buffer = Buffer.from('OK');
 
+	/** */
+	private static ResetServerInternalOptionsToBad(serverRequestInternalOptions : IServerRequestInternalOptions): void
+	{
+		serverRequestInternalOptions.WriteStream?.removeAllListeners();
+		serverRequestInternalOptions.WriteStream?.destroy();
+		serverRequestInternalOptions.ReadStream?.removeAllListeners();
+		serverRequestInternalOptions.ReadStream?.unpipe();
+		serverRequestInternalOptions.ReadStream?.destroy();
+		serverRequestInternalOptions.Value = undefined;
+	}
 
+
+	/**  */
 	public static EndResponseWithGoodResult( response : http.ServerResponse, chunk: string | Buffer = undefined ) : void
 	{
 		response.statusCode = 200;
@@ -82,6 +94,7 @@ export default class ServerResponsesProcessing
 				{
 					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
 					ComUtils.ResolveWithError( "ServerResponsesProcessing:HandleDownload[WriteStream]", err, resolve );
+					ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 				});
 				
 				serverRequestInternalOptions.WriteStream.on( 'finish', () =>
@@ -96,18 +109,18 @@ export default class ServerResponsesProcessing
 			{
 				const contentLength = parseInt(request.headers['content-length'], 10);
 				const body = new Array<Buffer>();
-				let currentLength: number = 0, currentIndex = 0;
+				let currentLength: number = 0;
 				request.on( 'data', function( chunk : Buffer )
 				{
 					currentLength += chunk.length;
-					body[currentIndex] = chunk;
-					currentIndex ++;
+					body.push(chunk);
 					
 					if (contentLength < currentLength)
 					{
 						const errMessage = `Request "${request.url}:${request.method}" data length exceed(${currentLength}) content length(${contentLength})!`;
 						ServerResponsesProcessing.EndResponseWithError( response, errMessage, 413 ); // TODO Ensure correct status code
 						ComUtils.ResolveWithError( 'ServerResponsesProcessing:ProcessRequest', errMessage, resolve );
+						ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 					}
 				});
 				
@@ -129,13 +142,14 @@ export default class ServerResponsesProcessing
 		{
 			ServerResponsesProcessing.PrepareRequest(request, response, serverRequestInternalOptions, resolve);
 
-			// If upload of resource is requested
+			// If read stream is available
 			if ( serverRequestInternalOptions.ReadStream )
 			{
 				serverRequestInternalOptions.ReadStream.on( 'error', ( err: Error ) =>
 				{
 					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
 					ComUtils.ResolveWithError( "ServerResponsesProcessing:HandleUpload[ReadStream]", err );
+					ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 				});
 	
 				serverRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
@@ -169,25 +183,22 @@ export default class ServerResponsesProcessing
 	}
 
 
-	/** Private */
+	/**  */
 	private static PrepareRequest( request : http.IncomingMessage, response : http.ServerResponse, serverRequestInternalOptions : IServerRequestInternalOptions, resolve : ( value: Buffer | Error ) => void ) : void
 	{
 		response.on( 'error', ( err : Error ) =>
 		{
 			ServerResponsesProcessing.EndResponseWithError( response, err, 400 ); // Bad Request
 			ComUtils.ResolveWithError( 'ServerResponsesProcessing:ProcessRequest', err, resolve );
+			ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 		});
 
 		/** Emitted when the request has been aborted. */
 		request.on( 'aborted', () =>
 		{
-			serverRequestInternalOptions.WriteStream?.removeAllListeners();
-			serverRequestInternalOptions.WriteStream?.destroy();
-			serverRequestInternalOptions.ReadStream?.removeAllListeners();
-			serverRequestInternalOptions.ReadStream?.unpipe();
-			serverRequestInternalOptions.ReadStream?.destroy();
 			const errMessage = `Request "${request.url}:${request.method}" has been aborted`;
 			ComUtils.ResolveWithError( 'ServerResponsesProcessing:ProcessRequest', errMessage, resolve );
+			ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 		});
 
 		// Set headers

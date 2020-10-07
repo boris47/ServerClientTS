@@ -1,12 +1,12 @@
 
 import * as http from 'http';
-import * as ComUtils from '../../../Common/Utils/ComUtils';
 import { ITemplatedObject } from '../../../Common/Utils/GenericUtils';
 import { EMappedPaths } from '../../../Common/Interfaces';
 
-import ServerResponseStorage from './Server.Responses.Storage';
+import ServerResponsesProcessing from './Server.Responses.Processing';
 import ServerResponseUser from './Server.Responses.User';
 import ServerResponseResources from './Server.Responses.Resources';
+import ServerResponseStorage from './Server.Responses.Storage';
 
 
 /** https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods */
@@ -74,6 +74,11 @@ export interface IResponsesMapItem
 
 export const ResponsesMap: ITemplatedObject<IResponsesMapItem> =
 {
+	[EMappedPaths.PINGPONG]:
+	{
+		requiresAuth: false,
+		responseMethods: { get: ServerResponsesProcessing.Pong }
+	},
 	[EMappedPaths.USER]:
 	{
 		requiresAuth: false,
@@ -83,12 +88,12 @@ export const ResponsesMap: ITemplatedObject<IResponsesMapItem> =
 	[EMappedPaths.RESOURCE]:
 	{
 		requiresAuth: true,
-		responseMethods: { get: ServerResponseResources.ServerToClient, put:ServerResponseResources.ClientToServer }
+		responseMethods: { get: ServerResponseResources.Resources_Upload, put:ServerResponseResources.Resources_Download }
 	},
 
 	[EMappedPaths.STORAGE]:
 	{
 		requiresAuth: true,
-		responseMethods: { get: ServerResponseStorage.Get, put: ServerResponseStorage.Add, delete: ServerResponseStorage.Delete }
+		responseMethods: { get: ServerResponseStorage.Storage_Get, put: ServerResponseStorage.Storage_Add, delete: ServerResponseStorage.Storage_Delete }
 	}
 };

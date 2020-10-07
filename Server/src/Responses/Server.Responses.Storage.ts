@@ -11,7 +11,7 @@ export default class ServerResponseStorage
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async Get(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
+	public static async Storage_Get(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const key = request.headers[EHeaders.KEY];
 		if (typeof key !== 'string' || key.length === 0)
@@ -28,7 +28,7 @@ export default class ServerResponseStorage
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async Add(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
+	public static async Storage_Add(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Check content Length
 		if (request.headers['content-length'] === undefined)
@@ -58,7 +58,7 @@ export default class ServerResponseStorage
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	public static async Delete(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
+	public static async Storage_Delete(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		const key = request.headers[EHeaders.KEY] as string;
 		if (typeof key !== 'string' || key.length === 0)

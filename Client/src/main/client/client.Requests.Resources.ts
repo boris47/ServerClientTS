@@ -14,7 +14,7 @@ export default class ClientRequestResources
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async UploadResource( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
+	public static async Resource_Upload( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
 	{
 		const identifier = clientRequestInternalOptions.Headers[EHeaders.IDENTIFIER] as string;
 		
@@ -42,13 +42,13 @@ export default class ClientRequestResources
 			clientRequestInternalOptions.Headers['content-length'] = sizeInBytes.toString();
 		}
 
-		clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier, { highWaterMark: 1024 } );
+		clientRequestInternalOptions.ReadStream = fs.createReadStream( identifier/*, { highWaterMark: 1024 }*/ );
 		return ClientRequestsProcessing.HandleUpload( options, clientRequestInternalOptions );
 	};
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
-	public static async DownloadResource( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
+	public static async Resource_Download( options: http.RequestOptions, clientRequestInternalOptions : IClientRequestInternalOptions )
 	{
 		const { DownloadLocation } = clientRequestInternalOptions;
 		const identifier = clientRequestInternalOptions.Headers[EHeaders.IDENTIFIER] as string;

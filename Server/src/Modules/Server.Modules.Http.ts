@@ -96,11 +96,12 @@ export default class HttpModule
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
-	private static ReportResponseResult( request : http.IncomingMessage, value : Buffer | Error, durationMS : number ) : void
+	private static ReportResponseResult( request : http.IncomingMessage, value : Buffer | Error, durationMS : number, context?: string ) : void
 	{
+		const {address} = request.socket?.address() as net.AddressInfo  || {};
 		console[(Buffer.isBuffer(value) ? 'log':'warn')](
 			[
-				`Incoming: "${request.url}", Method: "${request.method}", Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
+				`Incoming: Origin:'${address}', Path: '${request.url}', Method: '${request.method}', ${context ?`Context: '${context}',`: ''} Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
 				`Body: ${value.toString()}`,
 			].join('\n\t')
 		);
@@ -148,7 +149,7 @@ export default class HttpModule
 		const method = responseMapItem ? ( responseMapItem.responseMethods[request.method.toLowerCase()] || ( HttpModule.MethodNotAllowed )) : ( HttpModule.NotExistingPath );
 		method( request, response ).then( ( value: Buffer | Error ) =>
 		{
-			HttpModule.ReportResponseResult( request, value, Date.now() - startTime );
+			HttpModule.ReportResponseResult( request, value, Date.now() - startTime, method.name );
 		});
 	};
 

@@ -45,16 +45,19 @@ async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error
 		return new Error( err );
 	}
 	
+	console.log(`Executing Path: '${request.path}', Method: '${request.method}'`);
+
 	// Execute the request
 	const result: Error | Buffer = await method( Object.assign({}, CommonOptions, request ), request.reqArgs );
 	if ( Buffer.isBuffer(result) )
 	{
-		console.log( `Request "${request.path}":[${request.method}] satisfied\nBody: "${result.toString()}"` );
+		console.log( `Request '${request.path}', Method '${request.method}', Context '${method.name}', satisfied\n\tBody: "${result.toString()}"` );
 		return result;
 	}
 	else
 	{
-		const errMsg = `\nRequest "${request.path}":[${request.method}] failed\nError:\n${result}`;
+		const errMsg = `\nRequest '${request.path}', Method '${request.method}', Context '${method.name}', failed\nError:\n${result}`;
+		console.error(errMsg);
 		result.message += errMsg
 		return result;
 	}

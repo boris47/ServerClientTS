@@ -29,7 +29,7 @@ export const RequestsMap : ITemplatedObject<IRequestsMethods> =
 
 	[EMappedPaths.RESOURCE]:
 	{
-		get: ClientRequestResources.DownloadResource, put: ClientRequestResources.UploadResource
+		get: ClientRequestResources.Resource_Download, put: ClientRequestResources.Resource_Upload
 	},
 
 	[EMappedPaths.STORAGE]:

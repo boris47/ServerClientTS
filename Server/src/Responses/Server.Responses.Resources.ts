@@ -14,7 +14,7 @@ export default class ServerResponseResources
 {
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Client -> Server */
-	public static async ClientToServer(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
+	public static async Resources_Download(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Check content Length
 		if (request.headers['content-length'] === undefined)
@@ -45,7 +45,7 @@ export default class ServerResponseResources
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 	/** Server -> Client */
-	public static async ServerToClient(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
+	public static async Resources_Upload(request: http.IncomingMessage, response: http.ServerResponse): Promise<Buffer | Error>
 	{
 		// Execute file download server side
 		const identifier = request.headers[EHeaders.IDENTIFIER] as string;
