@@ -15,7 +15,7 @@ export default class LoginManager
 	/////////////////////////////////////////////////////////////////////////////////////////
 	public static async TryAutoLogin(): Promise<boolean>
 	{
-		const token = await ICP_RendererComs.Invoke(EComunicationsChannels.STORAGE_GET, null, 'accessToken');
+		const token = await ICP_RendererComs.Request(EComunicationsChannels.STORAGE_GET, null, 'accessToken');
 		if ( !token )
 		{
 			console.log('No token found for autologin');
@@ -25,7 +25,7 @@ export default class LoginManager
 		console.log("TRING AUTOLOGIN WITH TOKEN", token.toString());
 
 		let bResult = true;
-		const reqResult = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_USER_LOGIN_TOKEN, null, token.toString());
+		const reqResult = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_LOGIN_TOKEN, null, token.toString());
 		if (LoginManager.isLogged = Buffer.isBuffer(reqResult))
 		{
 			LoginManager.token = reqResult.toString();
@@ -44,7 +44,7 @@ export default class LoginManager
 	public static async Trylogin( username: string, password: string ): Promise<boolean>
 	{
 		let bResult = true;
-		const reqResult = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_USER_LOGIN, null, username, password);
+		const reqResult = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_LOGIN, null, username, password);
 		if (LoginManager.isLogged = Buffer.isBuffer(reqResult))
 		{
 			LoginManager.token = reqResult.toString();
@@ -68,7 +68,7 @@ export default class LoginManager
 		{
 			return bResult;
 		}
-		const reqResult = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_USER_LOGOUT, null, LoginManager.token);
+		const reqResult = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_LOGOUT, null, LoginManager.token);
 		if (Buffer.isBuffer(reqResult))
 		{
 			LoginManager.isLogged = false;

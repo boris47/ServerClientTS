@@ -89,14 +89,15 @@ async function createMainWindow()
 			/** Whether node integration is enabled. Default is false. */
 			nodeIntegration: false,
 			nodeIntegrationInSubFrames: false,
+			nodeIntegrationInWorker: false,
 			nativeWindowOpen: true,
 			preload: path.resolve(__dirname, './preload.js'),
 			webSecurity: true,
 			allowRunningInsecureContent: false,
 			worldSafeExecuteJavaScript: true,
 			enableRemoteModule: false,
-			contextIsolation : false, // Cannot be set to true cause the error 'module not found'
-			sandbox: false,
+			contextIsolation : true, // Cannot be set to true cause the error 'module not found'
+			sandbox: true,
 		},
 		// Show window in the center of the screen.
 		center: true,
@@ -129,7 +130,7 @@ async function createMainWindow()
 		})
 		.then(resolve);
 	});
- 
+	
 	await GenericUtils.DelayMS(1000);
 
 	// Open the DevTools if desired
@@ -178,7 +179,7 @@ async function main()
 	{
 		electron.app.once('window-all-closed', resolve);
 	});
-
+/*
 	// we expect 'rendererReady' notification from Renderer
 	const rendererPromise = new Promise<void>((resolve: () => void) =>
 	{
@@ -188,7 +189,7 @@ async function main()
 			resolve();
 		});
 	});
-
+*/
 	// initiate creating the main window
 	const mainWindowPromise = createMainWindow();
 
@@ -197,7 +198,7 @@ async function main()
 	// while observing premature termination
 	await Promise.race(
 		[
-			Promise.all([rendererPromise, mainWindowPromise]),
+			Promise.all([/*rendererPromise,*/ mainWindowPromise]),
 			terminationPromise.finally(() =>
 			{
 				throw new Error('All windows closed prematurely.');

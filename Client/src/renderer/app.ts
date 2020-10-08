@@ -9,9 +9,9 @@ import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 
 // Electron Stuff
-import { ipcRenderer } from 'electron';
+//import { ipcRenderer } from 'electron';
 import { ICP_RendererComs } from './icpRendererComs';
-import { EComunicationsChannels } from '../icpComs';
+//import { EComunicationsChannels } from '../icpComs';
 
 // Vue
 import Vue, { VueConstructor, PluginObject } from 'vue';
@@ -58,20 +58,23 @@ const components : PluginObject<Vue> =
 
 async function Initialize()
 {
+	ICP_RendererComs.Initialize();
+	
 	// localStorage Setup
 	{		
 		localStorage.setItem('isDev', String(bIsDev));
-
-		const resourcePath = await ICP_RendererComs.Invoke( EComunicationsChannels.RESOURCE_PATH );
-		localStorage.setItem('staticPath',bIsDev ? window.location.origin : `${resourcePath}/app.asar/static` );
+		
+//		alert(EComunicationsChannels.RESOURCE_PATH);
+//		const resourcePath = await ICP_RendererComs.Request( EComunicationsChannels.RESOURCE_PATH );
+//		localStorage.setItem('staticPath',bIsDev ? window.location.origin : `${resourcePath}/app.asar/static` );
 	}
-
+	
 	if (process.env.NODE_ENV === 'development')
 	{
 		// this is to give Chrome Debugger time to attach to the new window
 		await GenericUtils.DelayMS(1000);
 	}
-
+	
 	// await the document to finish loading
 	await new Promise((resolve) => document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', resolve) : resolve() );
 
@@ -89,7 +92,7 @@ async function Initialize()
 	vueInstance.$mount('#app');
 
 	// notify Main that Renderer is ready
-	ipcRenderer.send('rendererReady', null);
+//	ipcRenderer.send('rendererReady', null);
 }
 
 Initialize().catch(function(error: Error)

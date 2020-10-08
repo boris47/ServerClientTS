@@ -110,7 +110,7 @@ export default class TestPage extends Vue
 			}
 		);
 
-		ICP_RendererComs.Invoke(EComunicationsChannels.FILE_READ, null, 'TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
+		ICP_RendererComs.Request(EComunicationsChannels.FILE_READ, null, 'TestStatic.txt' ).then( ( arg: NodeJS.ErrnoException | Buffer ) =>
 		{
 			if ( Buffer.isBuffer(arg) )
 			{
@@ -151,7 +151,7 @@ export default class TestPage extends Vue
 			test.push( `Test Array ${index}` );
 		}
 
-		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_STORAGE_PUT, null, this.valueToSet, JSON.stringify(test));
+		const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_STORAGE_PUT, null, this.valueToSet, JSON.stringify(test));
 		if ( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );
@@ -164,7 +164,7 @@ export default class TestPage extends Vue
 
 	protected async GetValue()
 	{
-		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_STORAGE_GET, null, this.valueToGet );
+		const result = await ICP_RendererComs.Request( EComunicationsChannels.REQ_STORAGE_GET, null, this.valueToGet );
 		if ( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );
@@ -185,7 +185,7 @@ export default class TestPage extends Vue
 	{
 		for (const filePath of this.inputFilePaths)
 		{
-			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_UPLOAD, this.uploadComFlowManager, filePath );
+			const result = await ICP_RendererComs.Request( EComunicationsChannels.REQ_RESOURCE_UPLOAD, this.uploadComFlowManager, filePath );
 			if ( GenericUtils.IsTypeOf(result, Error))
 			{
 				console.error( `"${result.name}:${result.message}"` );
@@ -201,7 +201,7 @@ export default class TestPage extends Vue
 	
 	protected async DownloadFile()
 	{
-		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_RESOURCE_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
+		const result = await ICP_RendererComs.Request( EComunicationsChannels.REQ_RESOURCE_DOWNLOAD, this.downloadComFlowManager, 'electron.exe', this.downloadFileLocation );
 		if( GenericUtils.IsTypeOf(result, Error))
 		{
 			console.error( `"${result.name}:${result.message}"` );

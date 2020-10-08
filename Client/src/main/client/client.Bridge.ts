@@ -9,7 +9,8 @@ import { IClientRequestInternalOptions } from './client.Requests.Processing';
 import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
 import FS_Storage from '../../../../Common/FS_Storage';
 
-const CommonOptions : http.RequestOptions = {
+const CommonOptions : http.RequestOptions =
+{
 	host: '0.0.0.0',
 	port: 3000,
 	timeout : 10000,
@@ -19,44 +20,44 @@ interface IClientRequest
 {
 	path : string;
 	method : string;
-	reqArgs : IClientRequestInternalOptions;
+	clientRequestInternalOptions : IClientRequestInternalOptions;
 }
 
 
 async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error>
 {
-	const { path } = request;
+	const { path, method, clientRequestInternalOptions } = request;
 
 	// Check if request is mapped
 	const availableMethods : IRequestsMethods = RequestsMap[path];
 	if ( !availableMethods )
 	{
-		const err = `Request "${request.path}" is not mapped`;
+		const err = `Request "${path}" is not mapped`;
 		console.error( err );
 		return new Error( err );
 	}
 
 	// Check if method is defined
-	const method = availableMethods[request.method.toLowerCase()];
-	if ( !method )
+	const executor = availableMethods[method.toLowerCase()];
+	if ( !executor )
 	{
-		const err = `Request "${request.path}":[${request.method}] cannot find method for path ${path} is undefined`;
+		const err = `Request "${path}":[${method}] cannot find method!`;
 		console.error( err );
 		return new Error( err );
 	}
 	
-	console.log(`Executing Path: '${request.path}', Method: '${request.method}'`);
+	console.log(`Executing Path: '${path}', Method: '${method}'`);
 
 	// Execute the request
-	const result: Error | Buffer = await method( Object.assign({}, CommonOptions, request ), request.reqArgs );
+	const result: Error | Buffer = await executor( Object.assign({}, CommonOptions, request ), clientRequestInternalOptions );
 	if ( Buffer.isBuffer(result) )
 	{
-		console.log( `Request '${request.path}', Method '${request.method}', Context '${method.name}', satisfied\n\tBody: "${result.toString()}"` );
+		console.log( `Request '${path}', Method '${method}', Context '${executor.name}', satisfied\n\tBody: "${result.toString()}"` );
 		return result;
 	}
 	else
 	{
-		const errMsg = `\nRequest '${request.path}', Method '${request.method}', Context '${method.name}', failed\nError:\n${result}`;
+		const errMsg = `\nRequest '${path}', Method '${method}', Context '${executor.name}', failed\nError:\n${result}`;
 		console.error(errMsg);
 		result.message += errMsg
 		return result;
@@ -71,7 +72,7 @@ export async function Request_UserRegister( Username: string, Password: string, 
 		[EHeaders.USERNAME] : Username,
 		[EHeaders.PASSWORD] : Password
 	};
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'put', reqArgs: { Headers, ComFlowManager } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'put', clientRequestInternalOptions: { Headers, ComFlowManager } } );
 }
 /** Login Request */
 export async function Request_UserLogin( Username: string, Password: string, ComFlowManager?: ComFlowManager ) : Promise<Buffer|Error>
@@ -81,7 +82,7 @@ export async function Request_UserLogin( Username: string, Password: string, Com
 		[EHeaders.USERNAME] : Username,
 		[EHeaders.PASSWORD] : Password
 	};
-	const result = await ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers, ComFlowManager } } );
+	const result = await ProcessRequest( { path: EMappedPaths.USER, method: 'get', clientRequestInternalOptions: { Headers, ComFlowManager } } );
 	if (Buffer.isBuffer(result))
 	{
 		await FS_Storage.AddResource( 'accessToken', result );
@@ -96,7 +97,7 @@ export async function Request_UserLoginByToken( Token: string, ComFlowManager?: 
 	{
 		[EHeaders.TOKEN]: Token,
 	};
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'get', reqArgs: { Headers, ComFlowManager } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'get', clientRequestInternalOptions: { Headers, ComFlowManager } } );
 }
 /** Logout Request */
 export async function Request_UserLogout( Token: string, ComFlowManager?: ComFlowManager ): Promise<Buffer|Error>
@@ -107,7 +108,7 @@ export async function Request_UserLogout( Token: string, ComFlowManager?: ComFlo
 	};
 	await FS_Storage.RemoveResource( 'accessToken' );
 	await FS_Storage.SaveStorage();
-	return ProcessRequest( { path: EMappedPaths.USER, method: 'post', reqArgs: { Headers, ComFlowManager } } );
+	return ProcessRequest( { path: EMappedPaths.USER, method: 'post', clientRequestInternalOptions: { Headers, ComFlowManager } } );
 }
 
 const RetrieveToken = async () => (await FS_Storage.GetResource('accessToken')).toString() 
@@ -120,7 +121,7 @@ export async function Request_StorageGetData( ComFlowManager: ComFlowManager, Ke
 		[EHeaders.TOKEN]: await RetrieveToken(),
 		[EHeaders.KEY]: Key
 	};
-	return ProcessRequest( { path: EMappedPaths.STORAGE, method: 'get', reqArgs: { ComFlowManager, Headers } } );
+	return ProcessRequest( { path: EMappedPaths.STORAGE, method: 'get', clientRequestInternalOptions: { ComFlowManager, Headers } } );
 }
 export async function Request_StoragePutData( ComFlowManager: ComFlowManager, Key : string, Value: any ) : Promise<Buffer|Error>
 {
@@ -129,7 +130,7 @@ export async function Request_StoragePutData( ComFlowManager: ComFlowManager, Ke
 		[EHeaders.TOKEN]: await RetrieveToken(),
 		[EHeaders.KEY]: Key
 	};
-	return ProcessRequest( { path: EMappedPaths.STORAGE, method: 'put', reqArgs: { Value, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: EMappedPaths.STORAGE, method: 'put', clientRequestInternalOptions: { Value, ComFlowManager, Headers } } );
 }
 
 
@@ -140,7 +141,7 @@ export async function Request_ResourceDownload( ComFlowManager: ComFlowManager, 
 		[EHeaders.TOKEN]: await RetrieveToken(),
 		[EHeaders.IDENTIFIER]: Identifier
 	};
-	return ProcessRequest( { path: EMappedPaths.RESOURCE, method: 'get', reqArgs: { DownloadLocation, ComFlowManager, Headers } } );
+	return ProcessRequest( { path: EMappedPaths.RESOURCE, method: 'get', clientRequestInternalOptions: { DownloadLocation, ComFlowManager, Headers } } );
 }
 export async function Request_ResourceUpload( ComFlowManager: ComFlowManager, AbsoluteFilePath : string ) : Promise<Buffer|Error>
 {
@@ -149,7 +150,7 @@ export async function Request_ResourceUpload( ComFlowManager: ComFlowManager, Ab
 		[EHeaders.TOKEN]: await RetrieveToken(),
 		[EHeaders.IDENTIFIER]: AbsoluteFilePath
 	};
-	return ProcessRequest( { path: EMappedPaths.RESOURCE, method: 'put', reqArgs: { ComFlowManager, Headers } } );
+	return ProcessRequest( { path: EMappedPaths.RESOURCE, method: 'put', clientRequestInternalOptions: { ComFlowManager, Headers } } );
 }
 
 
