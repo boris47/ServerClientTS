@@ -91,7 +91,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 		{
 			const property = this.type === ESelectorType.FILE ? 'openFile' : 'openDirectory';
 			const multiple = this.multiple ? 'multiSelections' : undefined;
-			const defaultPath = await ICP_RendererComs.Invoke(EComunicationsChannels.ELECTRON_PATH, null, 'exe');
+			const defaultPath = await ICP_RendererComs.Request(EComunicationsChannels.ELECTRON_PATH, null, 'exe');
 			if ( !GenericUtils.IsTypeOf<string>( defaultPath, 'string' ) )
 			{
 				console.error( `InputSelector.SelectFile: Cannot retrieve defaultPath\nError${defaultPath}` );
@@ -103,7 +103,7 @@ import GenericUtils from '../../../../Common/Utils/GenericUtils';
 				defaultPath: defaultPath,
 				properties: [property, multiple],
 			};
-			const result = await ICP_RendererComs.Invoke( EComunicationsChannels.ELECTRON_MODAL_OPEN, null, modalOptions );
+			const result = await ICP_RendererComs.Request( EComunicationsChannels.ELECTRON_MODAL_OPEN, null, modalOptions );
 			if ( !result.canceled && result.filePaths.length)
 			{
 				this.$emit("select", this.SelectedAbsolutePaths = result.filePaths);

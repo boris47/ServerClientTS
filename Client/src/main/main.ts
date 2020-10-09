@@ -90,13 +90,13 @@ async function createMainWindow()
 			nodeIntegration: false,
 			nodeIntegrationInSubFrames: false,
 			nativeWindowOpen: true,
-			preload: path.resolve(__dirname, './preload.js'),
+			preload: path.resolve(__static, './preload.js'),
 			webSecurity: true,
 			allowRunningInsecureContent: false,
 			worldSafeExecuteJavaScript: true,
 			enableRemoteModule: false,
-			contextIsolation : false, // Cannot be set to true cause the error 'module not found'
-			sandbox: false,
+			contextIsolation : true, // Cannot be set to true cause the error 'module not found'
+			sandbox: true,
 		},
 		// Show window in the center of the screen.
 		center: true,

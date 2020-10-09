@@ -52,7 +52,7 @@
 				this.submitted = true;
 				if (this.username && this.password)
 				{ // TODO
-					const result = await ICP_RendererComs.Invoke(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
+					const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
 					if (Buffer.isBuffer(result))
 					{
 						console.log('TOKEN', result.toString());

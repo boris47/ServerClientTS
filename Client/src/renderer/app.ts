@@ -9,7 +9,7 @@ import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 
 // Electron Stuff
-import { ipcRenderer } from 'electron';
+//import { ipcRenderer } from 'electron';
 import { ICP_RendererComs } from './icpRendererComs';
 import { EComunicationsChannels } from '../icpComs';
 
@@ -61,8 +61,8 @@ async function Initialize()
 	// localStorage Setup
 	{		
 		localStorage.setItem('isDev', String(bIsDev));
-
-		const resourcePath = await ICP_RendererComs.Invoke( EComunicationsChannels.RESOURCE_PATH );
+		
+		const resourcePath = await ICP_RendererComs.Request( EComunicationsChannels.RESOURCE_PATH );
 		localStorage.setItem('staticPath',bIsDev ? window.location.origin : `${resourcePath}/app.asar/static` );
 	}
 
@@ -89,7 +89,7 @@ async function Initialize()
 	vueInstance.$mount('#app');
 
 	// notify Main that Renderer is ready
-	ipcRenderer.send('rendererReady', null);
+	ICP_RendererComs.Notify('rendererReady');
 }
 
 Initialize().catch(function(error: Error)
