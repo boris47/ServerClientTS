@@ -1,7 +1,7 @@
 {
 	"files.exclude": {
 		"dist/**/*.js": true,
-		"src/**/*.js": { "when": "$(basename).ts" },
+		"**/*.js": { "when": "$(basename).ts" },
 		"**/*.map": true,
 		"**/.git": true,
 		"**/.git*": true,

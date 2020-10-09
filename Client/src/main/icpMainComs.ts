@@ -51,7 +51,8 @@ export function SetupMainHandlers()
 			};
 			const newLabelCallback = (label: string) =>
 			{
-				sender.send( progressLabelId, comFlowManager.Progress.MaxValue, comFlowManager.Progress.CurrentValue, label );
+				const { MaxValue, CurrentValue } = comFlowManager.Progress;
+				sender.send( progressLabelId, MaxValue, CurrentValue, label );
 			};
 			comFlowManager.Progress.SetCallback( newValueCallback, newLabelCallback );
 		}
@@ -61,8 +62,8 @@ export function SetupMainHandlers()
 
 	const UnregisterComFlowManager = ( sender: electron.WebContents, tag: string, comFlowManagerId: string ) : void =>
 	{
-	//	console.log("Unregistering ComFlowManager on dispose", tag);
-		sender.send(comFlowManagerId);
+		console.log("Unregistering ComFlowManager on dispose", tag);
+		sender.send(ComFlowManager.ToUnregisterId(comFlowManagerId));
 	}
 
 
@@ -103,7 +104,6 @@ export function SetupMainHandlers()
 
 		[EComunicationsChannels.RESOURCE_PATH]: ( event: electron.IpcMainInvokeEvent, comFlowManager: ComFlowManager ) => 
 		{
-			console.log('requested RESOURCE_PATH');
 			return bIsDev ? 'http://127.0.0.1:9080' : process.resourcesPath;
 	//		url.resolve( 'http://127.0.0.1:9080', 'resources' )
 //			:
@@ -172,33 +172,35 @@ export function SetupMainHandlers()
 			return RequestProcessor.Request_ResourceDownload(comFlowManager, identifier, downloadLocation);
 		}
 	}
-
+/*
 	electron.ipcMain.on("toMain", async ( event: electron.IpcMainEvent, [channel, comFlowManagerId, ...args] ) =>
 	{
-	//	console.log('toMain received', channel, comFlowManagerId, ...args); 
+		console.log('toMain received', channel, comFlowManagerId, ...args); 
 
 		return Using( RegisterComFlowManager(event.sender, channel, comFlowManagerId), async (comFlowManager: ComFlowManager) =>
 		{ 
 			const callback = <Function>MappedHandlers[channel as EComunicationsChannels];
 			const result = await Promise.resolve(callback(event, comFlowManager, ...args))
 			UnregisterComFlowManager(event.sender, comFlowManager.Tag, comFlowManagerId);
-		//	console.log("Returning to renderer", result);
+			console.log("Returning to renderer", channel, result);
 			event.sender.send("fromMain", channel, comFlowManagerId, result);
 		});
 	});
+*/
 
-/*
 	for( const [channel, callback] of Object.entries(MappedHandlers) )
 	{
 		electron.ipcMain.handle( channel, async ( event: electron.IpcMainInvokeEvent, comFlowManagerId: string, ...args:any[] ) =>
 		{
 			return Using( RegisterComFlowManager(event.sender, channel, comFlowManagerId), async (comFlowManager: ComFlowManager) =>
 			{
+				console.log('ICP_MAIN: Received',channel, comFlowManagerId);
 				const result = await Promise.resolve((<any>callback)(event, comFlowManager, ...args))
+				event.sender.send( ComFlowManager.ToProgressValueId(comFlowManagerId), 100, 50, null );
 				UnregisterComFlowManager(event.sender, comFlowManager.Tag, comFlowManagerId);
 				return result;
 			});
 		});
 	}
-*/
+
 }

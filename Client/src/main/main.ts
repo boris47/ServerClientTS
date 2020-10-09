@@ -91,7 +91,7 @@ async function createMainWindow()
 			nodeIntegrationInSubFrames: false,
 			nodeIntegrationInWorker: false,
 			nativeWindowOpen: true,
-			preload: path.resolve(__dirname, './preload.js'),
+			preload: path.resolve(__static, './preload.js'),
 			webSecurity: true,
 			allowRunningInsecureContent: false,
 			worldSafeExecuteJavaScript: true,

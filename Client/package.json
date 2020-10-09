@@ -16,17 +16,14 @@
 		"postinstall": ""
 	},
 	"electronWebpack": {
-		"staticSourceDirectory": "notIncluded",
+		"staticSourceDirectory": "static",
 		"whiteListedModules": [
 			"electron",
 			"vue-router"
 		],
 		"main": {
 			"webpackConfig": "webpack.main.additions.js",
-			"sourceDirectory": "src/main",
-			"extraEntries": [
-				"@/preload.js"
-			]
+			"sourceDirectory": "src/main"
 		},
 		"renderer": {
 			"webpackConfig": "webpack.renderer.additions.js",

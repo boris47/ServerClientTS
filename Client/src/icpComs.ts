@@ -6,34 +6,34 @@ export enum EComunicationsChannels
 	/////////////////////////////////////////////////
 	/////////////////  ELECTRON  ////////////////////
 	/////////////////////////////////////////////////
-	ELECTRON_PROPERTY = 'ELECTRON_PROPERTY',
-	ELECTRON_CALL = 'ELECTRON_CALL',
-	ELECTRON_PATH = 'ELECTRON_PATH',
-	ELECTRON_MODAL_OPEN = 'ELECTRON_MODAL_OPEN',
+	ELECTRON_PROPERTY 		= 'ELECTRON_PROPERTY',
+	ELECTRON_CALL 			= 'ELECTRON_CALL',
+	ELECTRON_PATH 			= 'ELECTRON_PATH',
+	ELECTRON_MODAL_OPEN 	= 'ELECTRON_MODAL_OPEN',
 
 	/////////////////////////////////////////////////
 	////////////////  FILESYSTEM  ///////////////////
 	/////////////////////////////////////////////////
-	RESOURCE_PATH = 'RESOURCE_PATH',
-	FILE_READ = 'READ_FILE',
-	FILE_WRITE = 'WRITE_FILE',
-	STORAGE_GET = 'STORAGE_GET',
-	STORAGE_SET = 'STORAGE_SET',
+	RESOURCE_PATH 	= 'RESOURCE_PATH',
+	FILE_READ 		= 'FILE_READ',
+	FILE_WRITE 		= 'FILE_WRITE',
+	STORAGE_GET 	= 'STORAGE_GET',
+	STORAGE_SET 	= 'STORAGE_SET',
 
 
 	/////////////////////////////////////////////////
 	/////////////////  REQUESTS  ////////////////////
 	/////////////////////////////////////////////////
-	REQ_USER_REGISTER = 'REQ_REGISTER',
-	REQ_USER_LOGIN = 'REQ_USER_LOGIN',
-	REQ_USER_LOGIN_TOKEN = 'REQ_USER_LOGIN_TOKEN',
-	REQ_USER_LOGOUT = 'REQ_USER_LOGOUT',
+	REQ_USER_REGISTER 		= 'REQ_REGISTER',
+	REQ_USER_LOGIN 			= 'REQ_USER_LOGIN',
+	REQ_USER_LOGIN_TOKEN 	= 'REQ_USER_LOGIN_TOKEN',
+	REQ_USER_LOGOUT 		= 'REQ_USER_LOGOUT',
 
-	REQ_STORAGE_GET = 'REQ_STORAGE_GET',
-	REQ_STORAGE_PUT = 'REQ_STORAGE_PUT',
+	REQ_STORAGE_GET 		= 'REQ_STORAGE_GET',
+	REQ_STORAGE_PUT 		= 'REQ_STORAGE_PUT',
 
-	REQ_RESOURCE_UPLOAD = 'REQ_RESOURCE_UPLOAD',
-	REQ_RESOURCE_DOWNLOAD = 'REQ_RESOURCE_DOWNLOAD',
+	REQ_RESOURCE_UPLOAD 	= 'REQ_RESOURCE_UPLOAD',
+	REQ_RESOURCE_DOWNLOAD 	= 'REQ_RESOURCE_DOWNLOAD',
 }
 
 type ComunicationInterfaceDefinition =

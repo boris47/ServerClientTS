@@ -19,63 +19,64 @@ const MappedOps : { [key in EMessageContentType]: IMessageContentReturnTypeMap[k
 };
 
 /*
-interface IComRendererRequest<T=any>
+interface IComRendererRequest
 {
 	id: string;
-	callback: ( arg: T )=> any;
+	comFlowManager: ComFlowManager;
+	callback: ( arg: any )=> any;
 }
 */
 export class ICP_RendererComs
 {
-
+//	private static readonly MappedRequests = new Map<string, IComRendererRequest>();
 
 	/** Add all the listeners for each flow of this manager
 	 * @param comFlowManager 
 	 */
-/*	private static RegisterComFlowManagerCallbacks( comFlowManager?: ComFlowManager )
+/*	private static RegisterComFlowManagerCallbacks( channel: string, comFlowManager?: ComFlowManager )
 	{
-		if ( comFlowManager )
+		comFlowManager = comFlowManager || new ComFlowManager(channel);
+	//	alert((window as any).ICP_RendererInterface);
+		console.log( `RegisterComFlowManagerCallbacks: ${channel}, ${comFlowManager.Id}` );
+		(window as any).ICP_RendererInterface.receive( ( channel: string, data: any ) =>
 		{
-			(window as any).api.receive( 'fromMain', ( [channel, comFlowManagerId]:any[] ) =>
+			console.log("RENDERER LISTEN", channel, data);
+			switch(channel)
 			{
-
-			});
-	//		console.log("ICP_RendererComs:Registering ComFlowManager", comFlowManager.Tag);
-			ipcRenderer.on(ComFlowManager.ToProgressValueId(comFlowManager.Id), (event: Electron.IpcRendererEvent, maxValue: number, currentValue: number, label: string ) =>
-			{
-				comFlowManager.Progress.SetProgress( maxValue, currentValue );
-				comFlowManager.Progress.SetLabel(label);
-	//			console.log( `ICP_RendererComs:ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Tag}]:${maxValue}:${currentValue}` );
-			});
-
-			ipcRenderer.on(ComFlowManager.ToProgressLabelId(comFlowManager.Id), (event: Electron.IpcRendererEvent, label: string ) =>
-			{
-				comFlowManager.Progress.SetLabel(label);
-	//			console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Tag}]:${label}` );
-			});
-
-			// Dispose
-			ipcRenderer.on(comFlowManager.Id, (event: Electron.IpcRendererEvent, ...args: any[]) =>
-			{
-	//			console.log("ICP_RendererComs:Unregistering ComFlowManager on dispose", comFlowManager.Tag);
-				ipcRenderer.removeAllListeners( comFlowManager.Id );
-				ipcRenderer.removeAllListeners( ComFlowManager.ToProgressValueId(comFlowManager.Id) );
-				ipcRenderer.removeAllListeners( ComFlowManager.ToProgressLabelId(comFlowManager.Id) );
-			});
-		}
+				case ComFlowManager.ToProgressValueId(comFlowManager.Id):
+				{
+					const [maxValue, currentValue, label] = data;
+					comFlowManager.Progress.SetProgress( maxValue, currentValue );
+					comFlowManager.Progress.SetLabel(label);
+					break;
+				}
+				case ComFlowManager.ToProgressLabelId(comFlowManager.Id):
+				{
+					const [label] = data;
+					comFlowManager.Progress.SetLabel(label);
+					break;
+				}
+				case ComFlowManager.ToUnregisterId(comFlowManager.Id):
+				{
+					ICP_RendererComs.MappedRequests.delete(comFlowManager.Id);
+					console.log('Deleted com flow manager', comFlowManager.Tag);
+					break;
+				}
+			}
+		});
+		return comFlowManager.Id;
 	}
 */
-
 	/** Allow async comunication to main process
 	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH
 	 * @param comFlowManager The meanager that will handle data flow
 	 * @param args Arguments to pass to the caller 
 	 */
-/*	public static async Invoke<T extends keyof IComunications>(channel: T, comFlowManager?: ComFlowManager, ...args: IComunications[T]['args']): Promise<IComunications[T]['return'] | null>
+/*	public static async Request<T extends keyof IComunications>(channel: T, comFlowManager?: ComFlowManager, ...args: IComunications[T]['args']): Promise<IComunications[T]['return'] | null>
 	{
-		comFlowManager = comFlowManager || new ComFlowManager(channel);
-		ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
-		const result = await Promise.resolve(ipcRenderer.invoke(channel, comFlowManager.Id, ...args));
+		const registeredComFlowManagerId = ICP_RendererComs.RegisterComFlowManagerCallbacks(channel, comFlowManager);
+
+		const result = await Promise.resolve((window as any).ICP_RendererInterface.send(channel, registeredComFlowManagerId, ...args));
 		
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.length - 1);
@@ -91,34 +92,21 @@ export class ICP_RendererComs
 	}
 */
 
-	private static readonly MappedRequestes = new Map<string, Function>();
-
-	public static Initialize(): void
+	public static Notify(channel: string, ...args: any[]): void
 	{
-		(window as any).api.receive( "fromMain", ( [channel, comFlowManagerId, result]:any[] ) =>
-		{
-			console.log("from main", channel, comFlowManagerId, result)
-			let callback: Function | undefined = undefined;
-			if (callback = ICP_RendererComs.MappedRequestes.get(comFlowManagerId))
-			{
-				callback(result);
-			}
-			else
-			{
-				throw new Error(`MappedRequest not found`);
-			}
-		});
+		(window as any).ICP_RendererInterface.notify(channel, args);
 	}
 
 	public static async Request<T extends keyof IComunications>(channel: T, comFlowManager?: ComFlowManager, ...args: IComunications[T]['args']): Promise<IComunications[T]['return'] | null>
 	{
 		comFlowManager = comFlowManager || new ComFlowManager(channel);
-	//	ICP_RendererComs.RegisterComFlowManagerCallbacks(comFlowManager);
-
-		(window as any).api.send('toMain', channel, comFlowManager.Id, ...args);
-		const result = await new Promise<any>( resolve => ICP_RendererComs.MappedRequestes.set(comFlowManager.Id, resolve));
-	//	console.log('Renderer obtained', result);
-
+	//	ICP_RendererComs.RegisterComFlowManagerCallbacks(channel, comFlowManager);
+	
+		const result = await Promise.resolve((window as any).ICP_RendererInterface.request(channel, comFlowManager.Id, ...args)).catch( () =>
+		{
+			console.log('FAILED MF');
+			return null;
+		});
 		const typeString = Object.prototype.toString.call(result);
 		const type = typeString.substring('[object '.length, typeString.length - 1);
 	//	console.log( 'ICP_RendererComs:Invoke', channel, args, typeString, type, result )
@@ -131,5 +119,33 @@ export class ICP_RendererComs
 		console.error( `RendererComs:Invoke: Unrecognized/unsupported type received at channel ${channel} with args: (${args}), type is ${type}` );
 		return null;
 	}
-}
 
+/*
+	private static UpdateComFlowManager( id:string, comFlowManager: ComFlowManager, data:any ): void
+	{
+		switch(id)
+		{
+			case ComFlowManager.ToProgressValueId(comFlowManager.Id):
+			{
+				const [maxValue, currentValue, label] = data;
+				comFlowManager.Progress.SetProgress( maxValue, currentValue );
+				comFlowManager.Progress.SetLabel(label);
+				break;
+			}
+			case ComFlowManager.ToProgressLabelId(comFlowManager.Id):
+			{
+				const [label] = data;
+				comFlowManager.Progress.SetLabel(label);
+				break;
+			}
+			case comFlowManager.Id:
+			{
+				ICP_RendererComs.MappedRequests.delete(comFlowManager.Id);
+				console.log('Deleted com flow manager', comFlowManager.Tag);
+				break;
+			}
+		}
+	}
+*/
+
+}
