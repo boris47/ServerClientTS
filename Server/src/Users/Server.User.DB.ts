@@ -89,10 +89,12 @@ export default class ServerUserDB
 
 		// Buffer -> String
 		let content = contentOrError.toString();
-
+		
 		// Decryption
 		content = ServerUserDB.CustomCryptoEnabled ? CustomCrypto.Decrypt( content, ServerUserDB.passPhrase32Bit, ServerUserDB.iv ) : content
-
+		
+		content = content ||  '{}';
+		
 		// Parsing
 		const parsed = GenericUtils.Parse<ITemplatedObject<Object>>( content );
 		if ( GenericUtils.IsTypeOf(parsed, Error) )

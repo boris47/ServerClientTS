@@ -74,11 +74,6 @@ export interface IResponsesMapItem
 
 export const ResponsesMap: ITemplatedObject<IResponsesMapItem> =
 {
-	[EMappedPaths.PINGPONG]:
-	{
-		requiresAuth: false,
-		responseMethods: { get: ServerResponsesProcessing.Pong }
-	},
 	[EMappedPaths.USER]:
 	{
 		requiresAuth: false,

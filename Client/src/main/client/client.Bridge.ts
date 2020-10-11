@@ -27,6 +27,7 @@ interface IClientRequest
 async function ProcessRequest( request : IClientRequest ) : Promise<Buffer|Error>
 {
 	const { path, method, clientRequestInternalOptions } = request;
+	delete request.clientRequestInternalOptions;
 
 	// Check if request is mapped
 	const availableMethods : IRequestsMethods = RequestsMap[path];

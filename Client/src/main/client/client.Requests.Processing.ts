@@ -1,7 +1,7 @@
 
 import * as http from 'http';
 import * as net from 'net';
-import * as followRedirects from 'follow-redirects';
+//import * as followRedirects from 'follow-redirects';
 import * as stream from 'stream';
 import * as zlib from 'zlib';
 
@@ -109,7 +109,7 @@ export class ClientRequestsProcessing
 								clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, currentReachedLength);
 							//	console.log( "ClientRequestsProcessing.ServetToClient:data: ", contentLength, currentLength, progress );
 							});
-		
+
 							clientRequestInternalOptions.WriteStream.on( 'finish', () =>
 							{
 								const result = Buffer.from( 'ClientRequestsProcessing:HandleDownload[WriteStream]: Data received correcly' );
@@ -213,9 +213,6 @@ export class ClientRequestsProcessing
 	/** Server -> Client (No Write Stream) */
 	public static async SimpleRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
 	{
-//		const ping = await ClientRequestsProcessing.Ping(options, clientRequestInternalOptions);
-//		if ( !Buffer.isBuffer(ping) ) return ping;
-
 		clientRequestInternalOptions.WriteStream?.destroy(); // Ensura data will be sent into body
 		clientRequestInternalOptions.WriteStream = undefined;
 		return ClientRequestsProcessing.HandleDownload(options, clientRequestInternalOptions);
@@ -226,7 +223,7 @@ export class ClientRequestsProcessing
 	private static MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: Error | Buffer) => void): http.ClientRequest
 	{
 		options.headers = clientRequestInternalOptions.Headers;
-		
+		/*
 		const followOptions: followRedirects.FollowOptions<http.RequestOptions> =
 		{
 			followRedirects: true,
@@ -240,8 +237,10 @@ export class ClientRequestsProcessing
 		//		}
 		//	}
 		};
-		const requestOptions: (http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>) = { ...options, ...followOptions };
-		const request: http.ClientRequest = followRedirects.http.request(requestOptions) as http.ClientRequest;
+		*/
+	//	const requestOptions: (http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>) = { ...options, ...followOptions };
+	//	const request: http.ClientRequest = followRedirects.http.request(requestOptions) as http.ClientRequest;
+	const request: http.ClientRequest = http.request(options);
 		request.on('timeout', () =>
 		{
 			request.destroy();
@@ -251,6 +250,7 @@ export class ClientRequestsProcessing
 
 		request.on('error', (err: Error) =>
 		{
+			console.log((err as any).toString());
 			ComUtils.ResolveWithError('ClientRequestsProcessing:MakeRequest:[RequestError]', err, resolve);
 			ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
 		});

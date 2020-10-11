@@ -122,13 +122,12 @@ async function createMainWindow()
 
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
-		window.loadURL(winURL).catch(( error: Error ) =>
+		window.loadURL(winURL).then(resolve).catch(( error: Error ) =>
 		{
 			reject(error);
 		//	console.error(error);
 		//	process.exit(1);
-		})
-		.then(resolve);
+		});
 	});
 	
 	await GenericUtils.DelayMS(1000);
@@ -137,7 +136,7 @@ async function createMainWindow()
 	window.webContents.openDevTools({ mode: "detach" });
 
 	window.show();
-	return window;
+	return Promise.resolve(window);
 }
 
 async function main()
@@ -156,14 +155,15 @@ async function main()
 	await FS_Storage.LoadStorage();
 
 	// Second instance is not allowed
-	const isSecondInstance = electron.app.requestSingleInstanceLock();
-	electron.app.on('second-instance', (event: electron.Event, argv: string[], cwd: string) =>
-	{
-		if (isSecondInstance)
+	const isPrimaryInstance = electron.app.requestSingleInstanceLock();
+//	electron.app.on('second-instance', (event: electron.Event, argv: string[], cwd: string) =>
+//	{
+		if (!isPrimaryInstance)
 		{
-            electron.app.quit()
-        }
-	});
+			electron.app.quit();
+			return;
+		}
+//	});
 	
 	electron.app.on("browser-window-created", (event: electron.Event, window: electron.BrowserWindow) =>
 	{
@@ -179,39 +179,33 @@ async function main()
 	{
 		electron.app.once('window-all-closed', resolve);
 	});
-/*
+
 	// we expect 'rendererReady' notification from Renderer
 	const rendererPromise = new Promise<void>((resolve: () => void) =>
 	{
-		electron.ipcMain.once('rendererReady', () =>
-		{
-			console.log("renderer is ready");
-			resolve();
-		});
+		electron.ipcMain.once('rendererReady', resolve );
 	});
-*/
+
 	// initiate creating the main window
 	const mainWindowPromise = createMainWindow();
+
+	let InitializedCount = 0;
+	mainWindowPromise.then(() => ++InitializedCount );
+	rendererPromise.then(() => ++InitializedCount );
 
 	// await both the window to have loaded 
 	// and 'rendererReady' notification to have been fired,
 	// while observing premature termination
-	await Promise.race(
-		[
-			Promise.all([/*rendererPromise,*/ mainWindowPromise]),
-			terminationPromise.finally(() =>
-			{
-				throw new Error('All windows closed prematurely.');
-			})
-		]
-	);
+	await Promise.race( [ Promise.all([rendererPromise, mainWindowPromise]), terminationPromise ] );
 
-	// keep the mainWindow reference
-	const mainWindow = await mainWindowPromise;
-
-	// notify the Renderer that Main is ready
-	mainWindow.webContents.send("mainReady");
-
+	if (InitializedCount === 2)
+	{
+		console.log('Initialization completed');
+	}
+	else
+	{
+		throw new Error('All windows closed prematurely.');
+	}
 	// from here we can do anything we want
 
 	// awaiting terminationPromise here keeps the mainWindow object alive

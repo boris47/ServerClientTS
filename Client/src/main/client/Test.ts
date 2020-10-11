@@ -14,13 +14,7 @@ import FS_Storage from "../../../../Common/FS_Storage";
 import { IPackageJSON } from "../../../../Common/IPackageJSON";
 import WebSocketManager from "./client.Modules.WebSocket";
 
-const { config: { name } }: IPackageJSON = require('../../../package.json');
-
-
-process.on('exit', (code: number) =>
-{
-	WebSocketManager.Finalize();
-});
+const { config: { name: AppName } }: IPackageJSON = require('../../../package.json');
 
 async function Main()
 {
@@ -35,10 +29,10 @@ async function Main()
 	process.env.NODE_ENV = 'development';
 	await InstallRequestsProcessor();
 	{
-		await FS_Storage.Initialize(name, 'cookies');
+		await FS_Storage.Initialize(AppName, 'cookies');
 		await FS_Storage.LoadStorage();
 
-		Promise.resolve()
+		Promise.resolve(Buffer.from(''))
 		// User: Registration
 		.then(() => Request_UserRegister('Rob', 'erto') )
 		// Userl: Login
@@ -56,7 +50,19 @@ async function Main()
 		.then( ( result : Buffer | Error ) => Buffer.isBuffer(result) ? Promise.resolve(result) : Promise.reject(result) )
 		.then( ( value: Error | Buffer ) => console.log( "Value", value.toString() ))
 		.catch( ( reason: Error ) => console.error(reason))
-		.finally(() => process.exit(0));
+		.finally(() =>
+		{
+			WebSocketManager.Finalize();
+			return FS_Storage.Finalize();
+		})
+		
+		.finally(() =>
+		{
+			const v1 = (process as any)._getActiveHandles();
+			const v2 = (process as any)._getActiveRequests();
+			console.log(v1, v2);
+		})
+		
 	}
 }
 

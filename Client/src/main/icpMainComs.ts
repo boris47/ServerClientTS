@@ -34,7 +34,7 @@ export function SetupMainHandlers()
 	//
 	const RegisterComFlowManager = ( sender: electron.WebContents, channel: string, comFlowManagerId: string ) : ComFlowManager =>
 	{
-	//	console.log("Registering ComFlowManager", comFlowManagerId);
+		console.log("Registering ComFlowManager", channel);
 		const comFlowManager =  new ComFlowManager(channel );// `${sender.id}_${comFlowManagerId}`);
 		{	// Progress
 			const progressValueId = ComFlowManager.ToProgressValueId(comFlowManagerId);
@@ -194,9 +194,8 @@ export function SetupMainHandlers()
 		{
 			return Using( RegisterComFlowManager(event.sender, channel, comFlowManagerId), async (comFlowManager: ComFlowManager) =>
 			{
-				console.log('ICP_MAIN: Received',channel, comFlowManagerId);
-				const result = await Promise.resolve((<any>callback)(event, comFlowManager, ...args))
-				event.sender.send( ComFlowManager.ToProgressValueId(comFlowManagerId), 100, 50, null );
+		//		console.log('ICP_MAIN: Received',channel, comFlowManagerId);
+				const result = await Promise.resolve((<any>callback)(event, comFlowManager, ...args));
 				UnregisterComFlowManager(event.sender, comFlowManager.Tag, comFlowManagerId);
 				return result;
 			});
