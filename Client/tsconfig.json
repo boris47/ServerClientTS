@@ -68,7 +68,6 @@
 	* Glob patterns require TypeScript version 2.0 or later.
 	*/
 	"exclude": [
-		".electron-vue",
 		"node_modules",
 		"./node_modules/@types",
 	],
