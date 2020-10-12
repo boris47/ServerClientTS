@@ -14,7 +14,7 @@ import { ICP_RendererComs } from './icpRendererComs';
 import { EComunicationsChannels } from '../icpComs';
 
 // Vue
-import Vue, { VueConstructor, PluginObject } from 'vue';
+import Vue, { VueConstructor, PluginObject, CreateElement, RenderContext } from 'vue';
 
 // Vue Router
 import AppRouter from './appRouter';
@@ -83,7 +83,7 @@ async function Initialize()
 	const vueInstance = new Vue(
 		{
 			router: AppRouter.Initialize(),
-			template: '<router-view></router-view>'
+			render: (createElement: CreateElement, hack: RenderContext<Record<never, any>>) => createElement('router-view')
 		}
 	);
 	vueInstance.$mount('#app');
