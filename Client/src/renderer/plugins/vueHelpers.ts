@@ -6,7 +6,7 @@ const methods =
 	GetStatic: (resource: string): string =>
 	{
 		const pathToResource = `${localStorage.getItem('staticPath')}/${resource}`;
-		console.log(pathToResource);
+		console.log(`GetStatic:Path '${pathToResource}'`);
 		return pathToResource;
 	}
 }

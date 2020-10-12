@@ -32,7 +32,8 @@ async function Main()
 		await FS_Storage.Initialize(AppName, 'cookies');
 		await FS_Storage.LoadStorage();
 
-		Promise.resolve(Buffer.from(''))
+		for (let index = 0; index < 20; index++)
+		await Promise.resolve(Buffer.from(''))
 		// User: Registration
 		.then(() => Request_UserRegister('Rob', 'erto') )
 		// Userl: Login
@@ -49,20 +50,19 @@ async function Main()
 		// Report and exit
 		.then( ( result : Buffer | Error ) => Buffer.isBuffer(result) ? Promise.resolve(result) : Promise.reject(result) )
 		.then( ( value: Error | Buffer ) => console.log( "Value", value.toString() ))
-		.catch( ( reason: Error ) => console.error(reason))
-		.finally(() =>
+		.catch( ( reason: Error ) => console.error(reason));
+		
+		Promise.resolve().finally(() =>
 		{
 			WebSocketManager.Finalize();
 			return FS_Storage.Finalize();
 		})
-		
 		.finally(() =>
 		{
 			const v1 = (process as any)._getActiveHandles();
 			const v2 = (process as any)._getActiveRequests();
 			console.log(v1, v2);
-		})
-		
+		});
 	}
 }
 

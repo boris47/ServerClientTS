@@ -130,7 +130,7 @@ export default class TestPage extends Vue
 
 	protected async onDownloadFolderSelected( [folderPath] : string ) : Promise<void>
 	{
-		console.log("onDownloadFolderSelected", folderPath)
+	//	console.log("onDownloadFolderSelected", folderPath)
 		this.downloadFileLocation = folderPath;
 //		const result = await ICP_RendererComs.Invoke( EComunicationsChannels.REQ_LIST, null, null );
 //		if ( Buffer.isBuffer(result) )

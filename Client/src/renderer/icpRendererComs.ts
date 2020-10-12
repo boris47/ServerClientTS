@@ -37,28 +37,28 @@ export class ICP_RendererComs
 
 	private static RegisterComFlowManagerCallbacks( channel: string, comFlowManager?: ComFlowManager ): string
 	{
-		if (!comFlowManager)
-			console.log(`Creating new ComFlowManager fron channel ${channel}`);
+	//	if (!comFlowManager)
+	//		console.log(`Creating new ComFlowManager fron channel ${channel}`);
 		comFlowManager = comFlowManager || new ComFlowManager(channel);
 		
-		console.log("ICP_RendererComs:Registering ComFlowManager", comFlowManager.Tag);
+	//	console.log("ICP_RendererComs:Registering ComFlowManager", comFlowManager.Tag);
 		window.ICP_RendererInterface.listen(ComFlowManager.ToProgressValueId(comFlowManager.Id), (maxValue: number, currentValue: number, label: string ) =>
 		{
-			console.log( `ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Tag}]:${maxValue}:${currentValue}` );
+		//	console.log( `ICP_RendererComs:ComFlowManager:Progress Value:[${comFlowManager.Tag}]:'${maxValue.toString()}':'${currentValue.toString()}'` );
 			comFlowManager.Progress.SetProgress( maxValue, currentValue );
 			comFlowManager.Progress.SetLabel(label);
 		});
 
 		window.ICP_RendererInterface.listen(ComFlowManager.ToProgressLabelId(comFlowManager.Id), (label: string ) =>
 		{
-			console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Tag}]:${label}` );
+	//		console.log( `ICP_RendererComs:ComFlowManager:Progress Label:[${comFlowManager.Tag}]:'${label}'` );
 			comFlowManager.Progress.SetLabel(label);
 		});
 
 		// Dispose
 		window.ICP_RendererInterface.listen(ComFlowManager.ToUnregisterId(comFlowManager.Id), () =>
 		{
-			console.log("ICP_RendererComs:Unregistering ComFlowManager on dispose", comFlowManager.Tag);
+	//		console.log("ICP_RendererComs:Unregistering ComFlowManager on dispose", comFlowManager.Tag);
 			window.ICP_RendererInterface.stopListening( ComFlowManager.ToUnregisterId(comFlowManager.Id) );
 			window.ICP_RendererInterface.stopListening( ComFlowManager.ToProgressValueId(comFlowManager.Id) );
 			window.ICP_RendererInterface.stopListening( ComFlowManager.ToProgressLabelId(comFlowManager.Id) );

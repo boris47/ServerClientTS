@@ -1,12 +1,11 @@
 
 import * as http from 'http';
-import * as net from 'net';
-//import * as followRedirects from 'follow-redirects';
 import * as stream from 'stream';
-import * as zlib from 'zlib';
+import axios, { AxiosRequestConfig, AxiosError, Method } from 'axios';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
+import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 
 
@@ -23,13 +22,6 @@ export interface IClientRequestInternalOptions
 
 export class ClientRequestsProcessing
 {
-	private static zlibOptions: zlib.ZlibOptions =
-	{
-		flush: zlib.constants.Z_SYNC_FLUSH,
-		finishFlush: zlib.constants.Z_SYNC_FLUSH
-	};
-
-
 	/**  */
 	private static ResetClientInternalOptionsToBad(clientRequestInternalOptions: IClientRequestInternalOptions): void
 	{
@@ -42,170 +34,106 @@ export class ClientRequestsProcessing
 		clientRequestInternalOptions.Value = undefined;
 	}
 
-	/**  */
-	private static HandleCompression(response: http.IncomingMessage) : zlib.Gunzip | zlib.Inflate | http.IncomingMessage
-	{
-		let stream: (zlib.Gunzip | zlib.Inflate | http.IncomingMessage) = response;
-		switch (response.headers['content-encoding']?.trim().toLowerCase())
-		{
-			case 'gzip': case 'compress':
-			{
-				stream = response.pipe(zlib.createGunzip(ClientRequestsProcessing.zlibOptions));
-				break;
-			}
-			case 'deflate':
-			{
-				stream = response.pipe(zlib.createInflate(ClientRequestsProcessing.zlibOptions));
-				break;
-			}
-		}
-
-	//	stream.on('error', (err: Error) =>
-	//	{
-	//		ComUtils.ResolveWithError('ClientRequestsProcessing:HandleCompression:[ResponseError]', `${ err.name }:${ err.message }`, resolve);
-	//	});
-		return stream;
-	}
-
 
 	/** Server -> Client */
 	public static async HandleDownload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions ): Promise<Buffer | Error>
 	{
-		return new Promise<Buffer | Error>( resolve =>
+		const config: AxiosRequestConfig = 
 		{
-			const request = ClientRequestsProcessing.MakeRequest(options, clientRequestInternalOptions, resolve);
-			request.on('response', (response: http.IncomingMessage): void =>
-			{
-				if (response.statusCode >= 400)
-				{
-					const errMessage = `${response.statusCode}:${response.statusMessage}`;
-					ComUtils.ResolveWithError( 'ClientRequestsProcessing:HandleDownload:[StatusCode]', errMessage, resolve );
-					ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-					return;
-				}
+			baseURL: `http://${options.host}:${options.port}`,
+			timeout: options.timeout,
+			decompress: true,
 
-				const compressonHandledResponse = ClientRequestsProcessing.HandleCompression(response);
-				const buffers = new Array<Buffer>();
-				const contentLength: number = parseInt(response.headers['content-length'], 10);
-				let currentLength = 0;
-				if (clientRequestInternalOptions.WriteStream)
-				{
-//					request.on( 'socket', (socket: net.Socket) =>
-//					{
-//						socket.on('connect', () =>
-//						{
-							compressonHandledResponse.pipe(clientRequestInternalOptions.WriteStream);
-							
-							clientRequestInternalOptions.WriteStream.on( 'error', (err: Error) =>
-							{
-								ComUtils.ResolveWithError('ClientRequestsProcessing:HandleDownload:[WriteStream]', `${err.name}:${err.message}`, resolve);
-								ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-							});
+			url: options.path,
+			method: options.method as Method,
+			headers: clientRequestInternalOptions.Headers,
+			responseType: clientRequestInternalOptions.WriteStream ? 'stream' : 'arraybuffer',
+		};
+
+		const response = await axios.request<stream.Readable | Buffer>(config).then(response => response ).catch(err => err);
+		if (response instanceof axios.Cancel)
+		{
+			let err = new Error(response.message);
+			err.name = `ClientRequestsProcessing:HandleDownload`;
+			return err;
+		}
+		if (GenericUtils.IsTypeOf(response, Error))
+		{
+			return response;
+		}
+
 		
-							let currentReachedLength: number = 0;
-							compressonHandledResponse.on('data', (chunk: Buffer) =>
-							{
-								currentReachedLength += chunk.length;
-								clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, currentReachedLength);
-							//	console.log( "ClientRequestsProcessing.ServetToClient:data: ", contentLength, currentLength, progress );
-							});
+		const responseBody: Buffer | stream.Readable = response.data;
+		if (Buffer.isBuffer(responseBody))
+		{
+			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(1, 1);
+			return Buffer.from(responseBody);
+		}
+			
+		const contentLength: number = parseInt(response.headers['content-length'], 10);
+		let loadedBytes = 0;
+		responseBody.pipe(clientRequestInternalOptions.WriteStream);
+		responseBody.on( 'data', (chunk: Buffer) =>
+		{
+			loadedBytes += chunk.length;
+			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, loadedBytes);
+		});
 
-							clientRequestInternalOptions.WriteStream.on( 'finish', () =>
-							{
-								const result = Buffer.from( 'ClientRequestsProcessing:HandleDownload[WriteStream]: Data received correcly' );
-								ComUtils.ResolveWithGoodResult(result, resolve);
-							});
-//						});
-//					});
-
-				}
-				else // normal way
-				{
-					compressonHandledResponse.on('error', (err: Error) =>
-					{
-						ComUtils.ResolveWithError('ClientRequestsProcessing:HandleDownload:[Standard]', err, resolve);
-						ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-					});
-
-					compressonHandledResponse.on('data', (chunk: Buffer) =>
-					{
-						currentLength += chunk.length;
-						buffers.push(chunk);
-
-						if (contentLength < currentLength)
-						{
-							const errMessage = `Response "${options.path}:${options.method}" data length exceed(${currentLength}) content length(${contentLength})!`;
-							ComUtils.ResolveWithError( 'ClientRequestsProcessing:HandleDownload:[DataSizeError]', errMessage, resolve );
-							ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-						}
-					});
-
-					compressonHandledResponse.on('end', () =>
-					{
-						const result: Buffer = Buffer.concat(buffers, currentLength)
-						ComUtils.ResolveWithGoodResult(result, resolve);
-					});
-				}
-			});
-			request.end();
+		return new Promise( resolve =>
+		{
+			clientRequestInternalOptions.WriteStream.on('close', () => resolve(Buffer.from('OK')) );
+			clientRequestInternalOptions.WriteStream.on('error', resolve );
 		});
 	}
 
+//	private static isReadableStream(body: any): body is stream.Readable
+//	{
+//		return typeof body.pipe === "function";
+//	}
+
 
 	/** Client -> Server */
-	public static async HandleUpload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
+	public static HandleUpload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
 	{
-		return new Promise<Buffer | Error>( resolve =>
+		const contentLength: number = parseInt(clientRequestInternalOptions.Headers['content-length'], 10);
+		let loadedBytes = 0;
+		const uploadReportStream = new stream.Transform(
+			{
+				transform: (chunk: string | Buffer, _encoding: string, callback: stream.TransformCallback) =>
+				{
+					loadedBytes += chunk.length;
+					clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, loadedBytes);
+					callback(undefined, chunk);
+				}				
+			}
+		);
+
+		if (clientRequestInternalOptions.ReadStream)
 		{
-			const request = ClientRequestsProcessing.MakeRequest(options, clientRequestInternalOptions, resolve);
-			if (clientRequestInternalOptions.ReadStream)
-			{
-				clientRequestInternalOptions.ReadStream.on( 'error', ( err: Error ) =>
-				{
-					ComUtils.ResolveWithError( "ClientRequestsProcessing:HandleUpload[ReadStream]", err , resolve);
-					ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-				});
+			clientRequestInternalOptions.ReadStream = clientRequestInternalOptions.ReadStream.pipe(uploadReportStream);
+		}
+		else
+		{
+			uploadReportStream.end(clientRequestInternalOptions.Value);
+		}
+		const config: AxiosRequestConfig = 
+		{
+			baseURL: `http://${options.host}:${options.port}`,
+			timeout: options.timeout,
+			decompress: true,
 
-				// Read data only if socket is connected
-				request.on( 'socket', (socket: net.Socket) =>
-				{
-					socket.on('connect', () =>
-					{
-						const totalLength: number = parseInt(clientRequestInternalOptions.Headers['content-length'], 10);
-						let currentLength: number = 0;
-						clientRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
-						{
-							currentLength += chunk.length;
-							request.write(chunk);
-							clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(totalLength, currentLength);
-						//	console.log( "ClientRequestsProcessing.Request_PUT:data: ", clientRequestInternalOptions.ComFlowManager.Tag, totalLength, currentLength, currentLength / totalLength );
-						});
-			
-						clientRequestInternalOptions.ReadStream.on( 'end', () =>
-						{
-							request.end();
-							clientRequestInternalOptions.ReadStream.destroy();
-							ComUtils.ResolveWithGoodResult( Buffer.from( 'ClientRequestsProcessing:HandleUpload[ReadStream]: Data sent correcly' ), resolve );
-						});
-					});
-				});
-			}
+			maxBodyLength: contentLength,
+			data: clientRequestInternalOptions.ReadStream || clientRequestInternalOptions.Value,
+			url: options.path,
+			method: options.method as Method,
+			headers: clientRequestInternalOptions.Headers,
+			responseType: 'arraybuffer',
+		};
 
-			if (clientRequestInternalOptions.Value !== undefined)
-			{
-				request.on( 'response', ( response: http.IncomingMessage ) =>
-				{
-					if (response.statusCode >= 400)
-					{
-						const errMessage = `${response.statusCode}:${response.statusMessage}`;
-						ComUtils.ResolveWithError( 'ClientRequestsProcessing:HandleUpload:[StatusCode]', errMessage, resolve );
-						ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
-						return;
-					}
-					ComUtils.ResolveWithGoodResult( Buffer.from( 'ClientRequestsProcessing:HandleUpload[Standard]: Data sent correcly' ), resolve );
-				});
-				request.end(clientRequestInternalOptions.Value);
-			}
+		return axios.request<Buffer>(config).then( res => res.data ).catch((err: Error|AxiosError<Buffer>) =>
+		{
+			ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
+			return err;
 		});
 	}
 
@@ -222,25 +150,34 @@ export class ClientRequestsProcessing
 	/** Private */
 	private static MakeRequest(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions, resolve: (value: Error | Buffer) => void): http.ClientRequest
 	{
+		ClientRequestsProcessing.MakeRequest
 		options.headers = clientRequestInternalOptions.Headers;
-		/*
-		const followOptions: followRedirects.FollowOptions<http.RequestOptions> =
-		{
-			followRedirects: true,
-			maxRedirects: 21, // default
-			maxBodyLength: 2 * 1024 * 1024 * 1024, // 2GB
-		//	beforeRedirect: ( options: http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>, responseDetails: followRedirects.ResponseDetails ) =>
-		//	{
-		//		if (false)
-		//		{
-		//			throw Error("no errors");
-		//		}
-		//	}
-		};
-		*/
-	//	const requestOptions: (http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>) = { ...options, ...followOptions };
-	//	const request: http.ClientRequest = followRedirects.http.request(requestOptions) as http.ClientRequest;
-	const request: http.ClientRequest = http.request(options);
+		
+		let request: http.ClientRequest = undefined;
+//		const bUseFollowRedirect = true;
+//		if (bUseFollowRedirect)
+//		{
+//			const followOptions: followRedirects.FollowOptions<http.RequestOptions> =
+//			{
+//				followRedirects: true,
+//				maxRedirects: 21, // default
+//				maxBodyLength: 2 * 1024 * 1024 * 1024, // 2GB
+			//	beforeRedirect: ( options: http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>, responseDetails: followRedirects.ResponseDetails ) =>
+			//	{
+			//		if (false)
+			//		{
+			//			throw Error("no errors");
+			//		}
+			//	}
+//			};			
+//			const requestOptions: (http.RequestOptions & followRedirects.FollowOptions<http.RequestOptions>) = { ...options, ...followOptions };
+//			request = followRedirects.http.request(requestOptions) as http.ClientRequest;
+//		}
+//		else
+//		{
+			request = http.request(options);
+//		}
+
 		request.on('timeout', () =>
 		{
 			request.destroy();
@@ -250,8 +187,7 @@ export class ClientRequestsProcessing
 
 		request.on('error', (err: Error) =>
 		{
-			console.log((err as any).toString());
-			ComUtils.ResolveWithError('ClientRequestsProcessing:MakeRequest:[RequestError]', err, resolve);
+			ComUtils.ResolveWithError('ClientRequestsProcessing:MakeRequest:[ERROR]', err, resolve);
 			ClientRequestsProcessing.ResetClientInternalOptionsToBad(clientRequestInternalOptions);
 		});
 

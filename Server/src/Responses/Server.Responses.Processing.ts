@@ -97,10 +97,11 @@ export default class ServerResponsesProcessing
 					ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 				});
 				
-				serverRequestInternalOptions.WriteStream.on( 'finish', () =>
+				serverRequestInternalOptions.WriteStream.on( 'close', (src: stream.Readable) =>
 				{
-					const result = Buffer.from( 'ServerResponsesProcessing:HandleDownload[WriteStream]: Data received correcly' );
+					serverRequestInternalOptions.WriteStream.destroy();
 					ServerResponsesProcessing.EndResponseWithGoodResult( response, ServerResponsesProcessing.Buffer_OK );
+					const result = Buffer.from( 'ServerResponsesProcessing:HandleDownload[WriteStream]: Data received correcly' );
 					ComUtils.ResolveWithGoodResult( result, resolve );
 				});
 			}
@@ -117,6 +118,7 @@ export default class ServerResponsesProcessing
 					
 					if (contentLength < currentLength)
 					{
+						request.destroy();
 						const errMessage = `Request "${request.url}:${request.method}" data length exceed(${currentLength}) content length(${contentLength})!`;
 						ServerResponsesProcessing.EndResponseWithError( response, errMessage, 413 ); // TODO Ensure correct status code
 						ComUtils.ResolveWithError( 'ServerResponsesProcessing:ProcessRequest', errMessage, resolve );
@@ -145,6 +147,7 @@ export default class ServerResponsesProcessing
 			// If read stream is available
 			if ( serverRequestInternalOptions.ReadStream )
 			{
+				serverRequestInternalOptions.ReadStream.pipe( response );
 				serverRequestInternalOptions.ReadStream.on( 'error', ( err: Error ) =>
 				{
 					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
@@ -152,12 +155,7 @@ export default class ServerResponsesProcessing
 					ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 				});
 	
-				serverRequestInternalOptions.ReadStream.on( 'data', ( chunk: Buffer ) =>
-				{
-					response.write(chunk);
-				});
-	
-				serverRequestInternalOptions.ReadStream.on( 'end', () =>
+				serverRequestInternalOptions.ReadStream.on( 'close', () =>
 				{
 					serverRequestInternalOptions.ReadStream.destroy();
 					ServerResponsesProcessing.EndResponseWithGoodResult( response );

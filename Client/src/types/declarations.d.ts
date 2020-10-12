@@ -20,6 +20,7 @@ declare interface Window
 		/** @see `static\\Preload.ts` */
 		listen: ( channel: string, callback: Function ) => void,
 
+		/** @see `static\\Preload.ts` */
 		stopListening: ( channel: string ) => void,
 
 		/** @see `static\\Preload.ts` */

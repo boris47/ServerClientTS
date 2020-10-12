@@ -63,16 +63,16 @@
 		}
 	},
 	"dependencies": {
-		"electron-updater": "4.3.1",
-		"follow-redirects": "1.13.0",
+		"axios": "0.20.0",
 		"mime-types": "2.1.27",
+		"electron-updater": "4.3.1",
 		"source-map-support": "0.5.19",
 		"vue": "2.6.11",
 		"vue-router": "3.3.4",
 		"websocket": "1.0.31"
 	},
 	"devDependencies": {
-		"@types/follow-redirects": "1.13.0",
+		"@types/axios": "0.14.0",
 		"@types/mime-types": "2.1.0",
 		"@types/node": "12.12.38",
 		"@types/source-map-support": "0.5.2",
@@ -89,5 +89,11 @@
 		"vue-property-decorator": "9.0.0",
 		"vue-template-compiler": "2.6.11",
 		"webpack": "4.43.0"
+	},
+	"depsRemoved": {
+		"follow-redirects": "1.13.0"
+	},
+	"devDepsRemoved": {
+		"@types/follow-redirects": "1.13.0"
 	}
 }

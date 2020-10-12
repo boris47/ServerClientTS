@@ -43,14 +43,12 @@ export default class ProgressSpinner extends Vue
 	@Watch('side')
 	protected OnSideChanged( newValue: number )
 	{
-		console.log('watch')
 		this.side = newValue;
 		this.UpdateStyle();
 	}
 
 	protected mounted()
 	{
-		console.log('mounted')
 		this.UpdateStyle();
 	}
 

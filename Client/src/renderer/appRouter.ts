@@ -91,7 +91,7 @@ export default class AppRouter
 					if (to.fullPath == from.fullPath)  // same path, red light
 					{
 						result = false;
-						console.warn(`AppRouter:beforeResolve: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }`);
+						console.warn(`AppRouter:beforeResolve: From '${from.fullPath}' -> '${to.fullPath}' : ${result}`);
 					}
 				}
 
@@ -112,7 +112,7 @@ export default class AppRouter
 				if (authenticationRequired && !LoginManager.IsLoggedIn) // Login required, red light
 				{
 					result = <RawLocation> { path: '/loginPage', query: { redirect: to.fullPath } };
-					console.log(`AppRouter:beforeEach: From '${ from.fullPath }' -> '${ to.fullPath }' : ${ result }`);
+					console.log(`AppRouter:beforeEach: From '${from.fullPath}' -> '${to.fullPath}' : ${result}`);
 				}
 
 				/**
@@ -132,7 +132,7 @@ export default class AppRouter
 	///
 	public static NavigateTo(name: string)
 	{
-		console.log(`AppRouter:NavigateTo: Going to ${ name }`);
+		console.log(`AppRouter:NavigateTo: Going to ${name}`);
 		if ( AppRouter.instance.currentRoute.name !== name )
 		{
 			AppRouter.instance.push({ name: name });
