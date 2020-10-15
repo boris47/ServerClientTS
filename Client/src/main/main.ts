@@ -10,6 +10,7 @@ import WebSocketManager from './client/client.Modules.WebSocket';
 import GenericUtils from '../../../Common/Utils/GenericUtils';
 import MainProcessProtocols from './protocols';
 
+
 const bIsDev = process.env.NODE_ENV === 'development';
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
@@ -32,11 +33,11 @@ const SCHEME = 'app';
  */
 if (!bIsDev)
 {
-	global.__static = path.join(__dirname, '/static').replace(/\\/g, /*'/'*/'\\\\');
+	global.__static = path.join(__dirname, '/static').replace(/\\/g, /*'/'*/'/');
 }
 
 
-process.on('beforeExit', (code: number) =>
+process.on('exit', (code: number) =>
 {
 	WebSocketManager.Finalize();
 });
@@ -122,18 +123,22 @@ async function createMainWindow()
 
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
-		window.loadURL(winURL).then(resolve).catch(( error: Error ) =>
+		window.loadURL(winURL).catch(( error: Error ) =>
 		{
 			reject(error);
 		//	console.error(error);
 		//	process.exit(1);
 		});
+
+		electron.ipcMain.once('rendererReady', resolve );
 	});
 	
 	await GenericUtils.DelayMS(1000);
 
+//	window.webContents.session.loadExtension(rd)
+
 	// Open the DevTools if desired
-	window.webContents.openDevTools({ mode: "detach" });
+ 	window.webContents.openDevTools({ mode: "detach" });
 
 	window.show();
 	return Promise.resolve(window);
@@ -180,25 +185,18 @@ async function main()
 		electron.app.once('window-all-closed', resolve);
 	});
 
-	// we expect 'rendererReady' notification from Renderer
-	const rendererPromise = new Promise<void>((resolve: () => void) =>
-	{
-		electron.ipcMain.once('rendererReady', resolve );
-	});
-
 	// initiate creating the main window
 	const mainWindowPromise = createMainWindow();
 
-	let InitializedCount = 0;
-	mainWindowPromise.then(() => ++InitializedCount );
-	rendererPromise.then(() => ++InitializedCount );
+	let bInitialized = false;
+	mainWindowPromise.then(() => bInitialized = true );
 
 	// await both the window to have loaded 
 	// and 'rendererReady' notification to have been fired,
 	// while observing premature termination
-	await Promise.race( [ Promise.all([rendererPromise, mainWindowPromise]), terminationPromise ] );
+	await Promise.race( [ mainWindowPromise, terminationPromise ] );
 
-	if (InitializedCount === 2)
+	if (bInitialized)
 	{
 		console.log('Initialization completed');
 	}

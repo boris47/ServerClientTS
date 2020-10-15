@@ -43,12 +43,12 @@ type ComunicationInterfaceDefinition =
 
 
 //	const UNNECESSARY = 'UNNECESSARY';
-export type ElectronPath = 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'logs' | 'pepperFlashSystemPlugin';
+export type ElectronPath = 'home' | 'appData' | 'userData' | 'cache' | 'temp' | 'exe' | 'module' | 'desktop' | 'documents' | 'downloads' | 'music' | 'pictures' | 'videos' | 'recent' | 'logs' | 'pepperFlashSystemPlugin' | 'crashDumps';
 
 export interface IComunications extends ComunicationInterfaceDefinition
 {
 	[EComunicationsChannels.ELECTRON_PROPERTY]		: { args: [propertyPath: string[]];								return: string | number | object;			};
-	[EComunicationsChannels.ELECTRON_CALL]			: { args: [functionPath: string[], ...args:any[]];				return: string | number | object; 			};
+	[EComunicationsChannels.ELECTRON_CALL]			: { args: [functionPath: string[], ...args:any[]];				return: string | number | object | null;	};
 	[EComunicationsChannels.ELECTRON_PATH]			: { args: [path: ElectronPath]; 								return: string | Error; 					};
 	[EComunicationsChannels.ELECTRON_MODAL_OPEN]	: {	args: [options: electron.OpenDialogOptions];				return: electron.OpenDialogReturnValue;		};
 	[EComunicationsChannels.RESOURCE_PATH]			: {	args: [];													return: string; 							};

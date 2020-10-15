@@ -46,9 +46,9 @@ export default class MainProcessProtocols
 		const endPoint = 'dist', cwd = 'dist';
 		electron.protocol.registerFileProtocol(
 		Scheme,
-		(request: electron.Request, callback: (filePath?: (string) | (electron.FilePathWithHeaders)) => void)  =>
+		(request: electron.ProtocolRequest, callback: (filePath?: (string) | (electron.ProtocolResponse)) => void)  =>
 		{
-			const {url}= request;
+			const {url} = request;
 			let { host, pathname } = urlModule.parse(url);
 			pathname = pathname || '';
 	
@@ -63,13 +63,6 @@ export default class MainProcessProtocols
 			// Basic request caching
 			this.FileProtocolCache[url] = this.FileProtocolCache[url] || resolvePath(filepath, 'index.html');
 			callback({ path: this.FileProtocolCache[url] });
-		},
-		(error: Error) =>
-		{
-			if (error)
-			{
-				console.error(`Failed to register ${Scheme} protocol`, error);
-			}
 		});
 	}
 }
