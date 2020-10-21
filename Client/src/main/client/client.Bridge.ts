@@ -3,7 +3,7 @@ import * as http from 'http';
 
 import { EHeaders, EMappedPaths } from '../../../../Common/Interfaces'
 import ServerConfigs from '../../../../Common/ServerConfigs'
-import WebSocketManager from './client.Modules.WebSocket';
+//import WebSocketManager from './client.Modules.WebSocket';
 import { IRequestsMethods, RequestsMap } from './client.Requests.Map';
 import { IClientRequestInternalOptions } from './client.Requests.Processing';
 import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
@@ -168,7 +168,7 @@ export async function InstallRequestsProcessor()
 	{
 		CommonOptions.host = ServerConfigs.instance.PublicIPv4;
 		CommonOptions.port = ServerConfigs.instance.RequestsListenerPort;
-		bResult = bResult && WebSocketManager.Initialize();
+		bResult = bResult;// && WebSocketManager.Initialize();
 	}
 	return bResult;
 }

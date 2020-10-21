@@ -30,6 +30,11 @@ export class ICP_RendererComs
 {
 //	private static readonly MappedRequests = new Map<string, IComRendererRequest>();
 
+	public static IsValid(): boolean
+	{
+		return !!window.ICP_RendererInterface;
+	}
+
 	public static Notify(channel: string, ...args: any[]): void
 	{
 		window.ICP_RendererInterface.notify(channel, args);

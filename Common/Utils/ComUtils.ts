@@ -2,25 +2,25 @@
 import * as http from 'http';
 import * as https from 'https';
 import * as zlib from 'zlib';
-import { IDisposable, UniqueID } from './GenericUtils';
+import { UniqueID } from './GenericUtils';
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
 enum EComFlowTags
 {
 	// Progress
-	PROGRESS_VALUE = 'PROGRESS_VALUE',
-	PROGRESS_LABEL = 'PROGRESS_LABEL',
-	CLOSE_LABEL = 'CLOSE_LABEL',
+	PROGRESS_VALUE 	= 'PROGRESS_VALUE',
+	PROGRESS_LABEL 	= 'PROGRESS_LABEL',
+	CLOSE_LABEL 	= 'CLOSE_LABEL',
 }
 
 //
-export class ComFlowManager implements IDisposable
+export class ComFlowManager
 {
 	/** Add tag for channel used for progress data transmission */
 	public static readonly ToProgressValueId 	= ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS_VALUE}`;
 	public static readonly ToProgressLabelId 	= ( baseId: string ) => `${baseId}_${EComFlowTags.PROGRESS_LABEL}`;
-	public static readonly ToUnregisterId 			= ( baseId: string ) => `${baseId}_${EComFlowTags.CLOSE_LABEL}`;
+	public static readonly ToUnregisterId 		= ( baseId: string ) => `${baseId}_${EComFlowTags.CLOSE_LABEL}`;
 
 	//
 	private readonly id: string = UniqueID.Generate();
@@ -49,11 +49,6 @@ export class ComFlowManager implements IDisposable
 	{
 		this.tag = tag;
 	}
-	dispose(): void | Promise<void>
-	{
-		
-	}
-
 }
 
 type newValueCallbackType = (maxValue: number, currentValue: number) => void;

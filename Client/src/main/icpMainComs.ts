@@ -1,6 +1,5 @@
 
 import * as path from 'path';
-//import * as url from 'url';
 import * as electron from 'electron';
 import { EComunicationsChannels, ElectronPath, IComunications } from '../icpComs';
 
@@ -8,7 +7,6 @@ import FSUtils from '../../../Common/Utils/FSUtils';
 import * as RequestProcessor from './client/client.Bridge';
 import { ComFlowManager } from '../../../Common/Utils/ComUtils';
 import FS_Storage from '../../../Common/FS_Storage';
-import { Using } from '../../../Common/Utils/GenericUtils';
 
 const bIsDev = process.env.NODE_ENV === 'development';
 
@@ -28,7 +26,7 @@ export function SetupMainHandlers()
 	//
 	const DirectoryAdjustment = ( resourcePath: string ): string =>
 	{
-		return path.join( ( bIsDev ? 'static' : global.__static ), resourcePath );
+		return path.join( bIsDev ? '' : __dirname,	'resources', resourcePath );
 	}
 
 	//
@@ -104,7 +102,7 @@ export function SetupMainHandlers()
 
 		[EComunicationsChannels.RESOURCE_PATH]: ( event: electron.IpcMainInvokeEvent, comFlowManager: ComFlowManager ): string => 
 		{
-			return bIsDev ? 'http://127.0.0.1:9080' : process.resourcesPath;
+			return bIsDev ? '' : __dirname;
 		},
 
 		[EComunicationsChannels.FILE_READ]: ( event: electron.IpcMainInvokeEvent, comFlowManager: ComFlowManager, filePath: string ): Promise<NodeJS.ErrnoException | Buffer> =>
@@ -173,13 +171,11 @@ export function SetupMainHandlers()
 	{
 		electron.ipcMain.handle( channel, async ( event: electron.IpcMainInvokeEvent, comFlowManagerId: string, ...args:any[] ): Promise<any> =>
 		{
-			return Using( RegisterComFlowManager(event.sender, channel, comFlowManagerId), async (comFlowManager: ComFlowManager) =>
-			{
-		//		console.log('ICP_MAIN: Received',channel, comFlowManagerId);
-				const result = await Promise.resolve((callback)(event, comFlowManager, ...args));
-				UnregisterComFlowManager(event.sender, comFlowManager.Tag, comFlowManagerId);
-				return result;
-			});
+			const comFlowManager: ComFlowManager = RegisterComFlowManager(event.sender, channel, comFlowManagerId)
+		//	console.log('ICP_MAIN: Received',channel, comFlowManagerId);
+			const result = await Promise.resolve((callback)(event, comFlowManager, ...args));
+			UnregisterComFlowManager(event.sender, comFlowManager.Tag, comFlowManagerId);
+			return result;
 		});
 	}
 

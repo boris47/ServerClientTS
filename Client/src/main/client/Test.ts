@@ -12,7 +12,6 @@ import { InstallRequestsProcessor } from "./client.Bridge";
 import { ComFlowManager } from "../../../../Common/Utils/ComUtils";
 import FS_Storage from "../../../../Common/FS_Storage";
 import { IPackageJSON } from "../../../../Common/IPackageJSON";
-import WebSocketManager from "./client.Modules.WebSocket";
 
 const { config: { name: AppName } }: IPackageJSON = require('../../../package.json');
 
@@ -39,9 +38,9 @@ async function Main()
 		// Userl: Login
 		.then( ( result: Buffer | Error ) => Buffer.isBuffer(result) ? Request_UserLogin('Rob', 'erto') : Promise.reject(result) )
 		// Resource: upload (Requires Auth)
-		.then( ( result: Buffer | Error ) => Buffer.isBuffer(result) ? Request_ResourceUpload( new ComFlowManager('Upload'), './Tests/RequestResourceUpload/GPU-Z.2.25.0.exe' ) : Promise.reject(result))
+		.then( ( result: Buffer | Error ) => Buffer.isBuffer(result) ? Request_ResourceUpload( new ComFlowManager('Upload'), '.dev/Tests/RequestResourceUpload/GPU-Z.2.25.0.exe' ) : Promise.reject(result))
 		// Resource: Download (Requires Auth)
-		.then( ( result: Buffer | Error ) => Buffer.isBuffer(result) ? Request_ResourceDownload( new ComFlowManager('Download'), 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/Tests/RequestResourceDownload' ) : Promise.reject(result))
+		.then( ( result: Buffer | Error ) => Buffer.isBuffer(result) ? Request_ResourceDownload( new ComFlowManager('Download'), 'GPU-Z.2.25.0.exe', 'E:/SourceTree/ServerClientTS/Client/.dev/Tests/RequestResourceDownload' ) : Promise.reject(result))
 		// Storage: Set Data (Requires Auth)
 		.then( ( result : Buffer | Error ) => Buffer.isBuffer(result) ? Request_StoragePutData( new ComFlowManager('Put Data'), 'MyDataName', '123' ) : Promise.reject(result))
 		// Storage: Get Data (Requires Auth)
@@ -54,7 +53,6 @@ async function Main()
 		
 		Promise.resolve().finally(() =>
 		{
-			WebSocketManager.Finalize();
 			return FS_Storage.Finalize();
 		})
 		.finally(() =>

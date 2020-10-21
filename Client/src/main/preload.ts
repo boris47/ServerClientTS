@@ -1,6 +1,8 @@
 
 import {contextBridge, ipcRenderer, IpcRendererEvent} from 'electron';
 
+console.log("PRELOAD");
+
 contextBridge.exposeInMainWorld
 (
 	"ICP_RendererInterface",

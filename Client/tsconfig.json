@@ -78,6 +78,7 @@
 	* Requires TypeScript version 2.0 or later.
 	*/
 	"include": [
+		".dev/*.ts",
 		"**/*.ts",
 		".node_modules/**/*.ts"
 	]

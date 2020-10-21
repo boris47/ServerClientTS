@@ -58,12 +58,17 @@ const components : PluginObject<Vue> =
 
 async function Initialize()
 {
+	if (!ICP_RendererComs.IsValid())
+	{
+		return Promise.reject('ICP_RendererComs not available');
+	}
+
 	// localStorage Setup
-	{		
+	{
 		localStorage.setItem('isDev', String(bIsDev));
 		
 		const resourcePath = await ICP_RendererComs.Request( EComunicationsChannels.RESOURCE_PATH );
-		localStorage.setItem('staticPath',bIsDev ? window.location.origin : `${resourcePath}/app.asar/static` );
+		localStorage.setItem('staticPath',bIsDev ? resourcePath : `${resourcePath}/resources` );
 	}
 
 	if (process.env.NODE_ENV === 'development')
@@ -80,21 +85,19 @@ async function Initialize()
 	Vue.use(VueHelperPlugin);
 	Vue.config.productionTip = false;
 
-	const vueInstance = new Vue(
-		{
-			router: AppRouter.Initialize(),
-			render: (createElement: CreateElement, hack: RenderContext<Record<never, any>>) => createElement('router-view')
-		}
-	);
+	const vueInstance = new Vue( {
+		router: AppRouter.Initialize(),
+		render: (createElement: CreateElement, hack: RenderContext<Record<never, any>>) => createElement('router-view')
+	});
 	vueInstance.$mount('#app');
 
 	// notify Main that Renderer is ready
 	ICP_RendererComs.Notify('rendererReady');
+	return 0;
 }
 
 Initialize().catch(function(error: Error)
 {
-	console.log(error);
-	alert(error);
+	console.error(error);
 });
 
