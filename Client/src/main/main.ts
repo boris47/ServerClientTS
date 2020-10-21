@@ -6,7 +6,7 @@ import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
 import { IPackageJSON } from '../../../Common/IPackageJSON';
 import FS_Storage from '../../../Common/FS_Storage';
-import GenericUtils from '../../../Common/Utils/GenericUtils';
+
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
@@ -65,84 +65,85 @@ class MainProcess
 	
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
-		await window.loadURL(winURL);
-	
-		// Await for renderer process initialization completion
-	//	await new Promise( resolve => electron.ipcMain.once('rendererReady', resolve) );
-	
-		// Open the DevTools if desired
-		GenericUtils.DelayMS(1).then( () => window.webContents.openDevTools({ mode: "detach" }) );
-	
-		// Fianlly show the window
-		window.show();
+		const bResult: boolean = await window.loadURL(winURL).then(() => true).catch((err: Error) =>
+		{
+			console.error('ERROR during "window.loadURL":', err.message);
+			return false;
+		});
+		
+		
+		if (bResult)
+		{
+			// Open the DevTools if desired
+			window.webContents.openDevTools({ mode: "detach" });
+			// Finally show the window
+			window.show();
+		}
+		return bResult;
 	}
 
 	public async Run()
 	{
 		// Here is where we change the default path of the cookies in order to keep them if we make automatic updates //
-	{
-		const userDataFolderPath = electron.app.getPath('userData');
-		console.log('userData', userDataFolderPath);
-		const cookiePath = path.join(userDataFolderPath, 'UserData', 'Cookies');
-		electron.app.setPath('userData', cookiePath);
-	}
-
-	// 'ready' will be fired when Electron has finished
-	// initialization and is ready to create browser windows.
-	// Some APIs can only be used after this event occurs.
-	await electron.app.whenReady();
-	
-	// FS storage initialization
-	{
-		const bResult = await FS_Storage.Initialize(name, 'cookies');
-		if (!bResult)
 		{
-			// TODO Handle this case
+			const userDataFolderPath = electron.app.getPath('userData');
+			console.log('userData', userDataFolderPath);
+			const cookiePath = path.join(userDataFolderPath, 'UserData', 'Cookies');
+			electron.app.setPath('userData', cookiePath);
+		}
+
+		// 'ready' will be fired when Electron has finished
+		// initialization and is ready to create browser windows.
+		// Some APIs can only be used after this event occurs.
+		await electron.app.whenReady();
+		
+		// FS storage initialization
+		{
+			const bResult = await FS_Storage.Initialize(name, 'cookies');
+			if (!bResult)
+			{
+				// TODO Handle this case
+				return;
+			}
+			await FS_Storage.LoadStorage();
+		}
+
+		// Second instance is not allowed
+		if (!electron.app.requestSingleInstanceLock()) // isPrimaryInstance
+		{
+			electron.app.quit();
 			return;
 		}
-		await FS_Storage.LoadStorage();
-	}
 
-	// Second instance is not allowed
-	if (!electron.app.requestSingleInstanceLock()) // isPrimaryInstance
-	{
-		electron.app.quit();
-		return;
-	}
+		// Register all the receivers for main process
+		SetupMainHandlers();
 
-	// Register all the receivers for main process
-	SetupMainHandlers();
+		// Exit when all windows are closed and this promise is resolved
+		const terminationPromise = new Promise<false>( resolve => electron.app.once('window-all-closed', () => resolve(false)) );
 
-	// Exit when all windows are closed and this promise is resolved
-	const terminationPromise = new Promise( resolve => electron.app.once('window-all-closed', resolve) );
+		// Initiate creating the main window
+		const mainWindowPromise = MainProcess.createMainWindow();
 
-	// Initiate creating the main window
-	const mainWindowPromise = MainProcess.createMainWindow();
+		// await both the window to have loaded 
+		// and 'rendererReady' notification to have been fired,
+		// while observing premature termination
+		const bInitialized = await Promise.race( [ mainWindowPromise, terminationPromise ] );
+		if (bInitialized)
+		{
+			console.log('Initialization completed');
+		}
 
-	let bInitialized = false;
-	mainWindowPromise.then(() => bInitialized = true );
+		// Awaiting terminationPromise here keeps the mainWindow object alive
+		await terminationPromise;
+		if (!bInitialized)
+		{
+			throw new Error('Errors happened in running program');
+		}
 
-	// await both the window to have loaded 
-	// and 'rendererReady' notification to have been fired,
-	// while observing premature termination
-	await Promise.race( [ mainWindowPromise, terminationPromise ] ).catch();
-
-	if (bInitialized)
-	{
-		console.log('Initialization completed');
-	}
-	else
-	{
-		throw new Error('All windows closed prematurely.');
-	}
-
-	// 
-	InstallRequestsProcessor()
-
-	// Awaiting terminationPromise here keeps the mainWindow object alive
-	await terminationPromise;
-	
-	electron.app.exit(0);
+		// 
+		InstallRequestsProcessor()
+		
+		electron.app.exit(0);
 	}
 }
 

@@ -5,7 +5,7 @@ import 'material-design-icons/iconfont/material-icons.css'
 import 'typeface-roboto/index.css'
 */
 
-import GenericUtils from '../../../Common/Utils/GenericUtils';
+//import GenericUtils from '../../../Common/Utils/GenericUtils';
 
 
 // Electron Stuff
@@ -71,12 +71,6 @@ async function Initialize()
 		localStorage.setItem('staticPath',bIsDev ? resourcePath : `${resourcePath}/resources` );
 	}
 
-	if (process.env.NODE_ENV === 'development')
-	{
-		// this is to give Chrome Debugger time to attach to the new window
-		await GenericUtils.DelayMS(1000);
-	}
-
 	// await the document to finish loading
 	await new Promise((resolve) => document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', resolve) : resolve() );
 
@@ -98,6 +92,9 @@ async function Initialize()
 
 Initialize().catch(function(error: Error)
 {
-	console.error(error);
+	alert(error)
+//	console.error(error);
+//	console.log((global) );
+	close();
 });
 
