@@ -6,6 +6,7 @@ import { SetupMainHandlers } from './icpMainComs';
 import { InstallRequestsProcessor } from './client/client.Bridge';
 import { IPackageJSON } from '../../../Common/IPackageJSON';
 import FS_Storage from '../../../Common/FS_Storage';
+import AppUpdater from './autoUpdater';
 
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
@@ -62,6 +63,8 @@ class MainProcess
 	
 		// Remove the window's menu bar.
 		window.removeMenu();
+
+		await new AppUpdater(window).SearchUpdates();
 	
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
