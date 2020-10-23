@@ -64,7 +64,10 @@ class MainProcess
 		// Remove the window's menu bar.
 		window.removeMenu();
 
-		await new AppUpdater(window).SearchUpdates();
+		if (!bIsDev)
+		{
+			await new AppUpdater(window).SearchUpdates();
+		}
 	
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
