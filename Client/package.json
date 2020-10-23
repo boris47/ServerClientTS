@@ -74,7 +74,7 @@
 		}
 	},
 	"dependencies": {
-		"axios": "^0.20.0",
+		"axios": "^0.21.0",
 		"electron-updater": "^4.3.5",
 		"mime-types": "^2.1.27",
 		"vue": "^2.6.12",
