@@ -1,12 +1,17 @@
 {
 	"name": "client_ts",
-	"version": "0.0.0",
+	"version": "1.0.0",
 	"author": "r.leogrande<leogranderoberto@gmailcom>",
 	"description": "My client side electron app",
 	"config": {
 		"name": "ClientTS"
 	},
 	"license": "",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/boris47/ServerClientTS.git",
+		"directory": "Client"
+	},
 	"main": "dist/main/main.js",
 	"scripts": {
 		"compile": "tsc -p tsconfig.json",
@@ -14,7 +19,7 @@
 		"CompileOnly": "electron-webpack",
 		"PackOnly": "electron-builder --dir -c.compression=store -c.mac.identity=null",
 		"CompileAndPack": "npm run CompileOnly -- --env.production=true --env.minify=true && electron-builder --dir -c.compression=store -c.mac.identity=null",
-		"CompileAndPackAndInst": "npm run CompileOnly -- --env.production=true --env.minify=true && electron-builder",
+		"CompileAndPackAndInst": "npm run CompileOnly -- --env.production=true --env.minify=true && electron-builder --publish [\"always\"]",
 		"postinstall": "node .dev/postinstall.js"
 	},
 	"electronWebpack": {
@@ -32,6 +37,10 @@
 		}
 	},
 	"build": {
+		"publish": {
+			"provider": "github",
+			"releaseType": "prerelease"
+		},
 		"productName": "ClientTS",
 		"appId": "ClientTS",
 		"directories": {
