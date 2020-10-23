@@ -137,6 +137,9 @@ class MainProcess
 		if (bInitialized)
 		{
 			console.log('Initialization completed');
+			
+			// 
+			InstallRequestsProcessor()
 		}
 
 		// Awaiting terminationPromise here keeps the mainWindow object alive
@@ -145,9 +148,6 @@ class MainProcess
 		{
 			throw new Error('Errors happened in running program');
 		}
-
-		// 
-		InstallRequestsProcessor()
 		
 		electron.app.exit(0);
 	}
