@@ -23,49 +23,41 @@
 
 <script lang="ts">
 
-	import Vue from 'vue';
+	import { Component, Vue } from 'vue-property-decorator';
 	import AppRouter from '../appRouter';
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunicationsChannels } from '../../icpComs';
 
-	export default Vue.extend({
+	@Component
+	export default class RegistrationPage extends Vue
+	{
+		protected username: string = '';
+		protected password: string = '';
+		protected submitted: boolean = false;
 
-		name: "RegistrationPage",
-		data()
-		{
-			return {
-				username: '',
-				password: '',
-				submitted: false
-			};
-		},
-
-		created()
+		protected created()
 		{
 			console.log('RegistrationPage');
-		},
+		}
 
-		methods:
+		protected async handleSubmit()
 		{
-			async handleSubmit()
-			{
-				this.submitted = true;
-				if (this.username && this.password)
-				{ // TODO
-					const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
-					if (Buffer.isBuffer(result))
-					{
-						console.log('TOKEN', result.toString());
-						AppRouter.NavigateTo('loginPage');
-					}
-					else
-					{
-						console.error("Login Failed", result);
-					}
+			this.submitted = true;
+			if (this.username && this.password)
+			{ // TODO
+				const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
+				if (Buffer.isBuffer(result))
+				{
+					console.log('TOKEN', result.toString());
+					AppRouter.NavigateTo('loginPage');
+				}
+				else
+				{
+					console.error("Login Failed", result);
 				}
 			}
 		}
-	});
+	}
 
 </script>
 

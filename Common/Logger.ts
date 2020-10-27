@@ -9,6 +9,7 @@ export default class Logger
 	private static instance: Logger = null;
 
 	private fileDescriptor: number = null;
+	private prefix: string = '';
 	private oldConsoleLog: (message?: any, ...optionalParams: any[]) => void = null;
 	private oldConsoleError: (message?: any, ...optionalParams: any[]) => void = null;
 
@@ -18,11 +19,12 @@ export default class Logger
 	 * @param programName the folder name created and used in userdata folder
 	 * @param bUseNodeConsole if true will override the log and error functions of node console with 
 	 */
-	public static async Initialize(programName: string, bUseNodeConsole: boolean = false): Promise<boolean>
+	public static async Initialize(programName: string, bUseNodeConsole: boolean = false, prefix?: string): Promise<boolean>
 	{
 		if (!this.instance)
 		{
-			const logFileName = Logger.CreateLogName();
+			prefix = prefix || '';
+			const logFileName = `${prefix}${Logger.CreateLogName()}`;
 			const programFolder = path.join(FSUtils.GetUserDataFolder(), programName, 'logs');
 			const finalFilePath = path.join(programFolder, logFileName);
 			await FSUtils.EnsureDirectoryExistence(programFolder);
@@ -44,7 +46,7 @@ export default class Logger
 			{
 				this.instance = new Logger();
 				this.instance.fileDescriptor = fileDescriptor;
-
+				this.instance.prefix = prefix;
 				if (bUseNodeConsole)
 				{
 					this.instance.oldConsoleLog = console.log;
@@ -107,11 +109,11 @@ export default class Logger
 	{
 		if (!this.fileDescriptor)
 		{
-			console.error(`Logger need a static initialization`);
+			console.error(`${this.prefix}Logger need a static initialization`);
 			return;
 		}
 
-		const msg = `${messages.join(' ')}\n`;
+		const msg = `${this.prefix}${messages.join(' ')}\n`;
 		fs.write(this.fileDescriptor, msg, (err: NodeJS.ErrnoException, written: number, str: string) =>
 		{
 			fs.fdatasync(this.fileDescriptor, (err: NodeJS.ErrnoException) =>
@@ -127,7 +129,7 @@ export default class Logger
 	{
 		if (!this.fileDescriptor)
 		{
-			console.error(`Logger need a static initialization`);
+			console.error(`${this.prefix}Logger need a static initialization`);
 			return;
 		}
 
@@ -142,11 +144,11 @@ export default class Logger
 	{
 		if (!this.fileDescriptor)
 		{
-			console.error(`Logger need a static initialization`);
+			console.error(`${this.prefix}Logger need a static initialization`);
 			return;
 		}
 
-		const msg = `Exit Code: ${code}`;
+		const msg = `${this.prefix}Exit Code: ${code}`;
 		fs.writeSync(this.fileDescriptor, msg);
 		fs.closeSync(this.fileDescriptor);
 	}

@@ -18,10 +18,10 @@ declare interface Window
 	ICP_RendererInterface:
 	{
 		/** @see `static\\Preload.ts` */
-		listen: ( channel: string, callback: Function ) => void,
+		listen: ( channel: string, callback: (...args: any[]) => void ) => void,
 
 		/** @see `static\\Preload.ts` */
-		stopListening: ( channel: string ) => void,
+		stopListening: ( channel: string, callback?: (...args: any[]) => void ) => void,
 
 		/** @see `static\\Preload.ts` */
 		request: ( channel: string, comFlowManagerId: string, ...data: any[] ) => Promise<any | null>,

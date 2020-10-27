@@ -1,13 +1,8 @@
-//const fs = require('fs');
-const isDevelopmentEnvironment = process.env.NODE_ENV == "development";
 
+const isDevelopmentEnvironment = process.env.NODE_ENV == "development";
 
 /**
  * @typedef  {import('webpack/declarations/WebpackOptions').WebpackOptions} WebpackOptions
- */
-
-/**
- * @typedef  {import('html-webpack-plugin/typings').Options} HtmlWebpackPluginOptions
  */
 
 /** @param config {WebpackOptions} */
@@ -20,13 +15,12 @@ module.exports = function(config)
 	};
 	config.output.libraryTarget = 'var';
 	config.plugins = config.plugins.filter(plugin => plugin.constructor.name !== 'BannerPlugin');
-
-	/** @type Array<String> */
-	const contentBase = config.devServer && config.devServer['contentBase'];
-
+	
 	// Replace static folder of webpack devserver content base entry with resources folder name
-	if (Array.isArray(contentBase))
+	if (isDevelopmentEnvironment)
 	{
+		/** @type Array<String> */
+		const contentBase = config.devServer && config.devServer['contentBase'];
 		const index = contentBase.findIndex( line => line.endsWith('static') );
 		if (index >= 0)
 		{
@@ -37,14 +31,6 @@ module.exports = function(config)
 			console.error('Cannot replace static folder path');
 		}
 	}
-
-
-	/** @type import('webpack/declarations/WebpackOptions').WebpackPluginInstance */
-//	const template = config.plugins.find(plugin => plugin.constructor.name === 'HtmlWebpackPlugin');
-	
-	/** @type String */
-//	const tempalteFileString = template['options']['template'];
-//	const templateFilePath = tempalteFileString.substring(tempalteFileString.lastIndexOf('!')+1);
 
 //	/** @param {string} key @param {any} value */
 //	const replacer = ( key, value ) =>

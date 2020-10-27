@@ -26,33 +26,26 @@
 
 <script lang="ts">
 
-	import Vue from 'vue';
+	import { Component, Vue } from 'vue-property-decorator';
 	import AppRouter from '../appRouter';
 	import LoginManager from '../plugins/loginManager';
-import { Route, NavigationGuardNext } from 'vue-router/types/router';
-//	import { ICP_RendererComs } from '../icpRendererComs';
-//	import { EComunicationsChannels } from '../../icpComs';
+	import { Route, NavigationGuardNext } from 'vue-router/types/router';
 
-	export default Vue.extend({
+	@Component
+	export default class LoginPage extends Vue
+	{
+		protected username: string = '';
+		protected password: string = '';
+		protected submitted: boolean = false;
 
-		name: "LoginPage",
-		data()
-		{
-			return {
-				username: '',
-				password: '',
-				submitted: false
-			};
-		},
-
-		async beforeRouteEnter( to: Route, from: Route, next: NavigationGuardNext<Vue> )
+		protected beforeRouteEnter(to: Route, from: Route, next: NavigationGuardNext<Vue>)
 		{
 			next( async (vn: Vue) =>
 			{
-				});
-		},
+			});
+		}
 
-		async created()
+		protected async created()
 		{
 			console.log('LoginPage');
 			const bResult = await LoginManager.TryAutoLogin();
@@ -60,35 +53,22 @@ import { Route, NavigationGuardNext } from 'vue-router/types/router';
 			{
 				AppRouter.NavigateTo('testPage');
 			}
+		}
 
-	/*		const result = await ICP_RendererComs.Invoke(EComunicationsChannels.FILE_READ, null, 'TestStatic.txt' );
-			if ( Buffer.isBuffer(result) )
-			{
-				console.log('Static: Content,', result.toString());
-			}
-			else
-			{
-				console.error('Static: Error,', result);
-			}
-	*/	},
-
-		methods:
+		protected handleSubmit()
 		{
-			handleSubmit()
+			this.submitted = true;
+			if (this.username && this.password)
 			{
-				this.submitted = true;
-				if (this.username && this.password)
-				{
-					LoginManager.Trylogin( this.username, this.password );
-				}
-			},
-
-			GoToRegisterPage()
-			{
-				AppRouter.NavigateTo('registrationPage');
+				LoginManager.Trylogin( this.username, this.password );
 			}
 		}
-	});
+
+		protected GoToRegisterPage()
+		{
+			AppRouter.NavigateTo('registrationPage');
+		}
+	}
 
 </script>
 

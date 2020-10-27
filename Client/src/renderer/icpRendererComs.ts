@@ -28,18 +28,35 @@ interface IComRendererRequest
 */
 export class ICP_RendererComs
 {
-//	private static readonly MappedRequests = new Map<string, IComRendererRequest>();
-
+	/**  */
 	public static IsValid(): boolean
 	{
 		return !!window.ICP_RendererInterface;
 	}
 
+
+	/** */
+	public static Listen(channel: string, callback: (...args: any[]) => void): void
+	{
+		window.ICP_RendererInterface.listen(channel, callback);
+	}
+
+
+	/** */
+	public static StopListening(channel: string, callback: (...args: any[]) => void): void
+	{
+		window.ICP_RendererInterface.stopListening(channel, callback);
+	}
+
+
+	/** */
 	public static Notify(channel: string, ...args: any[]): void
 	{
 		window.ICP_RendererInterface.notify(channel, args);
 	}
 
+
+	/** */
 	private static RegisterComFlowManagerCallbacks( channel: string, comFlowManager?: ComFlowManager ): string
 	{
 	//	if (!comFlowManager)
@@ -71,6 +88,7 @@ export class ICP_RendererComs
 		
 		return comFlowManager.Id;
 	}
+
 
 	/** Allow async comunication to main process
 	 * @param channel An `EComunications` channel, Ex: EComunications.ELECTRON_PATH

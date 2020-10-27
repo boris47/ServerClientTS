@@ -65,14 +65,17 @@ async function Initialize()
 
 	// localStorage Setup
 	{
-		localStorage.setItem('isDev', String(bIsDev));
+		localStorage.setItem('isDev', bIsDev ? 'true' : '');
 		
 		const resourcePath = await ICP_RendererComs.Request( EComunicationsChannels.RESOURCE_PATH );
 		localStorage.setItem('staticPath',bIsDev ? resourcePath : `${resourcePath}/resources` );
 	}
 
 	// await the document to finish loading
-	await new Promise((resolve) => document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', resolve) : resolve() );
+	await new Promise( resolve => document.readyState === 'loading' ? document.addEventListener( 'DOMContentLoaded', resolve ) : resolve() );
+
+	// notify Main that Renderer is ready
+	ICP_RendererComs.Notify('rendererReady');
 
 	// Setup Vue
 	Vue.use(components);
@@ -84,9 +87,6 @@ async function Initialize()
 		render: (createElement: CreateElement, hack: RenderContext<Record<never, any>>) => createElement('router-view')
 	});
 	vueInstance.$mount('#app');
-
-	// notify Main that Renderer is ready
-	ICP_RendererComs.Notify('rendererReady');
 	return 0;
 }
 

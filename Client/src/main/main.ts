@@ -8,22 +8,23 @@ import { IPackageJSON } from '../../../Common/IPackageJSON';
 import FS_Storage from '../../../Common/FS_Storage';
 import AppUpdater from './autoUpdater';
 
+import Logger from '../../../Common/Logger';
+
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
 
 const bIsDev = process.env.NODE_ENV === 'development';
 console.log("BuildDevelopment", bIsDev);
 
-electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
-electron.app.name = `${name} - ${description} v.${version}${bIsDev?' - DEVELOPMENT RUN':''}`;
-
 
 class MainProcess
 {
-	private static async createMainWindow()
+	private window: electron.BrowserWindow = null;
+	
+	
+	private async createMainWindow()
 	{
 		// Create the browser window..
-		let window: electron.BrowserWindow = null;
 		{
 			const webPreferences: electron.WebPreferences =
 			{
@@ -58,38 +59,37 @@ class MainProcess
 				// Whether window should be shown when created. Default is true.
 				show: false,
 			}
-			window = new electron.BrowserWindow(options);
+			this.window = new electron.BrowserWindow(options);
 		};
 	
 		// Remove the window's menu bar.
-		window.removeMenu();
-
-		if (!bIsDev)
-		{
-			await new AppUpdater(window).SearchUpdates();
-		}
+		this.window.removeMenu();
 	
 		// initiate the loading
 		const winURL = bIsDev ? `http://${process.env.ELECTRON_WEBPACK_WDS_HOST}:${process.env.ELECTRON_WEBPACK_WDS_PORT}` : `file://${__dirname}/index.html`;
-		const bResult: boolean = await window.loadURL(winURL).then(() => true).catch((err: Error) =>
+		const bResult: boolean = await this.window.loadURL(winURL).then(() => true).catch((err: Error) =>
 		{
 			console.error('ERROR during "window.loadURL":', err.message);
 			return false;
 		});
 		
-		
 		if (bResult)
 		{
 			// Open the DevTools if desired
-			window.webContents.openDevTools({ mode: "detach" });
+			this.window.webContents.openDevTools({ mode: "detach" });
 			// Finally show the window
-			window.show();
+			this.window.show();
 		}
 		return bResult;
 	}
 
 	public async Run()
 	{
+		await Logger.Initialize(name, true, '[Main Process]');
+
+		electron.app.allowRendererProcessReuse = true; // In order to avoid warning for future deprecation
+		electron.app.name = `${name} - ${description} v.${version}${bIsDev?' - DEVELOPMENT RUN':''}`;
+
 		// Here is where we change the default path of the cookies in order to keep them if we make automatic updates //
 		{
 			const userDataFolderPath = electron.app.getPath('userData');
@@ -128,18 +128,26 @@ class MainProcess
 		const terminationPromise = new Promise<false>( resolve => electron.app.once('window-all-closed', () => resolve(false)) );
 
 		// Initiate creating the main window
-		const mainWindowPromise = MainProcess.createMainWindow();
+		const mainWindowPromise = this.createMainWindow();
+		
+		// we expect 'rendererReady' notification from Renderer
+		const rendererPromise = new Promise<true>( resolve => electron.ipcMain.once('rendererReady', () => resolve(true) ) );
 
 		// await both the window to have loaded 
 		// and 'rendererReady' notification to have been fired,
 		// while observing premature termination
-		const bInitialized = await Promise.race( [ mainWindowPromise, terminationPromise ] );
+		const bInitialized = await Promise.race( [ Promise.all([mainWindowPromise, rendererPromise]), terminationPromise ] );
 		if (bInitialized)
 		{
 			console.log('Initialization completed');
 			
 			// 
-			InstallRequestsProcessor()
+			InstallRequestsProcessor();
+
+			if (!bIsDev)
+			{
+				await new AppUpdater(this.window).SearchUpdates();
+			}
 		}
 
 		// Awaiting terminationPromise here keeps the mainWindow object alive

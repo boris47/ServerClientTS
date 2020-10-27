@@ -3,27 +3,14 @@ import Vue from 'vue';
 import LoginManager from './plugins/loginManager';
 import VueRouter, { Route, RouterOptions, RawLocation } from 'vue-router';
 
-//import HomePage from "./Pages/HomePage.vue";
 import TestPage from "./Pages/TestPage.vue";
 import RegistrationPage from "./Pages/RegistrationPage.vue";
-//import LoginPage from "./Pages/LoginPage.vue";
 import AboutPage from "./Pages/AboutPage.vue";
 
 // requiresAuth
 import MainPage from "./Pages/RequiresAuth/MainPage.vue";
 import EntrancePage from "./Pages/RequiresAuth/EntrancePage.vue";
 
-
-export const RouterMap =
-{
-	'loginPage': {},
-	'registrationPage': {},
-	'testPage' : {},
-	'mainPage' : {
-		'entrancePage': {}
-	},
-	'aboutPage': {}
-}
 
 
 export default class AppRouter
@@ -35,47 +22,53 @@ export default class AppRouter
 	{
 		if (!AppRouter.isInitialized)
 		{
+			const isDev = Boolean( localStorage.getItem('isDev') );
 			AppRouter.isInitialized = true;
-			const routerOptions = <RouterOptions>
-				{
-					routes: [
-						{
-							path: '/loginPage',
-							name: 'loginPage',
-							component: () => import('./Pages/LoginPage.vue')
-						},
-						{
-							path: '/RegistrationPage',
-							name: 'registrationPage',
-							component: RegistrationPage
-						},
-						{
-							path: '/testPage',
-							name: 'testPage',
-							component: TestPage,
-							meta: { requiresAuth: true },
-						},
-						{
-							path: '/mainPage',
-							name: 'mainPage',
-							component: MainPage,
-							meta: { requiresAuth: true },
-							children: [
-								{
-									path: 'entrancePage', name: 'entrancePage', component: EntrancePage
-								}
-							]
-						},
-						{
-							path: '/aboutPage',
-							name: 'aboutPage',
-							component: AboutPage
-						},
+			const routerOptions: RouterOptions =
+			{
+				routes: [
+					{
+						path: '/updatePage',
+						name: 'updatePage',
+						component: () => import('./Pages/UpdatePage.vue')
+					},
+					{
+						path: '/loginPage',
+						name: 'loginPage',
+						component: () => import('./Pages/LoginPage.vue')
+					},
+					{
+						path: '/RegistrationPage',
+						name: 'registrationPage',
+						component: RegistrationPage
+					},
+					{
+						path: '/testPage',
+						name: 'testPage',
+						component: TestPage,
+						meta: { requiresAuth: true },
+					},
+					{
+						path: '/mainPage',
+						name: 'mainPage',
+						component: MainPage,
+						meta: { requiresAuth: true },
+						children: [
+							{
+								path: 'entrancePage', name: 'entrancePage', component: EntrancePage
+							}
+						]
+					},
+					{
+						path: '/aboutPage',
+						name: 'aboutPage',
+						component: AboutPage
+					},
 
-						// Fallback to avoid 404 error
-						{ path: '*', redirect: { path: '/loginPage' } }
-					]
-				};
+					// Fallback to avoid 404 error
+					{ path: '*', redirect: { path: isDev ? '/loginPage' : '/updatePage' } }
+				]
+			};
 
 			const vueRouterInstance = new VueRouter(routerOptions);
 			Vue.use(VueRouter);
@@ -111,7 +104,7 @@ export default class AppRouter
 				const authenticationRequired: boolean = to.matched.some(route => route.meta && route.meta.requiresAuth);
 				if (authenticationRequired && !LoginManager.IsLoggedIn) // Login required, red light
 				{
-					result = <RawLocation> { path: '/loginPage', query: { redirect: to.fullPath } };
+					result = { path: '/loginPage', query: { redirect: to.fullPath } };
 					console.log(`AppRouter:beforeEach: From '${from.fullPath}' -> '${to.fullPath}' : ${result}`);
 				}
 

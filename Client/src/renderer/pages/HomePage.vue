@@ -2,7 +2,7 @@
 	<global-layout>
 		<div slot="header">
 			<p>Home Page!</p>
-			<button type="button" @click.stop="GoToLoginPage">Login</button>
+			<!--button type="button" @click.stop="GoToLoginPage">Login</button-->
 		</div>
 	</global-layout>
 </template>
