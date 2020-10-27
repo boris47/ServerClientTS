@@ -49,6 +49,7 @@ export default class AppUpdater
 		// Declare as update only if version is different
 		if ( updateAvailable && updateAvailable.version !== electron.app.getVersion() )
 		{
+			this.mainWindow.webContents.send('on-update-news', true);
 			// Notify User
 			{
 				const options: electron.MessageBoxOptions =
@@ -93,6 +94,7 @@ export default class AppUpdater
 		}
 		else
 		{
+			this.mainWindow.webContents.send('on-update-news', false);
 			this.mainWindow.setSize(orig_width, orig_heigth);
 		//	const options: electron.MessageBoxOptions =
 		//	{
