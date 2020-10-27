@@ -70,7 +70,7 @@
 			"cache": "cache"
 		},
 		"win": {
-			"icon": "build/icons/icon.ico"
+			"icon": "resources/icon.png"
 		}
 	},
 	"dependencies": {
