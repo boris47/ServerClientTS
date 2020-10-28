@@ -16,12 +16,6 @@ module.exports = function(config)
 	config.performance = false;
 	config.plugins = config.plugins.filter(plugin => plugin.constructor.name !== 'BannerPlugin');
 
-	if (!isDevelopmentEnvironment)
-	{
-	//	config.externals.splice( config.externals.indexOf(/HmrClient/), 1 );
-		
-	}
-
 //	/** @param {string} key @param {any} value */
 //	const replacer = ( key, value ) =>
 //	{

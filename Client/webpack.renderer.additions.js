@@ -14,7 +14,6 @@ module.exports = function(config)
 		hints : false //"error"
 	};
 	config.output.libraryTarget = 'var';
-	config.plugins = config.plugins.filter(plugin => plugin.constructor.name !== 'BannerPlugin');
 	
 	// Replace static folder of webpack devserver content base entry with resources folder name
 	if (isDevelopmentEnvironment)
