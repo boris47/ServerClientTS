@@ -1,14 +1,14 @@
 {
 	"files.exclude": {
-		"dist/**/*.js": true,
 		"**/*.js": { "when": "$(basename).ts" },
 		"**/*.map": true,
 		"**/.git": true,
 		"**/.git*": true,
-//		"node_modules": true,
+		".dev":true,
+		"node_modules": true,
+		"dist": true,
 		"cache": true,
-		"build": true,
-//		"dist": true
+		"build": true
 	},
 //	"typescript.tsdk": "./node_modules/typescript/lib"
 }

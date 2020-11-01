@@ -3,13 +3,13 @@ import Vue from 'vue';
 import LoginManager from './plugins/loginManager';
 import VueRouter, { Route, RouterOptions, RawLocation } from 'vue-router';
 
-import TestPage from "./Pages/TestPage.vue";
-import RegistrationPage from "./Pages/RegistrationPage.vue";
-import AboutPage from "./Pages/AboutPage.vue";
+//import TestPage from "./Pages/TestPage.vue";
+//import RegistrationPage from "./Pages/RegistrationPage.vue";
+//import AboutPage from "./Pages/AboutPage.vue";
 
 // requiresAuth
-import MainPage from "./Pages/RequiresAuth/MainPage.vue";
-import EntrancePage from "./Pages/RequiresAuth/EntrancePage.vue";
+//import MainPage from "./Pages/RequiresAuth/MainPage.vue";
+//import EntrancePage from "./Pages/RequiresAuth/EntrancePage.vue";
 
 
 
@@ -40,29 +40,29 @@ export default class AppRouter
 					{
 						path: '/RegistrationPage',
 						name: 'registrationPage',
-						component: RegistrationPage
+						component: () => import('./Pages/RegistrationPage.vue')
 					},
 					{
 						path: '/testPage',
 						name: 'testPage',
-						component: TestPage,
+						component: () => import('./Pages/RequiresAuth/TestPage.vue'),
 						meta: { requiresAuth: true },
 					},
 					{
 						path: '/mainPage',
 						name: 'mainPage',
-						component: MainPage,
+						component: () => import('./Pages/RequiresAuth/MainPage.vue'),
 						meta: { requiresAuth: true },
 						children: [
 							{
-								path: 'entrancePage', name: 'entrancePage', component: EntrancePage
+								path: 'entrancePage', name: 'entrancePage', component: () => import('./Pages/RequiresAuth/EntrancePage.vue')
 							}
 						]
 					},
 					{
 						path: '/aboutPage',
 						name: 'aboutPage',
-						component: AboutPage
+						component: () => import('./Pages/AboutPage.vue')
 					},
 
 					// Fallback to avoid 404 error

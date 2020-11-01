@@ -46,13 +46,13 @@
 <script lang="ts">
 
 import { Component, Vue } from 'vue-property-decorator';
-import { ICP_RendererComs } from '../icpRendererComs';
-import { EComunicationsChannels } from '../../icpComs';
-import GenericUtils from '../../../../Common/Utils/GenericUtils';
+import { ICP_RendererComs } from '../../icpRendererComs';
+import { EComunicationsChannels } from '../../../icpComs';
+import GenericUtils from '../../../../../Common/Utils/GenericUtils';
 
-import { ITableHeader, ITableRow } from '../components/Table/CustomTable.vue';
-import CustomButton from '../components/CustomButton.vue';
-import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
+import { ITableHeader, ITableRow } from '../../components/Table/CustomTable.vue';
+import CustomButton from '../../components/CustomButton.vue';
+import { ComFlowManager } from '../../../../../Common/Utils/ComUtils';
 
 
 @Component

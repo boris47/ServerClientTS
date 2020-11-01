@@ -5,11 +5,8 @@ import 'material-design-icons/iconfont/material-icons.css'
 import 'typeface-roboto/index.css'
 */
 
-//import GenericUtils from '../../../Common/Utils/GenericUtils';
-
 
 // Electron Stuff
-//import { ipcRenderer } from 'electron';
 import { ICP_RendererComs } from './icpRendererComs';
 import { EComunicationsChannels } from '../icpComs';
 
@@ -82,19 +79,18 @@ async function Initialize()
 	Vue.use(VueHelperPlugin);
 	Vue.config.productionTip = false;
 
-	const vueInstance = new Vue( {
+	const vueInstance = new Vue(
+	{
 		router: AppRouter.Initialize(),
-		render: (createElement: CreateElement, hack: RenderContext<Record<never, any>>) => createElement('router-view')
+		render: ( createElement: CreateElement, hack: RenderContext<Record<never, any>> ) => createElement('router-view')
 	});
 	vueInstance.$mount('#app');
 	return 0;
 }
 
-Initialize().catch(function(error: Error)
+Initialize().catch(function( error: Error )
 {
 	alert(error)
-//	console.error(error);
-//	console.log((global) );
 	close();
 });
 

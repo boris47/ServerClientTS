@@ -128,7 +128,7 @@ class MainProcess
 		const terminationPromise = new Promise<false>( resolve => electron.app.once('window-all-closed', () => resolve(false)) );
 
 		// Initiate creating the main window
-		const mainWindowPromise = this.createMainWindow();
+		const mainWindowPromise: Promise<boolean> = this.createMainWindow();
 		
 		// we expect 'rendererReady' notification from Renderer
 		const rendererPromise = new Promise<true>( resolve => electron.ipcMain.once('rendererReady', () => resolve(true) ) );

@@ -21,7 +21,7 @@
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunicationsChannels } from '../../icpComs';
 	import ObjectUtils from '../../../../Common/Utils/ObjectUtils';
-import GenericUtils from '../../../../Common/Utils/GenericUtils';
+	import GenericUtils from '../../../../Common/Utils/GenericUtils';
 
 	enum ESelectorType
 	{
