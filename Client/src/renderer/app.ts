@@ -71,6 +71,13 @@ async function Initialize()
 	// await the document to finish loading
 	await new Promise( resolve => document.readyState === 'loading' ? document.addEventListener( 'DOMContentLoaded', resolve ) : resolve() );
 
+	// Register context menu callback
+	window.addEventListener('contextmenu', ( e: MouseEvent ) =>
+	{
+		e.preventDefault();
+		ICP_RendererComs.Notify('context-menu', e.x, e.y);
+	}, false);
+
 	// notify Main that Renderer is ready
 	ICP_RendererComs.Notify('rendererReady');
 

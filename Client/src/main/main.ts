@@ -21,6 +21,59 @@ class MainProcess
 {
 	private window: electron.BrowserWindow = null;
 	
+
+	private createMenus()
+	{
+		// Application Menu
+		{
+			const menu = electron.Menu.buildFromTemplate([
+				{
+					label: 'Menu',
+					submenu: [
+						{label:'Item 1'},
+						{label:'Item 2'},
+						{type:'separator'},
+						{
+							label:'Exit',
+							click(menuItem: electron.MenuItem, browserWindow: electron.BrowserWindow, event: electron.KeyboardEvent)
+							{
+								electron.app.quit();
+							}
+						}
+					]
+				},
+				{
+					label:'About',
+					click(menuItem: electron.MenuItem, browserWindow: electron.BrowserWindow, event: electron.KeyboardEvent)
+					{
+						electron.shell.openExternal('https://www.electronjs.org/');
+					}
+				}
+			]);
+			electron.Menu.setApplicationMenu(menu);
+		}
+
+		// Context Menu
+		{
+			let rightClickPosition_X:number = 0, rightClickPosition_Y:number = 0;
+			const menu = new electron.Menu()
+			const menuItem = new electron.MenuItem(
+				{
+					label: 'Inspect Element',
+					click: () => this.window.webContents.inspectElement(rightClickPosition_X, rightClickPosition_Y )
+				}
+			);
+			menu.append(menuItem)
+	
+			electron.ipcMain.on('context-menu', (event: electron.IpcMainEvent, x:number, y: number) =>
+			{
+				rightClickPosition_X = x;
+				rightClickPosition_Y = y;
+				menu.popup( { window: this.window } );
+			});
+		}
+	}
+	
 	
 	private async createMainWindow()
 	{
@@ -79,6 +132,8 @@ class MainProcess
 			this.window.webContents.openDevTools({ mode: "detach" });
 			// Finally show the window
 			this.window.show();
+
+			this.createMenus();
 		}
 		return bResult;
 	}
