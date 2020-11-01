@@ -52,7 +52,7 @@ export class ICP_RendererComs
 	/** */
 	public static Notify(channel: string, ...args: any[]): void
 	{
-		window.ICP_RendererInterface.notify(channel, args);
+		window.ICP_RendererInterface.notify(channel, ...args);
 	}
 
 
