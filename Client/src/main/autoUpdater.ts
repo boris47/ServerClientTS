@@ -15,11 +15,14 @@ electronUpdater.autoUpdater.autoDownload = false;
 export default class AppUpdater
 {
 	private readonly mainWindow: electron.BrowserWindow = null;
+
+	//
 	constructor(mainWindow: electron.BrowserWindow)
 	{
 		this.mainWindow = mainWindow;
 	}
 
+	//
 	public async SearchUpdates(): Promise<void>
 	{
 		electronUpdater.autoUpdater.on('error', (error) =>
@@ -38,13 +41,13 @@ export default class AppUpdater
 		// Set the events
 		const updateAvailable = await new Promise<electronUpdater.UpdateInfo>( resolve =>
 		{
-			electronUpdater.autoUpdater.on('update-available', resolve );
-			electronUpdater.autoUpdater.on('update-not-available', () => resolve(null) );
+			electronUpdater.autoUpdater.on( 'update-available', resolve );
+			electronUpdater.autoUpdater.on( 'update-not-available', () => resolve(null) );
 		});
 
 		// Clean events for potential next checks
-		electronUpdater.autoUpdater.removeAllListeners('update-available');
-		electronUpdater.autoUpdater.removeAllListeners('update-not-available');
+		electronUpdater.autoUpdater.removeAllListeners( 'update-available' );
+		electronUpdater.autoUpdater.removeAllListeners( 'update-not-available' );
 
 		// Declare as update only if version is different
 		if ( updateAvailable && updateAvailable.version !== electron.app.getVersion() )
@@ -65,9 +68,9 @@ export default class AppUpdater
 			this.mainWindow.setClosable(false);
 
 			// Setup update page data refresh event
-			electronUpdater.autoUpdater.on('download-progress', ( progressObj: any) =>
+			electronUpdater.autoUpdater.on( 'download-progress', ( progressObj: any) =>
 			{
-				this.mainWindow.webContents.send( 'update-download-progress',progressObj.percent, progressObj.bytesPerSecond );
+				this.mainWindow.webContents.send( 'update-download-progress', progressObj.percent, progressObj.bytesPerSecond );
 			});
 
 			// Actually download the update
@@ -105,9 +108,3 @@ export default class AppUpdater
 		}
 	}
 }
-
-
-
-
-//autoUpdater.checkForUpdates();
-

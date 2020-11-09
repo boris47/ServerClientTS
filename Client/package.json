@@ -25,7 +25,9 @@
 	},
 	"electronWebpack": {
 		"whiteListedModules": [
-			"vue-router"
+			"vue",
+			"vue-router",
+			"vuetify"
 		],
 		"main": {
 			"webpackConfig": "webpack.main.additions.js",
@@ -78,7 +80,8 @@
 		"electron-updater": "^4.3.5",
 		"mime-types": "^2.1.27",
 		"vue": "^2.6.12",
-		"vue-router": "^3.4.6"
+		"vue-router": "^3.4.6",
+		"vuetify": "^2.3.16"
 	},
 	"devDependencies": {
 		"@types/mime-types": "^2.1.0",

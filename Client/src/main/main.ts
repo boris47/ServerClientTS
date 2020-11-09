@@ -9,6 +9,7 @@ import FS_Storage from '../../../Common/FS_Storage';
 import AppUpdater from './autoUpdater';
 
 import Logger from '../../../Common/Logger';
+import ContextMenuManager from './contextMenuManager';
 
 
 const { config: { name }, description, version }: IPackageJSON = require('../../package.json');
@@ -21,61 +22,37 @@ class MainProcess
 {
 	private window: electron.BrowserWindow = null;
 	
-
-	private createMenus()
+	private createMenus(): void
 	{
 		// Application Menu
 		{
+			
 			const menu = electron.Menu.buildFromTemplate([
 				{
-					label: 'Menu',
-					submenu: [
-						{label:'Item 1'},
-						{label:'Item 2'},
-						{type:'separator'},
-						{
-							label:'Exit',
-							click(menuItem: electron.MenuItem, browserWindow: electron.BrowserWindow, event: electron.KeyboardEvent)
-							{
-								electron.app.quit();
-							}
-						}
-					]
+					role: 'fileMenu'
 				},
 				{
 					label:'About',
-					click(menuItem: electron.MenuItem, browserWindow: electron.BrowserWindow, event: electron.KeyboardEvent)
-					{
-						electron.shell.openExternal('https://www.electronjs.org/');
-					}
+					submenu: [
+						{
+							label: 'Electron',
+							click(menuItem: electron.MenuItem, browserWindow: electron.BrowserWindow, event: electron.KeyboardEvent)
+							{
+								electron.shell.openExternal('https://www.electronjs.org/');
+							}
+						}
+					]
 				}
 			]);
 			electron.Menu.setApplicationMenu(menu);
 		}
 
 		// Context Menu
-		{
-			let rightClickPosition_X:number = 0, rightClickPosition_Y:number = 0;
-			const menu = new electron.Menu()
-			const menuItem = new electron.MenuItem(
-				{
-					label: 'Inspect Element',
-					click: () => this.window.webContents.inspectElement(rightClickPosition_X, rightClickPosition_Y )
-				}
-			);
-			menu.append(menuItem)
-	
-			electron.ipcMain.on('context-menu', (event: electron.IpcMainEvent, x:number, y: number) =>
-			{
-				rightClickPosition_X = x;
-				rightClickPosition_Y = y;
-				menu.popup( { window: this.window } );
-			});
-		}
+		ContextMenuManager.Initialize(this.window);
 	}
 	
 	
-	private async createMainWindow()
+	private async createMainWindow(): Promise<boolean>
 	{
 		// Create the browser window..
 		{
@@ -138,7 +115,7 @@ class MainProcess
 		return bResult;
 	}
 
-	public async Run()
+	public async Run(): Promise<void>
 	{
 		await Logger.Initialize(name, true, '[Main Process]');
 
@@ -172,6 +149,7 @@ class MainProcess
 		// Second instance is not allowed
 		if (!electron.app.requestSingleInstanceLock()) // isPrimaryInstance
 		{
+			console.log('An already running instance exists, exiting');
 			electron.app.quit();
 			return;
 		}

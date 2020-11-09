@@ -12,6 +12,7 @@ import { EComunicationsChannels } from '../icpComs';
 
 // Vue
 import Vue, { VueConstructor, PluginObject, CreateElement, RenderContext } from 'vue';
+//import 'vuetify/dist/vuetify.min.css';
 
 // Vue Router
 import AppRouter from './appRouter';
@@ -29,6 +30,7 @@ import CustomDatalist from './components/CustomDatalist.vue';
 
 // Vue Plugins
 import VueHelperPlugin from './plugins/vueHelpers';
+import vuetify from './plugins/vuetify';
 
 const bIsDev = process.env.NODE_ENV === 'development';
 const components : PluginObject<Vue> =
@@ -72,15 +74,15 @@ async function Initialize()
 	await new Promise( resolve => document.readyState === 'loading' ? document.addEventListener( 'DOMContentLoaded', resolve ) : resolve() );
 
 	// Register context menu callback
-	window.addEventListener('contextmenu', ( e: MouseEvent ) =>
+	window.addEventListener('contextmenu', ( ev: MouseEvent ) =>
 	{
-		e.preventDefault();
-		ICP_RendererComs.Notify('context-menu', e.x, e.y);
+		ev.preventDefault();
+		ICP_RendererComs.Notify('context-menu', ev.x, ev.y);
 	}, false);
 
 	// notify Main that Renderer is ready
 	ICP_RendererComs.Notify('rendererReady');
-
+	
 	// Setup Vue
 	Vue.use(components);
 	Vue.use(VueHelperPlugin);
@@ -88,8 +90,9 @@ async function Initialize()
 
 	const vueInstance = new Vue(
 	{
+		vuetify: vuetify,
 		router: AppRouter.Initialize(),
-		render: ( createElement: CreateElement, hack: RenderContext<Record<never, any>> ) => createElement('router-view')
+		render: ( createElement: CreateElement, hack: RenderContext<Record<never, any>> ) => createElement('v-app', [createElement('router-view')])
 	});
 	vueInstance.$mount('#app');
 	return 0;

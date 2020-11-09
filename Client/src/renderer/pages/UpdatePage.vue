@@ -19,7 +19,7 @@
 	import { ICP_RendererComs } from '../icpRendererComs';
 
 	import StringUtils from '../../../../Common/Utils/StringUtils';
-import AppRouter from '../appRouter';
+	import AppRouter from '../appRouter';
 
 	@Component
 	export default class UpdatePage extends Vue

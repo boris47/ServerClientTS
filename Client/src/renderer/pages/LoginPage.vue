@@ -1,25 +1,19 @@
 <template>
 	<global-layout>
-		<div slot="header">
-			<!--div class="logo"/--> 
-			<!--img :src="GetStatic('me.jpg')" alt=""-->
+		<div slot="main">
+			<div class="logo"/> 
+			<img :src="GetStatic('me.jpg')" alt="">
 			<h3>Login</h3>
 			<form v-on:submit.prevent="handleSubmit">
 				<div>
-					<label>username</label>
-					<input type="text" v-model="username" name="username" />
-					<div class="red-label" v-show="submitted && !username">username is required</div>
+					<v-text-field label="Username" type="text" :rules="textFiledsRules" v-model="username" name="username" />
 				</div>
 				<div>
-					<label>Password</label>
-					<input type="password" v-model="password" name="password" />
-					<div class="red-label" v-show="submitted && !password">Password is required</div>
+					<v-text-field label="Password" type="password" :rules="textFiledsRules" v-model="password" name="password" />
 				</div>
-				<div>
-					<button class="btn btn-primary">Login</button>
-				</div>
+				<v-btn>Login</v-btn>
 			</form>
-			<button class="btn btn-primary" v-on:click.stop="GoToRegisterPage">Register</button>
+			<v-btn v-on:click.stop="GoToRegisterPage">Register</v-btn>
 		</div>
 	</global-layout>
 </template>
@@ -37,6 +31,10 @@
 		protected username: string = '';
 		protected password: string = '';
 		protected submitted: boolean = false;
+		protected textFiledsRules =
+		[
+			(value: string) => !!value || 'Required.'
+		];
 
 		protected beforeRouteEnter(to: Route, from: Route, next: NavigationGuardNext<Vue>)
 		{
@@ -57,9 +55,9 @@
 
 		protected handleSubmit()
 		{
-			this.submitted = true;
 			if (this.username && this.password)
 			{
+				this.submitted = true;
 				LoginManager.Trylogin( this.username, this.password );
 			}
 		}

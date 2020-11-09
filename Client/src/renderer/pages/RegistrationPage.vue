@@ -4,18 +4,12 @@
 			<h3>Registration</h3>
 			<form v-on:submit.prevent="handleSubmit">
 				<div>
-					<label>username</label>
-					<input type="text" v-model="username" name="username" />
-					<div class="red-label" v-show="submitted && !username">username is required</div>
+					<v-text-field label="Username" type="text" :rules="textFiledsRules" v-model="username" name="username" />
 				</div>
 				<div>
-					<label>Password</label>
-					<input type="password" v-model="password" name="password" />
-					<div class="red-label" v-show="submitted && !password">Password is required</div>
+					<v-text-field label="Password" type="password" :rules="textFiledsRules" v-model="password" name="password" />
 				</div>
-				<div>
-					<button class="btn btn-primary">Register</button>
-				</div>
+				<v-btn>Register</v-btn>
 			</form>
 		</div>
 	</global-layout>
@@ -27,6 +21,7 @@
 	import AppRouter from '../appRouter';
 	import { ICP_RendererComs } from '../icpRendererComs';
 	import { EComunicationsChannels } from '../../icpComs';
+	
 
 	@Component
 	export default class RegistrationPage extends Vue
@@ -34,6 +29,10 @@
 		protected username: string = '';
 		protected password: string = '';
 		protected submitted: boolean = false;
+		protected textFiledsRules =
+		[
+			(value: string) => !!value || 'Required.'
+		];
 
 		protected created()
 		{

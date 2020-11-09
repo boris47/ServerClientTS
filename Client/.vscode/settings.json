@@ -5,7 +5,7 @@
 		"**/.git": true,
 		"**/.git*": true,
 		".dev":true,
-		"node_modules": true,
+		"node_modules": false,
 		"dist": true,
 		"cache": true,
 		"build": true

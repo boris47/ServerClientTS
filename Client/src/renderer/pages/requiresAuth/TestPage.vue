@@ -1,6 +1,6 @@
 <template>
 	<global-layout>
-		<div slot="header">
+		<div slot="body">
 			<p>Test Page!</p>
 			<div>
 				<input type="text" v-model="valueToSet"/>
