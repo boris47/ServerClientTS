@@ -15,6 +15,7 @@ module.exports = function(config)
 	config.devtool = false;// isDevelopmentEnvironment ? "inline-source-map" : false;
 	config.performance = false;
 	config.plugins = config.plugins.filter(plugin => plugin.constructor.name !== 'BannerPlugin');
+	config.stats = 'normal';
 
 //	/** @param {string} key @param {any} value */
 //	const replacer = ( key, value ) =>

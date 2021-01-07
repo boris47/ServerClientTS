@@ -12,7 +12,6 @@ import { EComunicationsChannels } from '../icpComs';
 
 // Vue
 import Vue, { VueConstructor, PluginObject, CreateElement, RenderContext } from 'vue';
-//import 'vuetify/dist/vuetify.min.css';
 
 // Vue Router
 import AppRouter from './appRouter';

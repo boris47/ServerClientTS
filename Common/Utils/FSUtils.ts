@@ -14,29 +14,31 @@ export interface IMappedFolderData
 export default class FSUtils
 {
 	/**  */
-	public static GetUserDataFolder()
+	public static GetUserDataFolder(): string
 	{
 		return process.env.APPDATA || path.join(process.env.HOME, process.platform === 'darwin' ? '/Library/Preferences' : "/.local/share");
 	}
-
+	
 	/**  */
-	public static async Copy(absoluteSourceFolder: string, absoluteDestinationFolder: string, subfolder?: string): Promise<Map<string, (NodeJS.ErrnoException | null)>>
+	public static async Copy(absoluteSourceFolder: string, absoluteDestinationFolder: string, filesToCopy?: string[]): Promise<Map<string, (NodeJS.ErrnoException | null)>>
 	{
-		const mapped: IMappedFolderData = FSUtils.MapFolder(path.join(absoluteSourceFolder, subfolder || ''));
 		const results = new Map<string, (NodeJS.ErrnoException | null)>();
-		for (const absoluteSourceFilePath of mapped.files)
+		for (const absoluteSourceFilePath of FSUtils.MapFolder(absoluteSourceFolder).files)
 		{
-			const relativeFilePath = absoluteSourceFilePath.replace(path.join(absoluteSourceFolder, subfolder || ''), '').replace('\\\\', '');
-			const absoluteDestinationFilePath = path.join(absoluteDestinationFolder, relativeFilePath);
-			await FSUtils.EnsureDirectoryExistence(path.parse(absoluteDestinationFilePath).dir);
-			await new Promise<void>((resolve) =>
+			if (!filesToCopy || filesToCopy.includes(absoluteSourceFilePath))
 			{
-				fs.copyFile(absoluteSourceFilePath, absoluteDestinationFilePath, (err: NodeJS.ErrnoException) =>
+				const relativeFilePath = absoluteSourceFilePath.replace(absoluteSourceFolder, '').replace('\\\\', '');
+				const absoluteDestinationFilePath = path.join(absoluteDestinationFolder, relativeFilePath);
+				await FSUtils.EnsureDirectoryExistence(path.parse(absoluteDestinationFilePath).dir);
+				await new Promise<void>(resolve =>
 				{
-					results.set(absoluteSourceFilePath, err);
-					resolve();
+					fs.copyFile(absoluteSourceFilePath, absoluteDestinationFilePath, (err: NodeJS.ErrnoException) =>
+					{
+						results.set(absoluteSourceFilePath, err);
+						resolve();
+					});
 				});
-			});
+			}
 		}
 		return results;
 	}
@@ -206,11 +208,11 @@ export default class FSUtils
 	/**  */
 	public static MapFolder(folderPath: string): IMappedFolderData
 	{
-		const result: IMappedFolderData = <IMappedFolderData>
-			{
-				files: new Array<string>(),
-				folders: new Array<string>()
-			};
+		const result: IMappedFolderData =
+		{
+			files: new Array<string>(),
+			folders: new Array<string>()
+		};
 
 		if (FSUtils.IsDirectorySafe(folderPath))
 		{
@@ -218,7 +220,7 @@ export default class FSUtils
 			while (directoriesPath.length > 0)
 			{
 				const dPath = directoriesPath.pop();
-				fs.readdirSync(dPath).map(fp => path.join(dPath, fp)).forEach((fp: string) =>
+				fs.readdirSync(dPath).map((fp: string) => path.join(dPath, fp)).forEach((fp: string) =>
 				{
 					if (FSUtils.IsDirectorySafe(fp))
 					{
@@ -232,7 +234,6 @@ export default class FSUtils
 				});
 			}
 		}
-
 		return result;
 	}
 

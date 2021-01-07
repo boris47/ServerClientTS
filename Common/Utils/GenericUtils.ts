@@ -2,8 +2,11 @@
 import * as crypto from 'crypto';
 import * as stream from 'stream';
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export class CustomCrypto
 {
+	/**  */
 	public static Encrypt(text: string, passPhrase32Bit: string, iv: string): string
 	{
 		if (text.length === 0) return '';
@@ -12,6 +15,7 @@ export class CustomCrypto
 		return encrypted.toString('hex');
 	}
 
+	/**  */
 	public static Decrypt(text: string, passPhrase32Bit: string, iv: string): string
 	{
 		const encryptedText = Buffer.from(text, 'hex');
@@ -29,14 +33,15 @@ export class UniqueID
 {
 	private static internalIndex = 0;
 
+	/**  */
 	public static Generate(): string
 	{
-		//	return [2, 2, 2, 6].reduce( ( previous : string, length : number ) =>
-		//		{
-		//			return `${previous}-${crypto.randomBytes(length).toString('hex')}`;
-		//		},
-		//		crypto.randomBytes(4).toString('hex')
-		//	);
+	//	return [2, 2, 2, 6].reduce( ( previous : string, length : number ) =>
+	//		{
+	//			return `${previous}-${crypto.randomBytes(length).toString('hex')}`;
+	//		},
+	//		crypto.randomBytes(4).toString('hex')
+	//	);
 		const time = Math.floor((new Date().getTime() + ++UniqueID.internalIndex) / 16);
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c)
 		{
@@ -47,29 +52,36 @@ export class UniqueID
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export interface ITemplatedObject<T = any>
 {
 	[key: string]: T;
 }
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export function Yieldable<T>(fn: () => T): Promise<T>
 {
 	return Promise.resolve().then(fn);
 }
 
 
+/////////////////////////////////////////////////////////////////////////////////////////
 export type GenericConstructor<T> = { new(...args: any[]): T; };
 export type Constructor<T> = Function & { prototype: T };
 
+
+/////////////////////////////////////////////////////////////////////////////////////////
 export default class GenericUtils
 {
-	/////////////////////////////////////////////////////////////////////////////////////////
+	/**  */
 	public static Instanciate<T>(constructor: GenericConstructor<T>, ...args: any[]): T
 	{
 		return new constructor(args);
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////
+
+	/**  */
 	public static Parse<T = Object>( content: string, ctor?: (arg: object) => T ) : Error | T
 	{
 		if (typeof content !== 'string' || content.length === 0)
@@ -91,7 +103,8 @@ export default class GenericUtils
 		return result as T;
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////
+
+	/**  */
 	public static BufferToStream(buffer: Buffer): stream.Readable
 	{ 
 		const readable = new stream.Readable();
@@ -100,35 +113,35 @@ export default class GenericUtils
 		return readable;
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////
-	/**
+
+	/** 
 	 * @param value Value to examinate
 	 * @param type -
 	 * - A type `string` ('string', 'number', ...),
 	 * - a `class` (Error, Buffer, ...)
 	 * - an `abstract class`
 	 */
-	public static IsTypeOf<T = any>(value: any, type: string | { new(...args: any[]): T; } | Constructor<T>): value is T
+	public static IsTypeOf<T = any>(value: any, type: string | GenericConstructor<T> | Constructor<T>): value is T
 	{
 		return (typeof type === 'string' ? (e: any) => typeof e === type : (e: any) => e instanceof type)(value);
 	}
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////
+	/**  */
 	public static IsPromise<TResult = any>(obj: any): obj is Promise<TResult>
 	{
 		return obj && typeof(obj.then) === 'function' && typeof(obj.finally) === 'function';
 	}
 
 
-	/////////////////////////////////////////////////////////////////////////////////////////
+	/** Wait an ammount of milliseconds */
 	public static DelayMS(ms: number): Promise<void>
 	{
 		return new Promise<void>((resolve) => setTimeout(resolve, ms));
 	};
 
 	
-	/////////////////////////////////////////////////////////////////////////////////////////
+	/**  */
 	public static async WaitFrames(frameCount: number): Promise<void>
 	{
 		for (let index = 0; index < frameCount; index++) await GenericUtils.DelayMS(1);
@@ -136,24 +149,22 @@ export default class GenericUtils
 }
 
 
-
-
-/**
- * Provides a mechanism for releasing resources.
- */
+/////////////////////////////////////////////////////////////////////////////////////////
+/** Provides a mechanism for releasing resources. */
 export interface IDisposable
 {
 	dispose(): void  | Promise<void>;
 }
 
-/**
- * Provides a convenient syntax that ensures the correct use of IDisposable objects
+
+/////////////////////////////////////////////////////////////////////////////////////////
+/** Provides a convenient syntax that ensures the correct use of IDisposable objects
  * @example
- *   await Using( new Object, async (object: object) =>
- *   {
- *	     await Task.delay(1000);
- *	 });
- *	 console.log("end");
+ * await Using( new Object, async (object: object) =>
+ * {
+ *     await Task.delay(1000);
+ * });
+ * console.log("end");
  */
 export async function Using<T extends IDisposable, K>(resource: T, func: (resource: T) => K | Promise<K>)
 {

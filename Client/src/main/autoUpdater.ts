@@ -32,14 +32,14 @@ export default class AppUpdater
 			electron.app.exit(1);
 		});
 
-		const [orig_width, orig_heigth] = this.mainWindow.getSize();
-		this.mainWindow.setSize(440, 130);
+//		const [orig_width, orig_heigth] = this.mainWindow.getSize();
+//		this.mainWindow.setSize(440, 130);
 
 		// Actually check for updates
 		electronUpdater.autoUpdater.checkForUpdates();
 
 		// Set the events
-		const updateAvailable = await new Promise<electronUpdater.UpdateInfo>( resolve =>
+		const updateAvailable = await new Promise<null | electronUpdater.UpdateInfo>( resolve =>
 		{
 			electronUpdater.autoUpdater.on( 'update-available', resolve );
 			electronUpdater.autoUpdater.on( 'update-not-available', () => resolve(null) );
@@ -93,12 +93,11 @@ export default class AppUpdater
 
 			// As name says, quit and install update
 			electronUpdater.autoUpdater.quitAndInstall();
-			
 		}
 		else
 		{
 			this.mainWindow.webContents.send('on-update-news', false);
-			this.mainWindow.setSize(orig_width, orig_heigth);
+//			this.mainWindow.setSize(orig_width, orig_heigth);
 		//	const options: electron.MessageBoxOptions =
 		//	{
 		//		title: 'No Updates',

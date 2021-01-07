@@ -1,69 +1,82 @@
 <template>
 	<global-layout>
-		<div slot="header">
+		<div slot="main">
 			<h3>Registration</h3>
-			<form v-on:submit.prevent="handleSubmit">
+			<v-form>
+				<v-text-field :disabled="submitted" :loading="submitted" :rules="textFiledsRules"
+					v-model="username"
+					label="Username"
+					type="text"
+					v-on:keyup.enter="HandleSubmit"
+				/>
 				<div>
-					<v-text-field label="Username" type="text" :rules="textFiledsRules" v-model="username" name="username" />
+				<v-text-field :disabled="submitted" :loading="submitted" :rules="textFiledsRules"
+					v-model="password"
+					label="Password"
+					:type="visible ? 'text' : 'password'"
+					v-on:keyup.enter="HandleSubmit"
+					hint="Insert the password"
+					:append-icon="visible ? 'mdi-eye' : 'mdi-eye-off'"
+					v-on:click:append="visible = !visible"
+				/>
 				</div>
-				<div>
-					<v-text-field label="Password" type="password" :rules="textFiledsRules" v-model="password" name="password" />
-				</div>
-				<v-btn>Register</v-btn>
-			</form>
+			</v-form>
+			<div>
+				<v-btn :disabled="submitted" :loading="submitted" v-on:click.stop="HandleSubmit">Register User</v-btn>
+				<v-btn :disabled="submitted" :loading="submitted" v-on:click.stop="GoToLoginPage">Back</v-btn>
+			</div>
 		</div>
 	</global-layout>
 </template>
 
 <script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import AppRouter from '../appRouter';
+import { ICP_RendererComs } from '../icpRendererComs';
+import { EComunicationsChannels } from '../../icpComs';
 
-	import { Component, Vue } from 'vue-property-decorator';
-	import AppRouter from '../appRouter';
-	import { ICP_RendererComs } from '../icpRendererComs';
-	import { EComunicationsChannels } from '../../icpComs';
-	
 
-	@Component
-	export default class RegistrationPage extends Vue
+@Component
+export default class RegistrationPage extends Vue
+{
+	protected username: string = '';
+	protected password: string = '';
+	protected submitted: boolean = false;
+	protected textFiledsRules =
+	[
+		(value: string) => !!value || 'Required.'
+	];
+
+	protected created()
 	{
-		protected username: string = '';
-		protected password: string = '';
-		protected submitted: boolean = false;
-		protected textFiledsRules =
-		[
-			(value: string) => !!value || 'Required.'
-		];
+		console.log('RegistrationPage');
+	}
 
-		protected created()
-		{
-			console.log('RegistrationPage');
-		}
+	protected GoToLoginPage()
+	{
+		AppRouter.NavigateTo('loginPage');
+	}
 
-		protected async handleSubmit()
+	protected async HandleSubmit()
+	{
+		if (this.username && this.password && !this.submitted)
 		{
 			this.submitted = true;
-			if (this.username && this.password)
-			{ // TODO
-				const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
-				if (Buffer.isBuffer(result))
-				{
-					console.log('TOKEN', result.toString());
-					AppRouter.NavigateTo('loginPage');
-				}
-				else
-				{
-					console.error("Login Failed", result);
-				}
+			const result = await ICP_RendererComs.Request(EComunicationsChannels.REQ_USER_REGISTER, null, this.username, this.password);
+			if (Buffer.isBuffer(result))
+			{
+				AppRouter.NavigateTo('loginPage');
+			}
+			else
+			{
+				this.submitted = false;
+				console.error("Login Failed", result);
 			}
 		}
 	}
-
+}
 </script>
 
 <style scoped>
-
-.red-label{
-	color: red;
-}
 
 </style>

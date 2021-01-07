@@ -14,50 +14,48 @@
 </template>
 
 <script lang="ts">
+import { Component, Vue } from 'vue-property-decorator';
+import { ICP_RendererComs } from '../icpRendererComs';
 
-	import { Component, Vue } from 'vue-property-decorator';
-	import { ICP_RendererComs } from '../icpRendererComs';
+import StringUtils from '../../../../Common/Utils/StringUtils';
+import AppRouter from '../appRouter';
 
-	import StringUtils from '../../../../Common/Utils/StringUtils';
-	import AppRouter from '../appRouter';
+@Component
+export default class UpdatePage extends Vue
+{
+	protected percent: number | undefined = 0;
+	protected bytesPerSecond: string = '';
 
-	@Component
-	export default class UpdatePage extends Vue
+	protected created(): void
 	{
-		protected percent: number | undefined = 0;
-		protected bytesPerSecond: string = '';
+		console.log('UpdatePage');
 
-		protected created(): void
+		this.percent = undefined;
+
+		ICP_RendererComs.Listen( 'update-download-progress', this.UpdateDownloadProgress);
+		ICP_RendererComs.Listen( 'on-update-news', this.OnUpdateNews );
+	}
+
+	protected destroy(): void
+	{
+		ICP_RendererComs.StopListening( 'update-download-progress', this.UpdateDownloadProgress);
+		ICP_RendererComs.StopListening( 'on-update-news', this.OnUpdateNews );
+	}
+
+	private OnUpdateNews( bIsUpdateAvailable: boolean ): void
+	{
+		if (!bIsUpdateAvailable)
 		{
-			console.log('UpdatePage');
-
-			this.percent = undefined;
-
-			ICP_RendererComs.Listen( 'update-download-progress', this.UpdateDownloadProgress);
-			ICP_RendererComs.Listen( 'on-update-news', this.OnUpdateNews );
-		}
-
-		protected destroy(): void
-		{
-			ICP_RendererComs.StopListening( 'update-download-progress', this.UpdateDownloadProgress);
-			ICP_RendererComs.StopListening( 'on-update-news', this.OnUpdateNews );
-		}
-
-		private OnUpdateNews( bIsUpdateAvailable: boolean ): void
-		{
-			if (!bIsUpdateAvailable)
-			{
-				AppRouter.NavigateTo('loginPage');
-			}
-		}
-
-		private UpdateDownloadProgress( percent: number, bytesPerSecond: number ): void
-		{
-			this.percent = percent * 0.01;
-			this.bytesPerSecond = StringUtils.FormatSpeedFromBytes(bytesPerSecond)
+			AppRouter.NavigateTo('loginPage');
 		}
 	}
 
+	private UpdateDownloadProgress( percent: number, bytesPerSecond: number ): void
+	{
+		this.percent = percent * 0.01;
+		this.bytesPerSecond = StringUtils.FormatSpeedFromBytes(bytesPerSecond)
+	}
+}
 </script>
 
 <style scoped>

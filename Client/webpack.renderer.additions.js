@@ -14,6 +14,7 @@ module.exports = function(config)
 		hints : false //"error"
 	};
 	config.output.libraryTarget = 'var';
+	config.stats = 'normal';
 	
 	// Replace static folder of webpack devserver content base entry with resources folder name
 	if (isDevelopmentEnvironment)
