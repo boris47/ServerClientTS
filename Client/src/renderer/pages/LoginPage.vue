@@ -40,6 +40,7 @@ export default class LoginPage extends Vue
 {
 	protected username: string = '';
 	protected password: string = '';
+	protected visible: boolean = false;
 	protected submitted: boolean = false;
 	protected textFiledsRules =
 	[
