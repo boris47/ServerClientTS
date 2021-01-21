@@ -100,11 +100,10 @@ export default class HttpModule
 	{
 		const {address} = request.socket?.address() as net.AddressInfo  || {};
 		console[(Buffer.isBuffer(value) ? 'log':'warn')](
-			[
-				`Incoming: Origin:'${address}', Path: '${request.url}', Method: '${request.method}', ${context ?`Context: '${context}',`: ''} Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
-				`Body: ${value.toString()}`,
-			].join('\n\t')
-		);
+		[
+			`Incoming: Origin:'${address}', Path: '${request.url}', Method: '${request.method}', ${context ?`Context: '${context}',`: ''} Result: ${Buffer.isBuffer(value)?'good':'bad'}, Duration: ${(durationMS).toString()}ms`,
+			`Body: ${value.toString()}\n`,
+		].join('\n\t'));
 	};
 
 
@@ -138,6 +137,8 @@ export default class HttpModule
 		const startTime = Date.now();
 		const path: string = request.url.split('?')[0];
 		const responseMapItem : IResponsesMapItem = ResponsesMap[path];
+
+		console.log(`Received request: url '${request.url}', method '${request.method}'`);
 
 		// Check Auths
 		const userRequestApprovation = await ServerUserRequestHandler.CheckUserAuths(path, responseMapItem?.requiresAuth, request, response);
