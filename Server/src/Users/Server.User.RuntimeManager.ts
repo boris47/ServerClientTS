@@ -40,7 +40,7 @@ export default class ServerUserRuntimeManager
 		// If aleady registeres or logged return the current instance
 	//	const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
 		const serverUser = await ServerUserRuntimeManager.FindUser(username);
-		if (serverUser && serverUser.IsPassword(password))
+		if (serverUser && serverUser.IsPasswordEqual(password))
 		{
 			return serverUser.id;
 		}
@@ -62,7 +62,7 @@ export default class ServerUserRuntimeManager
 	{
 //		const { username: encryptedUsername, password: encryptedPassword } = ServerUser.EncryptData( username, password );
 		const serverUser = await ServerUserRuntimeManager.FindUser(username);
-		if (serverUser && serverUser.IsPassword(password))
+		if (serverUser && serverUser.IsPasswordEqual(password))
 		{
 			serverUser.Login(serverUser.LoginToken);
 			this.LoggedInUsersMappedByAccessToken.set(serverUser.LoginToken, serverUser);

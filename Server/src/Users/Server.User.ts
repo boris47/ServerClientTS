@@ -2,40 +2,6 @@
 
 import { UniqueID, ITemplatedObject, CustomCrypto, Yieldable } from "../../../Common/Utils/GenericUtils";
 
-
-export class UserLoginData
-{
-	private token: null | string = null;
-//	private loggedInTime: number = 0;
-	private loginDate: null | Date = null;
-	private logoutDate: null | Date = null;
-
-	//
-	get Token(): null | string { return this.token; };
-//	get LoggedInTime() : number { return this.loggedInTime; };
-	get LoginDate() : Date { return this.loginDate; };
-	get LogoutDate() : Date { return this.logoutDate; };
-
-
-	//
-	public Login( token?: string )
-	{
-		this.loginDate = new Date;
-//		this.loggedInTime = 0;
-		this.logoutDate = null;
-		this.token = token || UniqueID.Generate();
-	}
-
-	//
-	public LogOut()
-	{
-		this.loginDate = null;
-//		this.loggedInTime = Date.now() - this.loginDate.getUTCMilliseconds()
-		this.logoutDate = new Date;
-		this.token = null;
-	}
-};
-
 export interface IServerUserBaseProps
 {
 	readonly	username: string;
@@ -43,24 +9,49 @@ export interface IServerUserBaseProps
 	readonly	id?: string;
 }
 
+export class UserLoginData
+{
+	private token: null | string = null;
+	private loginDate: null | Date = null;
+	private logoutDate: null | Date = null;
+
+	get Token(): null | string { return this.token; };
+	get LoginDate() : Date { return this.loginDate; };
+	get LogoutDate() : Date { return this.logoutDate; };
+
+	public Login( token?: string )
+	{
+		this.loginDate = new Date;
+		this.logoutDate = null;
+		this.token = token || UniqueID.Generate();
+	}
+
+	public LogOut()
+	{
+		this.loginDate = null;
+		this.logoutDate = new Date;
+		this.token = null;
+	}
+};
+
 export class ServerUser implements IServerUserBaseProps
 {
 //	private static passPhrase32Bit : string = `NEhS@qDBXrmq2qyNe4WUS7Lb+Y=5-gC3`;
 //	private static iv: string = '7}t;Ca5R&nT{8>RE';
 //	private static users: ServerUser[] = new Array<ServerUser>();
 
-//	public static async GetUserByToken(token: string): Promise<ServerUser | null>
-//	{
-//		return ServerUser.users.find( u => u.LoginToken === token ) || null;
-/*
+/*	public static async GetUserByToken(token: string): Promise<ServerUser | null>
+	{
+		return ServerUser.users.find( u => u.LoginToken === token ) || null;
+
 		let userFound = null;
 		for( const user of ServerUser.users )
 		{
 			await Yieldable( () => userFound = ( user.loginData?.Token === token ) ? user : null );
 		}
-		return userFound;*/
-//	}
-
+		return userFound;
+	}
+*/
 /*	public static EncryptData( username: string, password: string, id?: string ): IServerUserBaseProps
 	{
 		return {
@@ -81,57 +72,47 @@ export class ServerUser implements IServerUserBaseProps
 */
 	///////////////////////////////////////////////////////////////////////////////////////////////////
 
-	public	readonly	username: string			= '';
-	public 	readonly	password: string 			= '';
-	public	readonly	id: string					= UniqueID.Generate();
-	private readonly	loginData: UserLoginData	= new UserLoginData;
+	public	readonly	username: string				= '';
+	public 	readonly	password: string 				= '';
+	public	readonly	id: string						= UniqueID.Generate();
+	private readonly	userLoginData: UserLoginData	= new UserLoginData;
 
-	//
-	get LoginToken(): string { return this.loginData.Token; };
+	get LoginToken(): string { return this.userLoginData.Token; };
 
 
-	//
-	public static Load( userData: Object ): ServerUser
+	public static Load( userData: any ): ServerUser
 	{
-		const { username, password, id, loginData: {token} } = userData as IServerUserBaseProps & { loginData: { token: string } };
+		const { username, password, id, loginData } = userData;
 		const newUser = new ServerUser( username, password, id );
-		if (token)
+		if (loginData?.token)
 		{
-			newUser.Login(token);
+			newUser.Login(loginData.token);
 		}
-
 		return newUser;
 	}
 
-	//
 	constructor( username?: string, password?: string, id?: string )
 	{
 		this.username = username ?? this.username;
 		this.password = password ?? this.password;
 		this.id = id ?? this.id;
-//		ServerUser.users.push(this);
 	}
 
-
-	//
 	public Login(token?: string): void
 	{
-		this.loginData.Login(token);
+		this.userLoginData.Login(token);
 	}
 
-	//
-	public IsPassword( password: string )
+	public IsPasswordEqual( password: string )
 	{
 		return this.password === password;
 	}
 
-	//
 	public async Logout()
 	{
-		this.loginData.LogOut();
+		this.userLoginData.LogOut();
 		// TODO Release every data left outside
 	}
-
 
 	protected toJSON()
 	{

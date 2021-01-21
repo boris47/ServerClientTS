@@ -21,7 +21,7 @@ export default class ServerResponseResources
 		{
 			const errMessage = `Request "${request.url}:${request.method}" missing 'content-length'`;
 			ServerResponsesProcessing.EndResponseWithError( response, HTTPCodes[411], 411 );
-			return ComUtils.ResolveWithError( 'ServerResponseResources.ClientToServer', errMessage );
+			return ComUtils.ResolveWithError( 'ServerResponseResources.Resources_Download', errMessage );
 		}
 
 		// Execute file upload to client
@@ -69,7 +69,7 @@ export default class ServerResponseResources
 		{
 			const err = `Cannot obtain size of file ${filePath}`;
 			ServerResponsesProcessing.EndResponseWithError(response, err, 400);
-			return ComUtils.ResolveWithError("ServerResponses:UploadResource", err);
+			return ComUtils.ResolveWithError("ServerResponseResources:Resources_Upload", err);
 		}
 
 		const options: IServerRequestInternalOptions =
