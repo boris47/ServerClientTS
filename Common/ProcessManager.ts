@@ -106,21 +106,29 @@ export namespace ProcessManager
 			});
 		};
 
+		const IsSubProcessMessage = (arg: any): arg is ISubProcessMessage =>
+		{
+			if (arg && typeof arg === 'object')
+			{
+				const {msg, msgType, processName} = arg;
+				return typeof msg === 'string' && typeof msgType === 'string' && typeof processName === 'string';
+			}
+			return false;
+		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////
 		const HandleReceivedMessage = async ( message: child_process.Serializable /*string | number | boolean | object*/ ): Promise<void> =>
 		{
-			const IsSubProcessMessage = (message: any): message is ISubProcessMessage => !!message.processName && message.msgType && !!message.msg
+	//		const IsSubProcessMessage = (message: any): message is ISubProcessMessage => !!message.processName && message.msgType && !!message.msg
 			if (IsSubProcessMessage(message))
 			{
 				const pendingMessageIndex = PendingMessages.findIndex( pending => pending.msgType === message.msgType && pending.processName === message.processName );
-				if ( pendingMessageIndex >= 0 )
+				if ( pendingMessageIndex > -1 )
 				{
 					const pendingMessage = PendingMessages[pendingMessageIndex];
-					pendingMessage?.onReceived?.onMessageReceived( <ISubProcessMessage>message );
+					pendingMessage?.onReceived?.onMessageReceived( message );
 					PendingMessages.splice( pendingMessageIndex, 1);
 				}
-				
 			}
 		}
 
@@ -462,23 +470,18 @@ export namespace ProcessManager
 			console.log( `ProcessManager:SpawnAndLeave: Process to execute "${processToExecute}"` );
 			try
 			{
-				const child = child_process.spawn
-				(
-					processToExecute,
-					args || [],
-					<child_process.SpawnOptions>
-					{
-						cwd : absoluteCWD || process.cwd(),
-						shell: process.env.ComSpec,
-						env : Object.assign( {}, process.env, additionalEnvVars || {} ),
-						execArgv : [],
-						detached : true,
-						stdio: 'ignore',
-				//		silent : false // If true, stdin, stdout, and stderr of the child will be piped to the parent, 
-				//		// otherwise they will be inherited from the parent, see the 'pipe' and 'inherit' options 
-				//		// for child_process.spawn()'s stdio for more details. Default: false.
-					}
-				);
+				const options: child_process.SpawnOptions =
+				{
+					cwd : absoluteCWD || process.cwd(),
+					shell: process.env.ComSpec,
+					env : Object.assign( {}, process.env, additionalEnvVars || {} ),
+					detached : true,
+					stdio: 'ignore',
+			//		silent : false // If true, stdin, stdout, and stderr of the child will be piped to the parent, 
+			//		// otherwise they will be inherited from the parent, see the 'pipe' and 'inherit' options 
+			//		// for child_process.spawn()'s stdio for more details. Default: false.
+				};
+				const child = child_process.spawn( processToExecute, args || [], options );
 				child.unref();
 				return true;
 			}
