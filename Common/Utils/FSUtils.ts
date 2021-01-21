@@ -25,7 +25,7 @@ export default class FSUtils
 		const results = new Map<string, (NodeJS.ErrnoException | null)>();
 		for (const absoluteSourceFilePath of FSUtils.MapFolder(absoluteSourceFolder).files)
 		{
-			if (!filesToCopy || filesToCopy.includes(absoluteSourceFilePath))
+			if (!filesToCopy || filesToCopy.some(portion => absoluteSourceFilePath.includes(portion)))
 			{
 				const relativeFilePath = absoluteSourceFilePath.replace(absoluteSourceFolder, '').replace('\\\\', '');
 				const absoluteDestinationFilePath = path.join(absoluteDestinationFolder, relativeFilePath);
