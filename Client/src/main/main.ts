@@ -71,12 +71,14 @@ class MainProcess
 				sandbox: true
 			};
 			
+			const { width, height } = electron.screen.getPrimaryDisplay().workAreaSize;
+
 			const options: Electron.BrowserWindowConstructorOptions =
 			{
 				// Window's height in pixels. Default is 600.
-				height: 600,
+				height: height * 0.8,
 				// Window's width in pixels. Default is 800.
-				width: 800,
+				width: width * 0.8,
 				// The width and height would be used as web page's size, which means the actual window's size will
 				// include window frame's size and be slightly larger. Default is false.
 			//	useContentSize: true,
