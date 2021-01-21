@@ -208,33 +208,28 @@ export default class FSUtils
 	/**  */
 	public static MapFolder(folderPath: string): IMappedFolderData
 	{
-		const result: IMappedFolderData =
-		{
-			files: new Array<string>(),
-			folders: new Array<string>()
-		};
-
+		const files = new Array<string>(), folders = new Array<string>();
 		if (FSUtils.IsDirectorySafe(folderPath))
 		{
 			const directoriesPath = new Array<string>(path.normalize(folderPath));
 			while (directoriesPath.length > 0)
 			{
 				const dPath = directoriesPath.pop();
-				fs.readdirSync(dPath).map((fp: string) => path.join(dPath, fp)).forEach((fp: string) =>
+				fs.readdirSync(dPath).map(fn => path.join(dPath, fn)).forEach((fPath: string) =>
 				{
-					if (FSUtils.IsDirectorySafe(fp))
+					if (FSUtils.IsDirectorySafe(fPath))
 					{
-						directoriesPath.push(fp);
-						result.folders.push(fp);
+						directoriesPath.push(fPath);
+						folders.push(fPath);
 					}
 					else
 					{
-						result.files.push(fp);
+						files.push(fPath);
 					}
 				});
 			}
 		}
-		return result;
+		return { files, folders };
 	}
 
 	/** If directory exists, clear all the content */
