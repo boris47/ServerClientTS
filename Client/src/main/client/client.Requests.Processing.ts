@@ -5,7 +5,8 @@ import axios, { AxiosRequestConfig, AxiosError, Method } from 'axios';
 
 import * as ComUtils from '../../../../Common/Utils/ComUtils';
 import { ComFlowManager } from '../../../../Common/Utils/ComUtils';
-import GenericUtils from '../../../../Common/Utils/GenericUtils';
+import GenericUtils, { StreamLimitator } from '../../../../Common/Utils/GenericUtils';
+import { EHeaders } from '../../../../Common/Interfaces';
 
 
 
@@ -44,73 +45,84 @@ export class ClientRequestsProcessing
 			timeout: options.timeout,
 			decompress: true,
 
-			url: options.path,
+			url: options.path || '',
 			method: options.method as Method,
 			headers: clientRequestInternalOptions.Headers,
 			responseType: clientRequestInternalOptions.WriteStream ? 'stream' : 'arraybuffer',
 		};
+		const response = await axios.request<stream.Readable | Buffer>(config).then(response => response).catch<Error>(err => err);
 
-		const response = await axios.request<stream.Readable | Buffer>(config).then(response => response ).catch(err => err);
+		// Cancelation
 		if (response instanceof axios.Cancel)
 		{
 			let err = new Error(response.message);
 			err.name = `ClientRequestsProcessing:HandleDownload`;
 			return err;
 		}
+
+		// Generic Error
 		if (GenericUtils.IsTypeOf(response, Error))
 		{
 			return response;
 		}
 
+		const {data: responseBody} = response;
 		
-		const responseBody: Buffer | stream.Readable = response.data;
+		// Buffer
 		if (Buffer.isBuffer(responseBody))
 		{
 			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(1, 1);
 			return Buffer.from(responseBody);
 		}
-			
-		const contentLength: number = parseInt(response.headers['content-length'], 10);
-		let loadedBytes = 0;
-		responseBody.pipe(clientRequestInternalOptions.WriteStream);
-		responseBody.on( 'data', (chunk: Buffer) =>
+		
+		// Stream
+		if (clientRequestInternalOptions.WriteStream && GenericUtils.IsStreamRead(responseBody))
 		{
-			loadedBytes += chunk.length;
-			clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, loadedBytes);
-		});
+			const contentLength: number = parseInt(response.headers['content-length'], 10);
+			let loadedBytes = 0;
+	
+			responseBody.on( 'data', (chunk: Buffer) =>
+			{
+				loadedBytes += chunk.length;
+				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, loadedBytes);
+			});
 
-		return new Promise( resolve =>
-		{
-			clientRequestInternalOptions.WriteStream.on('close', () => resolve(Buffer.from('OK')) );
-			clientRequestInternalOptions.WriteStream.on('error', resolve );
-		});
+			responseBody.pipe(clientRequestInternalOptions.WriteStream);
+			return new Promise( resolve =>
+			{
+				clientRequestInternalOptions.WriteStream.on('close', () => { console.log('close'); resolve(Buffer.from('OK'))} );
+			//	clientRequestInternalOptions.WriteStream.on('finish', () => console.log('finish'));
+				clientRequestInternalOptions.WriteStream.on('error', resolve );
+			});
+		}
+		
+		const message = `ClientRequestsProcessing.HandleDownload: UNHANDLED BEHAVIOUR: Expected Writable or misconfigurated request`;
+		debugger;
+		return Object.assign<Error, Error>(new Error, {name:'', message});
 	}
-
-//	private static isReadableStream(body: any): body is stream.Readable
-//	{
-//		return typeof body.pipe === "function";
-//	}
 
 
 	/** Client -> Server */
 	public static HandleUpload(options: http.RequestOptions, clientRequestInternalOptions: IClientRequestInternalOptions): Promise<Buffer | Error>
 	{
-		const contentLength: number = parseInt(clientRequestInternalOptions.Headers['content-length'], 10);
-		let loadedBytes = 0;
-		const uploadReportStream = new stream.Transform(
-			{
-				transform: (chunk: string | Buffer, _encoding: string, callback: stream.TransformCallback) =>
-				{
-					loadedBytes += chunk.length;
-					clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, loadedBytes);
-					callback(undefined, chunk);
-				}				
-			}
-		);
+		let maxTransferSpeed = parseInt(clientRequestInternalOptions?.Headers?.[EHeaders.TRANSFER_SPEED] as string || '0', 10)
+		// converts to bytes per ms
+		maxTransferSpeed = Math.floor((Math.max(maxTransferSpeed, 0) * 1024) / 1000.0) || Number.MAX_SAFE_INTEGER;;
 
+		const contentLength: number = parseInt(clientRequestInternalOptions?.Headers?.['content-length'] || '0', 10);
+		let tmpSentBytes: number = 0;
+		const uploadReportStream = new stream.Transform(
+		{
+			transform: (chunk: string | Buffer, _encoding: string, callback: stream.TransformCallback) =>
+			{
+				tmpSentBytes += chunk.length;
+				clientRequestInternalOptions.ComFlowManager?.Progress.SetProgress(contentLength, tmpSentBytes);
+				callback(undefined, chunk);
+			}
+		});
 		if (clientRequestInternalOptions.ReadStream)
 		{
-			clientRequestInternalOptions.ReadStream = clientRequestInternalOptions.ReadStream.pipe(uploadReportStream);
+			clientRequestInternalOptions.ReadStream = clientRequestInternalOptions.ReadStream.pipe(new StreamLimitator(maxTransferSpeed, 1)).pipe(uploadReportStream);
 		}
 		else
 		{
@@ -124,7 +136,7 @@ export class ClientRequestsProcessing
 
 			maxBodyLength: contentLength,
 			data: clientRequestInternalOptions.ReadStream || clientRequestInternalOptions.Value,
-			url: options.path,
+			url: options.path || '',
 			method: options.method as Method,
 			headers: clientRequestInternalOptions.Headers,
 			responseType: 'arraybuffer',
@@ -153,7 +165,7 @@ export class ClientRequestsProcessing
 		ClientRequestsProcessing.MakeRequest
 		options.headers = clientRequestInternalOptions.Headers;
 		
-		let request: http.ClientRequest = undefined;
+//		let request: http.ClientRequest = undefined;
 //		const bUseFollowRedirect = true;
 //		if (bUseFollowRedirect)
 //		{
@@ -175,7 +187,7 @@ export class ClientRequestsProcessing
 //		}
 //		else
 //		{
-			request = http.request(options);
+			const request = http.request(options);
 //		}
 
 		request.on('timeout', () =>

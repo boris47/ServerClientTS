@@ -4,6 +4,8 @@ import * as stream from 'stream';
 
 import { HTTPCodes } from '../HTTP.Codes';
 import * as ComUtils from '../../../Common/Utils/ComUtils';
+import { EHeaders } from '../../../Common/Interfaces';
+import { StreamLimitator } from '../../../Common/Utils/GenericUtils';
 
 
 export interface IServerRequestInternalOptions
@@ -142,20 +144,24 @@ export default class ServerResponsesProcessing
 	{
 		return new Promise<Buffer | Error>( ( resolve : ( value: Buffer | Error ) => void ) =>
 		{
+			let maxTransferSpeed = parseInt(request.headers[EHeaders.TRANSFER_SPEED] as string || '0', 10);
+			// converts to bytes per ms
+			maxTransferSpeed = Math.floor((Math.max(maxTransferSpeed, 0) * 1024) / 1000.0) || Number.MAX_SAFE_INTEGER;;
+
 			ServerResponsesProcessing.PrepareRequest(request, response, serverRequestInternalOptions, resolve);
 
 			// If read stream is available
 			if ( serverRequestInternalOptions.ReadStream )
 			{
-				serverRequestInternalOptions.ReadStream.pipe( response );
 				serverRequestInternalOptions.ReadStream.on( 'error', ( err: Error ) =>
 				{
 					ServerResponsesProcessing.EndResponseWithError( response, err, 500 ); // Internal Server Error
 					ComUtils.ResolveWithError( "ServerResponsesProcessing:HandleUpload[ReadStream]", err );
 					ServerResponsesProcessing.ResetServerInternalOptionsToBad(serverRequestInternalOptions);
 				});
-	
-				serverRequestInternalOptions.ReadStream.on( 'close', () =>
+
+				const limitedStream = serverRequestInternalOptions.ReadStream.pipe(new StreamLimitator(maxTransferSpeed, 1));
+				response = limitedStream.pipe( response ).on( 'close', () =>
 				{
 					serverRequestInternalOptions.ReadStream.destroy();
 					ServerResponsesProcessing.EndResponseWithGoodResult( response );

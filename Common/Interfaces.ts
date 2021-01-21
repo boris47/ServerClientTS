@@ -6,6 +6,9 @@ export enum EHeaders
 	TOKEN = 'x-token',
 
 	IDENTIFIER = 'x-identifier',
+
+	/** Limitation in KiB/s of the transfer  */
+	TRANSFER_SPEED = 'x-transfer-speed',
 	KEY = 'x-key',
 }
 
